@@ -1,0 +1,20 @@
+# .gitignore
+
+# Python Compiled Files and Directories
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual Environment
+# Ignores the venv folder created by 'python -m venv venv'
+venv/
+
+# Dependencies folder if using Pipenv or Poetry (optional)
+.venv/
+
+# Project Output Folder
+# Ignores the folder containing the generated static site
+my_static_book/
+
+# Operating System Files
+.DS_Store
