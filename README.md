@@ -1,88 +1,376 @@
-Run the script:
-source venv/bin/activate
-python -m src.main
+# Flipbook Generator
 
+Transform your PDF files into beautiful, interactive 3D flipbooks with this pure client-side JavaScript application. Experience the elegance of handcrafted digital books with smooth page transitions and a calm, soothing aesthetic.
 
-# Static Flipbook Generator README 📖
+## What is This?
 
-This project is a modular Python script designed to convert source documents (specifically PDF or simulated EPUB) into a lightweight, static HTML/CSS/JavaScript web application featuring a realistic, **3D page-turning effect**.
+This application lets you convert any PDF document into a self-contained HTML flipbook file. The generated file is completely standalone - no internet connection or server needed. You can:
 
-It is built with **zero external JavaScript dependencies**, relying entirely on custom CSS 3D transforms and vanilla JavaScript for performance and control.
+- Upload a PDF through a beautiful drag-and-drop interface
+- Watch it transform into an interactive 3D flipbook
+- Navigate pages with arrow keys or mouse clicks
+- Download the result as a single HTML file
+- Share the file with others - it works offline
 
------
+## Features
 
-## 🏗️ Project Structure
+- **Pure Client-Side Processing**: No server required - all processing happens in your browser
+- **Drag & Drop Interface**: Simply drop your PDF or click to browse
+- **Beautiful 3D Page Turning**: Smooth animations with realistic book-like transitions
+- **Standalone Output**: Generate a single self-contained HTML file
+- **Keyboard & Click Navigation**: Use arrow keys or click pages to navigate
+- **Download & Share**: Save or open your flipbook in a new tab
 
-The project is organized into a `src` directory containing the core Python logic for configuration, source file handling, and static file generation.
+## Prerequisites
+
+### What You Need
+
+- **Node.js** (version 16 or higher)
+  - Download from [nodejs.org](https://nodejs.org/)
+  - Verify installation by running: `node --version`
+- **npm** (comes with Node.js)
+  - Verify installation by running: `npm --version`
+- **A modern web browser**: Chrome, Firefox, Safari, or Edge
+
+### Browser Compatibility
+
+This application works on all modern browsers:
+- ✅ Chrome/Edge (recommended)
+- ✅ Firefox
+- ✅ Safari
+- ✅ Opera
+
+## Quick Start
+
+### Step 1: Install Dependencies
+
+Open a terminal in the project directory and run:
+
+```bash
+npm install
+```
+
+This will install all required dependencies including pdf.js for PDF processing.
+
+### Step 2: Start the Development Server
+
+Run the following command to start the development server:
+
+```bash
+npm start
+```
+
+The application will:
+1. Build the project for production
+2. Start a web server on port 3000
+3. Display the URL in the terminal
+
+You should see output like:
+```
+  VITE v5.4.21  ready in 200ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://192.168.x.x:3000/
+  ➜  press h to show help
+```
+
+### Step 4: Open in Browser
+
+Open your web browser and navigate to:
+```
+http://localhost:3000
+```
+
+You'll see the Flipbook Generator interface ready to use!
+
+### Step 4: Create Your Flipbook
+
+1. **Upload a PDF**: 
+   - Drag and drop a PDF file onto the upload area, OR
+   - Click the upload area and browse for a PDF file
+
+2. **Wait for Processing**:
+   - Watch the progress bar as pages are rendered
+   - This may take a minute or two depending on your PDF size
+
+3. **Preview & Download**:
+   - The flipbook will appear in the preview window
+   - Use arrow keys or click pages to navigate
+   - Click "Download HTML" to save the file
+   - Or "Open in New Tab" to view it full screen
+
+## Development
+
+### Development Mode
+
+For development with hot-reload and faster build times:
+
+```bash
+npm run dev
+```
+
+This starts Vite's development server which:
+- Provides instant server start
+- Hot Module Replacement (HMR) for fast updates
+- Opens the browser automatically at `http://localhost:8008`
+
+### Building for Production
+
+To build the project for production deployment:
+
+```bash
+npm run build
+```
+
+This creates an optimized `dist/` folder containing all files ready for deployment to any web server.
+
+### Preview Production Build
+
+To preview the production build locally:
+
+```bash
+npm run preview
+```
+
+## Available NPM Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm install` | Install all dependencies |
+| `npm test` | Run tests using Node.js built-in test runner |
+| `npm start` | Build and start production server on port 3000 |
+| `npm run dev` | Start development server with hot reload |
+| `npm run build` | Build for production (creates `dist/` folder) |
+| `npm run preview` | Preview the production build locally |
+
+## Testing
+
+This project uses Node.js's built-in test runner for testing. Tests are written using the native `node:test` module and assertions.
+
+### Running Tests
+
+```bash
+npm test
+```
+
+### Test Structure
+
+Tests are located in the `test/` directory:
+- `test/generator.test.js` - Tests for HTML generation functionality
+- `test/processor.test.js` - Tests for PDF processing functionality
+- `test/fixtures/test-pdf.js` - Test PDF data and utilities
+
+### Test Coverage
+
+The test suite covers:
+- **JavaScript wrapping**: `wrapFlipbookJs` function
+- **Page HTML generation**: `generatePagesHtml` function
+- **Complete HTML generation**: `generateFlipbookHtml` function
+- **Input validation**: Error handling for invalid inputs
+- **Asset loading**: Mock asset loaders for testing
+- **PDF processing**: Document loading, option validation, page rendering setup
+- **PDF utilities**: Option normalization, document loading, renderer creation
+
+## Project Structure
 
 ```
-.
-├── src/
-│   ├── __init__.py
-│   ├── config.py
-│   ├── main.py (Entry point - assumed)
-│   ├── processing/
-│   │   ├── __init__.py
-│   │   └── source_handler.py
-│   └── generation/
-│       ├── __init__.py
-│       └── static_generator.py
-└── [OUTPUT_DIR]/ (e.g., my_static_book/)
-    ├── index.html
-    ├── css/
-    │   └── style.css
-    ├── js/
-    │   ├── flipbook_core.js
-    │   └── interactivity.js
-    └── images/
-        ├── page_1.jpeg
-        └── page_2.jpeg
-        └── ...
+Pages/
+├── index.html              # Main HTML file
+├── package.json            # NPM configuration and dependencies
+├── vite.config.js         # Vite build configuration
+├── .gitignore             # Git ignore rules
+├── README.md              # This file
+├── node_modules/          # Installed dependencies (gitignored)
+├── dist/                  # Build output (gitignored)
+├── test/                  # Test files
+│   ├── fixtures/          # Test fixtures
+│   │   └── test-pdf.js    # Test PDF data
+│   ├── generator.test.js  # HTML generator tests
+│   └── processor.test.js  # PDF processor tests
+├── src/                   # Source code directory
+│   ├── app.js             # Main application controller
+│   ├── processor.js       # PDF processing with pdf.js
+│   ├── generator.js       # Flipbook HTML generator
+│   ├── flipbook.css       # Flipbook page styling
+│   └── flipbook.js        # 3D page turning logic
+└── styles/                # App interface styling
+    └── main.css           # UI design and layout
 ```
 
------
+### What Each File Does
 
-## 🗃️ Component Breakdown
+- **index.html**: The main web page with upload interface
+- **src/app.js**: Main application controller - handles UI, file uploads, and orchestrates processing
+- **src/processor.js**: Processes PDFs using pdf.js library, converts pages to images
+- **src/generator.js**: Generates standalone HTML files with embedded assets
+- **src/flipbook.css**: Styles the flipbook pages and 3D effects
+- **src/flipbook.js**: Handles page navigation and 3D flip animations
+- **styles/main.css**: Styles the main application interface
 
-### 1\. Configuration (`src/config.py`)
+## How It Works
 
-This file holds all mutable constants for the project.
+### PDF Processing
 
-| Variable/Constant | Purpose |
-| :--- | :--- |
-| `SOURCE_FILE` | Path to the PDF, EPUB, or other document to be processed. |
-| `BOOK_TITLE` | The title used in the output HTML `<title>` tag. |
-| `OUTPUT_DIR` | The name of the folder where all static files are generated. |
-| `FLIPBOOK_JS_FILENAME`, etc. | Defines the output names for the generated static files. |
+The application uses [pdf.js](https://mozilla.github.io/pdf.js/), Mozilla's PDF rendering library, which is included as an npm dependency:
 
-### 2\. Source Processing (`src/processing/source_handler.py`)
+1. **Load PDF**: The PDF file is loaded from disk into browser memory
+2. **Render Pages**: Each page is rendered to an HTML canvas element using pdf.js
+3. **Convert to Images**: Canvas content is converted to JPEG images (base64-encoded)
+4. **Store**: All images are stored in memory for instant access
 
-This module is responsible for reading the input document and preparing its content for the web.
+### Flipbook Generation
 
-| Function | Purpose |
-| :--- | :--- |
-| `process_pdf(pdf_path, output_dir)` | Uses **PyMuPDF (`fitz`)** to open the PDF, iterate through every page, render it, and save the result as an optimized **`.jpeg`** image file in the `images/` directory. Returns the total page count. |
-| `process_epub(epub_path, output_dir)` | (Placeholder logic) Designed to unzip EPUBs, aggregate content, and use **`lxml`** to clean and potentially split the HTML content into structured pages. |
+The generator creates a complete, standalone HTML file containing:
 
-### 3\. Static Generation (`src/generation/static_generator.py`)
+- **Embedded CSS**: All styling is inlined within `<style>` tags
+- **Embedded JavaScript**: All interactivity is inlined within `<script>` tags
+- **Base64-encoded Images**: All pages are embedded as data URLs
+- **Result**: Single `.html` file - completely self-contained!
 
-This is the primary generation module that creates all necessary static files.
+### Lazy Loading & Performance
 
-| Function | Purpose |
-| :--- | :--- |
-| `create_structure(output_dir)` | Creates the necessary `css/`, `js/`, and `images/` subdirectories. |
-| `generate_css(...)` | Creates **`style.css`**. Defines the 3D viewing perspective (`perspective`), the core page styles, and the critical **`.turned`** classes for the `-180deg` (forward) rotation and `180deg` (backward) rotation. |
-| `generate_js_flipbook(...)` | Creates **`flipbook_core.js`**. Contains the core **`Flipbook` class**. This class manages: 1. The book's current page state (`currentPage`). 2. Setting the correct **`transform-origin`** (`right center` or `left center`) for pages based on their position in the spread to ensure the spine is in the middle. 3. Handling the 3D rotation transition for `turnNext()` and `turnPrev()` via arrow keys or clicks. |
-| `generate_html(...)` | Creates **`index.html`**. Inserts meta tags, links the CSS/JS files, and dynamically generates the `<div class="page">` containers, including **lazy-loading image tags** that reference the generated `.jpeg` files. |
-| `open_output_in_browser(...)` | Uses the Python **`webbrowser`** module to automatically open the resulting `index.html` file after the generation process is complete. |
+To handle large PDF files gracefully, the application uses:
 
------
+- **Progressive Loading**: Pages load on-demand as you navigate
+- **Pre-loading**: Anticipates page turns and preloads adjacent pages
+- **Image Caching**: Loaded pages are cached to prevent re-downloads
+- **Smooth Transitions**: Loading placeholders keep animations fluid
+- **Efficient Rendering**: Only renders what's needed, when it's needed
 
-## ▶️ Running the Generator
+## Troubleshooting
 
-1.  **Configure:** Ensure your desired input and output names are set in `src/config.py`.
-2.  **Run:** Execute the main script (e.g., from the project root):
-    ```bash
-    python -m src.main
-    ```
-3.  **View:** The resulting static site will be automatically generated into the folder defined by `OUTPUT_DIR` and launched in your default web browser. Use the **Left/Right arrow keys** or **click the pages** to turn them.
+### "Command not found: npm"
+
+You need to install Node.js. Download it from [nodejs.org](https://nodejs.org/) and run the installer.
+
+### "Cannot find module" errors after npm install
+
+Try deleting `node_modules/` and `package-lock.json`, then run:
+```bash
+npm install
+```
+
+### Port 8008 already in use
+
+Change the port in `package.json`:
+```json
+"start": "http-server dist -p 3000 -c-1"
+```
+
+Or use environment variable:
+```bash
+PORT=3000 npm start
+```
+
+### PDF Processing Fails
+
+- Make sure the PDF file is not corrupted
+- Try with a smaller PDF first
+- Make sure it's a real PDF file (not just renamed .doc or .txt)
+- Check browser console for errors (F12 → Console tab)
+
+### Browser Shows Blank Page
+
+- Make sure JavaScript is enabled (should be by default)
+- Try refreshing the page
+- Check browser console for errors (F12 → Console tab)
+- Try a different browser
+- Verify the build completed: check if `dist/` folder exists
+
+### The Generated File is Too Large
+
+Large PDFs with many pages create large HTML files. This is normal because all pages are embedded. The application optimizes loading:
+
+- Only visible pages load initially
+- Remaining pages load progressively
+- Images are compressed (quality: 92%)
+
+## Dependencies
+
+The project uses the following main dependencies:
+
+### Production
+
+- **pdfjs-dist** (^5.4.296): Mozilla's PDF rendering library
+
+### Development
+
+- **vite** (^7.1.12): Build tool and development server
+
+## Deployment
+
+To deploy this application:
+
+1. **Build for production**:
+   ```bash
+   npm run build
+   ```
+
+2. **Deploy the `dist/` folder** to any static hosting service:
+   - GitHub Pages
+   - Netlify
+   - Vercel
+   - AWS S3
+   - Any web server
+
+3. That's it! The `dist/` folder contains everything needed.
+
+## Tips for Best Results
+
+1. **Use High-Quality PDFs**: Better source PDFs = better flipbooks
+2. **Keep PDFs Under 50 Pages**: Larger PDFs take longer to process
+3. **Test with Small Files First**: Start with a 5-10 page PDF to verify everything works
+4. **Check File Size**: Large PDFs create large HTML files (this is normal)
+5. **Share via Cloud Storage**: Generated HTML files can be shared via Dropbox, Google Drive, etc.
+
+## Privacy & Security
+
+- **100% Client-Side**: All processing happens in your browser - nothing is uploaded to any server
+- **No Internet Required**: After initial page load, everything works offline
+- **Self-Contained Output**: Generated HTML files work completely offline
+- **No Tracking**: No analytics, no tracking, no data collection
+- **No Build Process Required for Users**: End-users don't need npm - they just open the generated HTML file
+
+## FAQ
+
+**Q: Do I need to install anything to use the generated flipbook?**  
+A: No! The generated HTML file is completely standalone. Just double-click it to open in any browser.
+
+**Q: Will the generated flipbook work offline?**  
+A: Yes! The generated HTML file contains everything it needs and works completely offline.
+
+**Q: Can I deploy this to a web server?**  
+A: Yes! Run `npm run build` and deploy the `dist/` folder to any static hosting service.
+
+**Q: How large are the generated files?**  
+A: Approximately 50-100KB per PDF page. A 20-page PDF creates a ~1-2MB HTML file.
+
+**Q: Can I edit the generated flipbook?**  
+A: The generated HTML is plain text, but it's quite complex. It's better to regenerate with different settings.
+
+**Q: Does this work on mobile?**  
+A: The interface works, but PDF processing may be slow due to mobile hardware limitations.
+
+**Q: Why do I need Node.js if it's client-side?**  
+A: Node.js is only needed for development and building. The end-users of your flipbooks don't need anything - they just open the HTML file!
+
+## Contributing
+
+This is a simple, standalone application. Feel free to:
+
+- Fork the code
+- Modify for your needs
+- Share improvements
+- Report issues
+
+## License
+
+MIT License - feel free to use this in your own projects.
+
+## Credits
+
+Built with:
+- [pdf.js](https://mozilla.github.io/pdf.js/) v5.4.296 - Mozilla's PDF rendering engine
+- [Vite](https://vitejs.dev/) v7.1.12 - Next generation frontend tooling
+- Vanilla JavaScript - No frameworks, just pure JS
+- Modern CSS - 3D transforms for realistic page turns

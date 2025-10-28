@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flipbook Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1 class="title">Flipbook</h1>
+            <p class="subtitle">Craft beautiful digital books from your PDFs</p>
+        </header>
+
+        <main class="main-content">
+            <div id="upload-area" class="upload-area">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <h2 class="upload-title">Drop your PDF here</h2>
+                <p class="upload-subtitle">or click to browse</p>
+                <input type="file" id="file-input" accept=".pdf" style="display: none;">
+            </div>
+
+            <div id="progress-container" class="progress-container hidden">
+                <div class="progress-bar-wrapper">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <p id="progress-text" class="progress-text">Processing...</p>
+            </div>
+
+            <div id="result-container" class="result-container hidden">
+                <div class="result-header">
+                    <h2 class="result-title">Your flipbook is ready</h2>
+                    <div class="result-actions">
+                        <button id="download-btn" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download HTML
+                        </button>
+                        <button id="open-tab-btn" class="btn btn-secondary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                            Open in New Tab
+                        </button>
+                        <button id="reset-btn" class="btn btn-ghost">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                                <path d="M21 3v5h-5"></path>
+                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                                <path d="M3 21v-5h5"></path>
+                            </svg>
+                            Start Over
+                        </button>
+                    </div>
+                </div>
+                <div class="preview-wrapper">
+                    <iframe id="preview-iframe" class="preview-iframe" frameborder="0"></iframe>
+                </div>
+            </div>
+
+            <div id="error-message" class="error-message hidden"></div>
+        </main>
+
+        <footer class="footer">
+            <p>Made with care for digital bookcraft</p>
+        </footer>
+    </div>
+
+    <script type="module" src="src/app.js"></script>
+</body>
+</html>
+
