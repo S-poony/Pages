@@ -128,7 +128,7 @@ class FlipbookApp {
                 loadJs: async () => wrapFlipbookJs(flipbookJs)
             };
             
-            const html = await generateFlipbookHtml(pageCount, pageImages, {
+            const html = await generateFlipbookHtml(pageImages, {
                 title: file.name.replace('.pdf', '')
             }, assetLoader);
             
