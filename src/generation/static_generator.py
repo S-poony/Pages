@@ -1,14 +1,14 @@
 # src/generation/static_generator.py
-
 from pathlib import Path
 import os
 import shutil
-import webbrowser 
+import webbrowser
+import json
 
 # Import necessary constants from the sibling module 'config'
 from config import (
-    FLIPBOOK_JS_FILENAME, 
-    INTERACTIVE_JS_FILENAME, 
+    FLIPBOOK_JS_FILENAME,
+    INTERACTIVE_JS_FILENAME,
     CSS_FILENAME,
     INDEX_HTML_FILENAME
 )
@@ -17,18 +17,18 @@ from config import (
 def create_structure(output_dir: Path) -> bool:
     """
     Creates the main directories (assets) for the static site.
+    Returns True on success, False if the output_dir already exists or on error.
     """
     if output_dir.exists():
         print(f"Error: The output directory '{output_dir}' exists. Please delete it or change the name.")
         return False
-    
+
     try:
-        output_dir.mkdir()
+        output_dir.mkdir(parents=False)
         (output_dir / "css").mkdir()
         (output_dir / "js").mkdir()
-        (output_dir / "images").mkdir() # For optimized PDF pages
-        (output_dir / "assets").mkdir() # For EPUB-specific assets (fonts, extra images)
-        
+        (output_dir / "images").mkdir()   # For optimized PDF pages and EPUB-copied assets
+        (output_dir / "assets").mkdir()   # optional bucket for future use
         print(f"Structure created in '{output_dir}'")
         return True
     except OSError as e:
@@ -38,7 +38,7 @@ def create_structure(output_dir: Path) -> bool:
 
 def generate_css(output_dir: Path, is_epub: bool):
     """Creates a minimalist CSS file for the background and flipbook container,
-    setting up the 3D context and initial page state.
+    setting up the 3D context and initial page state. Keeps EPUB tweaks optional.
     """
     css_content = """
 /* Base reset and viewport */
@@ -120,14 +120,13 @@ body {
 
     overflow: hidden;
     transform-style: preserve-3d; /* ensure faces are 3D children */
-    /* backface-visibility property is REMOVED from here to fix the bug */
 }
 
 /* Front face is upright and must disappear when rotated away */
 .page-face-front {
     transform: rotateY(0deg);
     z-index: 2;
-    backface-visibility: hidden; /* <--- Applied ONLY here, so it disappears when rotated 180deg */
+    backface-visibility: hidden; /* applied to front so it disappears when rotated 180deg */
 }
 
 /* Back face must be rotated opposite to the page rotation so it comes into view
@@ -156,12 +155,9 @@ body {
     box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
     pointer-events: none;
 }
-/* DEBUG: Removed problematic and confusing debug block that overwrote correct transform */
 
 /* EPUB-specific tweaks will be appended below if requested by caller */
 """
-
-    # EPUB-specific CSS adjustments (retained for flexibility)
     if is_epub:
         css_content += """
 /* EPUB specific adjustments for better text readability */
@@ -172,24 +168,33 @@ body {
 .page h1, .page h2, .page p { 
     max-width: 100%; 
     margin: 10px auto;
+    line-height: 1.4;
+}
+.page img {
+    max-width: 100%;
+    height: auto;
 }
 """
 
-    # Write the CSS file
-    with open(output_dir / "css" / CSS_FILENAME, "w", encoding="utf-8") as f:
+    css_path = output_dir / "css" / CSS_FILENAME
+    with open(css_path, "w", encoding="utf-8") as f:
         f.write(css_content)
+    print(f"CSS written to {css_path}")
 
 
 def generate_js_flipbook(output_dir: Path, page_count: int):
-    """Generates the core JavaScript code handling the page-turning effect and state.
-    This version keeps the front face visible until half the transition, then clears it
-    to avoid mirrored artifacts, and does NOT hide correct pages at the end of the animation.
     """
-    # transition duration (must match CSS .page transition)
+    Generates the core JavaScript code handling the page-turning effect and state.
+    This implementation supports both image (PDF) mode and EPUB mode (HTML snippets).
+    The logic for flipping is intentionally close to the original behaviour.
+    """
     transition_ms = 800
 
+    # The JS contains a conditional in loadFaceContent to either insert an <img> (PDF)
+    # or inject the EPUB snippet (if window.IS_EPUB is true and EPUB_SNIPPETS is defined).
     js_content = f"""
 // --- {FLIPBOOK_JS_FILENAME} ---
+// Core flipbook behavior (supports PDF image mode and EPUB HTML-snippet mode)
 
 document.addEventListener('DOMContentLoaded', () => {{
     const totalPages = {page_count};
@@ -210,7 +215,9 @@ document.addEventListener('DOMContentLoaded', () => {{
         }}
 
         /**
-         * Clears and loads the image into a specific face of a page element.
+         * Clears and loads the content into a specific face of a page element.
+         * If window.IS_EPUB is true and window.EPUB_SNIPPETS exists, use the snippet.
+         * Otherwise fallback to the image mode (PDF).
          */
         loadFaceContent(pageIndex, faceType, pageEl) {{
             if (pageIndex < 1 || pageIndex > this.totalPages) {{
@@ -229,15 +236,29 @@ document.addEventListener('DOMContentLoaded', () => {{
             const faceEl = pageEl.querySelector('.page-face-' + faceType);
             if (!faceEl) return;
 
-            // Only replace content if different — keeps things stable
+            // EPUB mode: use pre-injected snippets
+            try {{
+                if (window.IS_EPUB && Array.isArray(window.EPUB_SNIPPETS)) {{
+                    const snippet = window.EPUB_SNIPPETS[pageIndex - 1] || '';
+                    // Insert snippet as-is. Caller (server-side) decided not to sanitize.
+                    faceEl.innerHTML = snippet;
+                    return;
+                }}
+            }} catch (e) {{
+                // If anything goes wrong, fall back to image mode below.
+                console.warn('EPUB snippet injection failed, falling back to image mode.', e);
+            }}
+
+            // PDF/image fallback: write the image tag (lazy loading)
             const newSrc = 'images/page_' + pageIndex + '.jpeg';
-            // For simplicity, write the image tag (lazy loading)
-            faceEl.innerHTML = '<img src="' + newSrc + '" alt="Page ' + pageIndex + '" loading="lazy" />';
+            // Only replace if content different to preserve state
+            const currentHtml = faceEl.innerHTML || '';
+            const expectedHtml = '<img src="' + newSrc + '" alt="Page ' + pageIndex + '" loading="lazy" />';
+            if (currentHtml !== expectedHtml) {{
+                faceEl.innerHTML = expectedHtml;
+            }}
         }}
 
-        /**
-         * Sets up a single page with correct geometry and front content.
-         */
         setupPageForDisplay(pageIndex) {{
             if (pageIndex < 1 || pageIndex > this.totalPages) return;
             const pageEl = this.pages[pageIndex - 1];
@@ -254,7 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {{
             this.loadFaceContent(pageIndex, 'front', pageEl);
 
             // Ensure back face is cleared here; back will be set on demand before a flip.
-            pageEl.querySelector('.page-face-back').innerHTML = '';
+            const backFace = pageEl.querySelector('.page-face-back');
+            if (backFace) backFace.innerHTML = '';
 
             // Position and set pivot depending on odd/even
             if (pageIndex % 2 !== 0) {{ // odd -> left side
@@ -264,13 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {{
                 pageEl.style.left = '50%';
                 pageEl.style.transformOrigin = 'left center';
             }}
-
-            // Make sure visible flag is managed by caller
         }}
 
-        /**
-         * Update visible spread (left = index, right = index+1)
-         */
         updateSpread(index) {{
             // Hide all pages visually first (but do not clear their content)
             this.pages.forEach(p => {{
@@ -292,10 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {{
             }}
         }}
 
-        /**
-         * Turn to the next spread (right page turns to the left).
-         * Front of turning page stays visible until half-rotation, then is cleared.
-         */
         turnNext() {{
             if (this.currentPage >= this.totalPages - 1 || this.isTurning) return;
             this.isTurning = true;
@@ -307,17 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {{
             const turningPage = this.pages[turningPageIndex - 1];
             const leftPage = this.pages[this.currentPage - 1]; // current left page (odd)
 
-            // DEBUG: report start state for turnNext
-            console.log('[Flipbook Debug] turnNext start', {{
-                currentPage: this.currentPage,
-                turningPageIndex: turningPageIndex,
-                versoPageIndex: versoPageIndex,
-                revealedPageIndex: revealedPageIndex,
-                frontHasContent: !!(turningPage.querySelector('.page-face-front') && turningPage.querySelector('.page-face-front').innerHTML),
-                backHasContent: !!(turningPage.querySelector('.page-face-back') && turningPage.querySelector('.page-face-back').innerHTML)
-            }});
-
-
             // 1) Preload the revealed page (N+3) so it is ready
             if (revealedPageIndex <= this.totalPages) {{
                 this.setupPageForDisplay(revealedPageIndex);
@@ -327,17 +329,10 @@ document.addEventListener('DOMContentLoaded', () => {{
             // 2) Preload the back of the turning page with N+2
             this.loadFaceContent(versoPageIndex, 'back', turningPage);
 
-            // IMPORTANT: do NOT clear the front immediately.
-            // Schedule clearing at half the transition so the front remains visible until ~90deg.
+            // Schedule clearing of the front at half the rotation
             const frontFace = turningPage.querySelector('.page-face-front');
             if (frontFace) {{
                 setTimeout(() => {{
-                console.log('[Flipbook Debug] about to clear front (turnNext)', {{
-                frontBeforeClear: !!(turningPage.querySelector('.page-face-front') && turningPage.querySelector('.page-face-front').innerHTML),
-                backAtClearTime: !!(turningPage.querySelector('.page-face-back') && turningPage.querySelector('.page-face-back').innerHTML)
-            }});
-
-                    // Clear front to avoid mirrored artifacts for second half of the flip
                     frontFace.innerHTML = '';
                 }}, Math.round(TRANSITION_MS / 2));
             }}
@@ -358,10 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {{
             }}, TRANSITION_MS);
         }}
 
-        /**
-         * Turn to the previous spread (left page turns to the right).
-         * Similar symmetry to turnNext.
-         */
         turnPrev() {{
             if (this.currentPage === 1 || this.isTurning) return;
             this.isTurning = true;
@@ -433,11 +424,13 @@ document.addEventListener('DOMContentLoaded', () => {{
     console.log('Flipbook initialized. Use Arrow keys or click to turn pages.');
 }});
 """
-    with open(output_dir / "js" / FLIPBOOK_JS_FILENAME, "w", encoding="utf-8") as f:
+
+    js_path = output_dir / "js" / FLIPBOOK_JS_FILENAME
+    with open(js_path, "w", encoding="utf-8") as f:
         f.write(js_content)
+    print(f"Flipbook JS written to {js_path}")
 
 
-# The rest of the file (generate_js_interactive, generate_html, open_output_in_browser) remains unchanged.
 def generate_js_interactive(output_dir: Path, is_epub: bool):
     """Placeholder for evolutionary JavaScript code (links, ActivityPub, EPUB features)."""
     js_content = f"""
@@ -462,7 +455,7 @@ document.addEventListener('click', (event) => {
         if (targetId.startsWith('fn')) { // Common EPUB footnote ID structure
             event.preventDefault();
             // TODO: Fetch the content of the element with ID=targetId and display it in a modal.
-            console.log(`Footnote link clicked for ID: ${{targetId}} - Display Modal.`);
+            console.log(`Footnote link clicked for ID: ${targetId} - Display Modal.`);
         }
     }
 });
@@ -476,41 +469,55 @@ function initializeActivityPub() {
 
 // initializeActivityPub();
 """
-    with open(output_dir / "js" / INTERACTIVE_JS_FILENAME, "w", encoding="utf-8") as f:
+    js_path = output_dir / "js" / INTERACTIVE_JS_FILENAME
+    with open(js_path, "w", encoding="utf-8") as f:
         f.write(js_content)
+    print(f"Interactive JS written to {js_path}")
 
 
-def generate_html(output_dir: Path, title: str, page_count: int, content_html: str = None, is_epub: bool = False):
-    """Creates the index.html file, inserts pages/content, and loads scripts."""
+def generate_html(output_dir: Path, title: str, page_count: int, content_html=None, is_epub: bool = False):
+    """
+    Creates the index.html file, inserts pages/content, and loads scripts.
 
-    if content_html:
-        # EPUB Mode: Content is the structured HTML returned by source_handler
-        book_pages_html = content_html
-    else:
-        # PDF/Image Mode: Generate page wrappers with face divs for dynamic content loading
-        pages_html_list = []
-        for i in range(1, page_count + 1): 
-            # FIX: Corrected the typo 'class.' to 'class="' on the back face div
-            page_html = f"""
+    content_html:
+      - None -> PDF/image mode (generate empty pages; client JS will insert images)
+      - list[str] -> EPUB mode: list of HTML snippets (one per simulated page)
+    """
+    # Prepare the page containers (same markup for both modes)
+    pages_html_list = []
+    for i in range(1, page_count + 1):
+        page_html = f"""
             <div class="page" id="page-{i}">
-                <div class="page-face page-face-front">
-                    </div>
-                <div class="page-face page-face-back" id="page-{i}-back">
-                    </div>
+                <div class="page-face page-face-front"></div>
+                <div class="page-face page-face-back" id="page-{i}-back"></div>
             </div>
-            """
-            pages_html_list.append(page_html)
-        book_pages_html = ''.join(pages_html_list)
+        """
+        pages_html_list.append(page_html)
+    book_pages_html = ''.join(pages_html_list)
 
+    # If EPUB, serialize the snippets to a JS variable. We expect content_html to be a list.
+    epub_snippets_script = ""
+    if is_epub and content_html:
+        try:
+            # content_html is expected to be a list of strings (snippets)
+            # JSON-serialize safely for embedding into JS
+            snippets_json = json.dumps(content_html, ensure_ascii=False)
+            epub_snippets_script = f"<script>window.IS_EPUB = true; window.EPUB_SNIPPETS = {snippets_json};</script>"
+        except Exception as e:
+            print(f"Warning: failed to serialize EPUB snippets to JSON for injection: {e}")
+            # Fall back to empty array
+            epub_snippets_script = "<script>window.IS_EPUB = true; window.EPUB_SNIPPETS = [];</script>"
+    else:
+        epub_snippets_script = "<script>window.IS_EPUB = false; window.EPUB_SNIPPETS = [];</script>"
 
-    html_content = f"""
-<!DOCTYPE html>
+    html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
-    <link rel="stylesheet" href="css/{CSS_FILENAME}">
+    <link rel="stylesheet" href="css/{CSS_FILENAME}" />
+    {epub_snippets_script}
     <script defer src="js/{FLIPBOOK_JS_FILENAME}"></script>
     <script defer src="js/{INTERACTIVE_JS_FILENAME}"></script>
 </head>
@@ -523,11 +530,13 @@ def generate_html(output_dir: Path, title: str, page_count: int, content_html: s
 </body>
 </html>
 """
-    with open(output_dir / INDEX_HTML_FILENAME, "w", encoding="utf-8") as f:
+
+    index_path = output_dir / INDEX_HTML_FILENAME
+    with open(index_path, "w", encoding="utf-8") as f:
         f.write(html_content)
+    print(f"index.html written to {index_path}")
 
 
-# --- Open resulting book ---
 def open_output_in_browser(output_dir: Path):
     """Opens the generated index.html file in the default web browser."""
     html_path = output_dir / INDEX_HTML_FILENAME
