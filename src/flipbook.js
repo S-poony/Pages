@@ -7,13 +7,11 @@ class Flipbook {
     /**
      * @param {number} totalPages - Total number of pages
      * @param {HTMLElement[]} pages - Array of page DOM elements
-     * @param {string[]} pageImages - Array of base64 image data URLs
      * @param {number} transitionMs - Transition duration in milliseconds
      */
-    constructor(totalPages, pages, pageImages, transitionMs = 800) {
+    constructor(totalPages, pages, transitionMs = 800) {
         this.totalPages = totalPages;
         this.pages = pages;
-        this.pageImages = pageImages;
         this.transitionMs = transitionMs;
         this.currentPage = 1;
         this.isTurning = false;
@@ -55,8 +53,28 @@ class Flipbook {
             const frontFace = page.querySelector('.page-face-front');
             const backFace = page.querySelector('.page-face-back');
             
-            frontFace.innerHTML = '<div class="loading-placeholder">Page ' + pageNum + '</div>';
-            backFace.innerHTML = '<div class="loading-placeholder">Page ' + pageNum + '</div>';
+            const frontImg = frontFace.querySelector('img');
+            const backImg = backFace.querySelector('img');
+            
+            if (frontImg) {
+                frontImg.style.display = 'none';
+                const placeholder = document.createElement('div');
+                placeholder.className = 'loading-placeholder';
+                placeholder.textContent = 'Page ' + pageNum;
+                frontFace.appendChild(placeholder);
+            } else {
+                frontFace.innerHTML = '<div class="loading-placeholder">Page ' + pageNum + '</div>';
+            }
+            
+            if (backImg) {
+                backImg.style.display = 'none';
+                const placeholder = document.createElement('div');
+                placeholder.className = 'loading-placeholder';
+                placeholder.textContent = 'Page ' + pageNum;
+                backFace.appendChild(placeholder);
+            } else {
+                backFace.innerHTML = '<div class="loading-placeholder">Page ' + pageNum + '</div>';
+            }
         });
     }
 
@@ -80,16 +98,14 @@ class Flipbook {
         const faceEl = pageEl.querySelector('.page-face-' + faceType);
         if (!faceEl) return;
 
-        const imageSrc = this.pageImages[pageIndex - 1];
-        if (!imageSrc) return;
+        const img = faceEl.querySelector('img');
+        if (!img) return;
+
+        const imageSrc = img.src;
 
         this.preloadImage(imageSrc).then(() => {
-            const currentHtml = faceEl.innerHTML || '';
-            const expectedHtml = '<img src="' + imageSrc + '" alt="Page ' + pageIndex + '" loading="eager" />';
-            
-            if (!currentHtml.includes('src="')) {
-                faceEl.innerHTML = expectedHtml;
-            }
+            img.style.display = '';
+            img.setAttribute('loading', 'eager');
         }).catch(() => {
             faceEl.innerHTML = '<div class="loading-placeholder">Failed to load page ' + pageIndex + '</div>';
         });
@@ -254,12 +270,11 @@ class Flipbook {
 
 // Initialize flipbook when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    const totalPages = parseInt(document.getElementById('book-container').dataset.pageCount);
-    const pageImages = JSON.parse(document.getElementById('book-container').dataset.pageImages);
-    const pages = Array.from(document.querySelectorAll('.page'));
     const container = document.getElementById('book-container');
+    const totalPages = parseInt(container?.dataset.pageCount) || window.__PAGE_COUNT__;
+    const pages = Array.from(document.querySelectorAll('.page'));
     
-    window.flipbook = new Flipbook(totalPages, pages, pageImages);
+    window.flipbook = new Flipbook(totalPages, pages);
     console.log('Flipbook initialized. Use Arrow keys or click to turn pages.');
 });
 

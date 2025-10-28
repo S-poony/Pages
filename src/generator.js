@@ -49,15 +49,9 @@ export function wrapFlipbookJs(jsContent) {
         throw new Error('jsContent must be a string');
     }
 
-    // Replace the initialization code to inject pageCount and pageImages
     let modifiedJs = jsContent.replace(
         'const totalPages = parseInt(document.getElementById(\'book-container\').dataset.pageCount);',
         'const totalPages = window.__PAGE_COUNT__;'
-    );
-
-    modifiedJs = modifiedJs.replace(
-        'const pageImages = JSON.parse(document.getElementById(\'book-container\').dataset.pageImages);',
-        'const pageImages = window.__PAGE_IMAGES__;'
     );
 
     return modifiedJs;
@@ -65,19 +59,22 @@ export function wrapFlipbookJs(jsContent) {
 
 /**
  * Generates HTML for individual pages
- * @param {number} pageCount - Total number of pages
+ * @param {string[]} pageImages - Array of base64 image data URLs
  * @returns {string} HTML string for all pages
  */
-export function generatePagesHtml(pageCount) {
-    if (!Number.isInteger(pageCount) || pageCount < 1) {
-        throw new Error('pageCount must be a positive integer');
+export function generatePagesHtml(pageImages) {
+    if (!Array.isArray(pageImages)) {
+        throw new Error('pageImages must be an array');
     }
+
+    const pageCount = pageImages.length;
 
     const pagesHtml = Array.from({ length: pageCount }, (_, i) => {
         const pageNum = i + 1;
+        const imgSrc = pageImages[i]?.replace(/"/g, '&quot;') || '';
         return `            <div class="page" id="page-${pageNum}">
-                <div class="page-face page-face-front"></div>
-                <div class="page-face page-face-back" id="page-${pageNum}-back"></div>
+                <div class="page-face page-face-front"><img src="${imgSrc}" alt="Page ${pageNum}" style="display: none;" /></div>
+                <div class="page-face page-face-back" id="page-${pageNum}-back"><img src="${imgSrc}" alt="Page ${pageNum}" style="display: none;" /></div>
             </div>`;
     }).join('');
 
@@ -86,24 +83,21 @@ export function generatePagesHtml(pageCount) {
 
 /**
  * Generates the complete HTML structure for the flipbook
- * @param {number} pageCount - Total number of pages
  * @param {string[]} pageImages - Array of base64 image data URLs
  * @param {GeneratorOptions} options - Generator options
  * @param {AssetLoader} assetLoader - Asset loader (optional, defaults to file loader)
  * @returns {Promise<string>} Complete HTML document
  */
-export async function generateFlipbookHtml(pageCount, pageImages, options = {}, assetLoader = defaultAssetLoader) {
-    if (!Number.isInteger(pageCount) || pageCount < 1) {
-        throw new Error('pageCount must be a positive integer');
-    }
-
+export async function generateFlipbookHtml(pageImages, options = {}, assetLoader = defaultAssetLoader) {
     if (!Array.isArray(pageImages)) {
         throw new Error('pageImages must be an array');
     }
 
-    if (pageImages.length !== pageCount) {
-        throw new Error('pageImages length must match pageCount');
+    if (pageImages.length < 1) {
+        throw new Error('pageImages must contain at least one image');
     }
+
+    const pageCount = pageImages.length;
 
     const { title = 'Flipbook' } = options;
 
@@ -112,7 +106,7 @@ export async function generateFlipbookHtml(pageCount, pageImages, options = {}, 
         assetLoader.loadJs().catch(() => '')
     ]);
 
-    const pagesHtml = generatePagesHtml(pageCount);
+    const pagesHtml = generatePagesHtml(pageImages);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -124,24 +118,16 @@ export async function generateFlipbookHtml(pageCount, pageImages, options = {}, 
 </head>
 <body>
     <div id="flipbook-wrapper">
-        <div id="book-container">
+        <div id="book-container" data-page-count="${pageCount}">
             ${pagesHtml}
         </div>
     </div>
     <script>
         window.__PAGE_COUNT__ = ${pageCount};
-        window.__PAGE_IMAGES__ = ${JSON.stringify(pageImages)};
     </script>
     <script>${js}</script>
 </body>
 </html>`;
 }
 
-/**
- * Legacy function for backward compatibility
- * @deprecated Use generateFlipbookHtml with assetLoader parameter instead
- */
-export async function generateFlipbookHtmlLegacy(pageCount, pageImages, options = {}) {
-    return generateFlipbookHtml(pageCount, pageImages, options, defaultAssetLoader);
-}
 
