@@ -25,8 +25,11 @@ async function getPdfJsLib() {
                 const pdfjsModule = await import('pdfjs-dist');
                 const lib = pdfjsModule.default || pdfjsModule;
 
-                // Import worker
-                await import('pdfjs-dist/build/pdf.worker.min.mjs');
+                // Configure worker
+                lib.GlobalWorkerOptions.workerSrc = new URL(
+                    'pdfjs-dist/build/pdf.worker.min.mjs',
+                    import.meta.url
+                ).toString();
 
                 window.pdfjsLib = lib;
                 return lib;
@@ -156,17 +159,40 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
 
         const context = canvas.getContext('2d');
 
+        const t0 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
         await page.render({
             canvasContext: context,
             viewport: viewport
         }).promise;
+        const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
 
         fullCanvasCache.set(pageNumber, canvas);
+
+        try {
+            if (typeof window !== 'undefined') {
+                window.__RENDER_METRICS__ = window.__RENDER_METRICS__ || [];
+                window.__RENDER_METRICS__.push({ page: pageNumber, step: 'renderToCanvas', ms: Math.round(t1 - t0) });
+            }
+        } catch (e) {
+            // ignore in non-browser contexts
+        }
+
         return canvas;
     }
 
     async function renderCanvasToDataUrl(canvas) {
-        return canvasAPI.canvasToDataURL(canvas, format, quality);
+        const t0 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+        const data = canvasAPI.canvasToDataURL(canvas, format, quality);
+        const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+
+        try {
+            if (typeof window !== 'undefined') {
+                window.__RENDER_METRICS__ = window.__RENDER_METRICS__ || [];
+                window.__RENDER_METRICS__.push({ step: 'canvasToDataUrl', ms: Math.round(t1 - t0) });
+            }
+        } catch (e) {}
+
+        return data;
     }
 
     /**
@@ -180,8 +206,19 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
      * @returns {Promise<string>} Data URL of the rendered page
      */
     async function renderPageFull(pageNumber) {
+        const t0 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
         const canvas = await renderPageToCanvas(pageNumber);
-        return renderCanvasToDataUrl(canvas);
+        const data = await renderCanvasToDataUrl(canvas);
+        const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+
+        try {
+            if (typeof window !== 'undefined') {
+                window.__RENDER_METRICS__ = window.__RENDER_METRICS__ || [];
+                window.__RENDER_METRICS__.push({ page: pageNumber, step: 'fullRender', ms: Math.round(t1 - t0) });
+            }
+        } catch (e) {}
+
+        return data;
     }
 
     /**
@@ -195,6 +232,8 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
         const h = fullCanvas.height;
         const halfW = Math.floor(w / 2);
 
+        const t0 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+
         const c = canvasAPI.createCanvas();
         c.width = halfW;
         c.height = h;
@@ -203,7 +242,17 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
         const sx = side === 'left' ? 0 : halfW;
         ctx.drawImage(fullCanvas, sx, 0, halfW, h, 0, 0, halfW, h);
 
-        return canvasAPI.canvasToDataURL(c, format, quality);
+        const data = canvasAPI.canvasToDataURL(c, format, quality);
+        const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+
+        try {
+            if (typeof window !== 'undefined') {
+                window.__RENDER_METRICS__ = window.__RENDER_METRICS__ || [];
+                window.__RENDER_METRICS__.push({ step: 'splitHalf', side, ms: Math.round(t1 - t0) });
+            }
+        } catch (e) {}
+
+        return data;
     }
 
     // For backward compatibility the renderer returns a function that

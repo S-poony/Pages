@@ -117,11 +117,22 @@ class FlipbookApp {
             this.showProgress(10, `Processing ${pageCount} pages...`);
             const pageImages = [];
             
+            const slowThreshold = 2000; // ms
+            const slowPages = [];
+
             for (let i = 1; i <= pageCount; i++) {
                 const progress = 10 + (i / pageCount * 80);
                 this.showProgress(progress, `Rendering page ${i} of ${pageCount}...`);
-                
+
+                const start = (typeof performance !== 'undefined') ? performance.now() : Date.now();
                 const imageDataUrl = await renderPage(i);
+                const duration = ((typeof performance !== 'undefined') ? performance.now() : Date.now()) - start;
+
+                if (duration > slowThreshold) {
+                    slowPages.push({ index: i, ms: Math.round(duration) });
+                    console.warn(`Slow render: page ${i} took ${Math.round(duration)}ms`);
+                }
+
                 pageImages.push(imageDataUrl);
             }
 
@@ -138,7 +149,13 @@ class FlipbookApp {
             }, assetLoader);
             
             this.currentHtml = html;
-            
+
+            // If any pages were slow to render, show a non-blocking warning
+            if (typeof slowPages !== 'undefined' && slowPages.length > 0) {
+                this.errorMessage.textContent = `Warning: ${slowPages.length} page(s) were slow to render (>${slowThreshold}ms). Consider lowering scale or splitting spreads.`;
+                this.errorMessage.classList.remove('hidden');
+            }
+
             this.showProgress(100, 'Complete!');
             setTimeout(() => this.showResult(html), 500);
             
