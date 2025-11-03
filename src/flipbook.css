@@ -47,6 +47,62 @@ body {
     visibility: hidden;
 }
 
+/* When the generated flipbook signals double-spread layout, remove any
+   visible gap at the center so a single image spanning both pages appears
+   contiguous. This relies on the generator setting data-double-spread="true"
+   on #book-container. */
+#book-container[data-double-spread="true"] .page {
+    /* ensure no visible gap between left/right pages */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+}
+
+#book-container[data-double-spread="true"] .page.visible {
+    visibility: visible;
+}
+
+#book-container[data-double-spread="true"] .page.turned,
+#book-container[data-double-spread="true"] .page.turned-back {
+    visibility: visible !important;
+}
+
+/* Align image halves to the inner edge (spine) for double-spread mode */
+#book-container[data-double-spread="true"] .page.left {
+    left: 0%;
+    transform-origin: right center;
+}
+
+#book-container[data-double-spread="true"] .page.right {
+    left: 50%;
+    transform-origin: left center;
+}
+
+#book-container[data-double-spread="true"] .page .page-face img {
+    /* Make sure the image is not centered — left images stick to right edge,
+       right images stick to left edge. We achieve this by using object-position
+       when available and falling back to transform for broader support. */
+    position: absolute;
+    width: 200%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    object-fit: cover;
+}
+
+#book-container[data-double-spread="true"] .page.left .page-face img {
+    transform: translateX(0%); /* show left half */
+    object-position: left center;
+}
+
+#book-container[data-double-spread="true"] .page.right .page-face img {
+    transform: translateX(-50%); /* show right half */
+    object-position: right center;
+}
+
+/* Hide any explicit book-spine element visually in double-spread mode */
+#book-container[data-double-spread="true"] .book-spine {
+    display: none;
+}
+
 .page.visible {
     visibility: visible;
 }

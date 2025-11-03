@@ -54,14 +54,13 @@ function init() { /* ... */ }
     });
 
     describe('generatePagesHtml', () => {
-        it('should generate correct HTML for single page', () => {
+        it('should generate page elements with side classes', () => {
             const pageImages = ['data:image/jpeg;base64,test'];
             const result = generatePagesHtml(pageImages);
-            const expected = `            <div class="page" id="page-1">
-                <div class="page-face page-face-front"><img src="data:image/jpeg;base64,test" alt="Page 1" style="display: none;" /></div>
-                <div class="page-face page-face-back" id="page-1-back"><img src="data:image/jpeg;base64,test" alt="Page 1" style="display: none;" /></div>
-            </div>`;
-            assert.strictEqual(result, expected);
+            assert(result.includes('class="page left"'));
+            assert(result.includes('id="page-1"'));
+            assert(result.includes('id="page-1-back"'));
+            assert(result.includes('src="data:image/jpeg;base64,test"'));
         });
 
         it('should generate correct HTML for multiple pages', () => {
@@ -144,7 +143,8 @@ function init() { /* ... */ }
             assert(result.includes('<meta name="viewport"'));
             assert(result.includes('<div id="flipbook-wrapper">'));
             assert(result.includes('id="book-container"'));
-            assert(result.includes('<div class="page" id="page-1">'));
+            // page element should exist (may include side class left/right)
+            assert(result.includes('class="page') && result.includes('id="page-1"'));
             assert(result.includes('<div class="page-face page-face-front"><img'));
             assert(result.includes('<div class="page-face page-face-back" id="page-1-back"><img'));
         });

@@ -68,6 +68,11 @@ export const defaultCanvasAPI = {
     }
 };
 
+// Global toggle for double-spread behavior. If true, each PDF page is
+// split into two assets (left/right). Can be overridden per-call via
+// options.DOUBLESPREAD in processPdf.
+export const DOUBLESPREAD = false;
+
 /**
  * Validates and normalizes processor options
  * @param {ProcessorOptions} options - Raw options
@@ -78,6 +83,7 @@ export function normalizeProcessorOptions(options = {}) {
         scale = 2,
         format = 'image/jpeg',
         quality = 0.92
+        , doubleSpread = DOUBLESPREAD
     } = options;
 
     if (!Number.isFinite(scale) || scale <= 0) {
@@ -92,7 +98,11 @@ export function normalizeProcessorOptions(options = {}) {
         throw new Error('quality must be a number between 0 and 1');
     }
 
-    return { scale, format, quality };
+    if (typeof doubleSpread !== 'boolean') {
+        throw new Error('doubleSpread must be a boolean');
+    }
+
+    return { scale, format, quality, doubleSpread };
 }
 
 /**
@@ -124,22 +134,25 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
     const { scale, format, quality } = options;
     const pageCount = pdf.numPages;
 
-    /**
-     * Renders a specific page to a data URL
-     * @param {number} pageNumber - 1-based page number
-     * @returns {Promise<string>} Data URL of the rendered page
-     */
-    return async function renderPage(pageNumber) {
+    // Cache full-page canvases to avoid re-rendering the same PDF page
+    // multiple times when splitting into halves.
+    const fullCanvasCache = new Map();
+
+    async function renderPageToCanvas(pageNumber) {
         if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > pageCount) {
             throw new Error(`Page ${pageNumber} is out of range (1-${pageCount})`);
+        }
+
+        if (fullCanvasCache.has(pageNumber)) {
+            return fullCanvasCache.get(pageNumber);
         }
 
         const page = await pdf.getPage(pageNumber);
         const viewport = page.getViewport({ scale });
 
         const canvas = canvasAPI.createCanvas();
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
+        canvas.width = Math.round(viewport.width);
+        canvas.height = Math.round(viewport.height);
 
         const context = canvas.getContext('2d');
 
@@ -148,8 +161,65 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
             viewport: viewport
         }).promise;
 
+        fullCanvasCache.set(pageNumber, canvas);
+        return canvas;
+    }
+
+    async function renderCanvasToDataUrl(canvas) {
         return canvasAPI.canvasToDataURL(canvas, format, quality);
-    };
+    }
+
+    /**
+     * Renders either a full page or a half-page asset depending on the
+     * callers indexing. When callers want halves, the processPdf wrapper
+     * will expose a pageCount that is doubled and call renderPage with a
+     * half-based index. This function accepts either a PDF page number
+     * (1..pdf.numPages) and returns a full dataURL, or a half index where
+     * the mapping is handled by the caller wrapper.
+     * @param {number} pageNumber - 1-based PDF page number
+     * @returns {Promise<string>} Data URL of the rendered page
+     */
+    async function renderPageFull(pageNumber) {
+        const canvas = await renderPageToCanvas(pageNumber);
+        return renderCanvasToDataUrl(canvas);
+    }
+
+    /**
+     * Create a half image (left or right) from a rendered full-page canvas.
+     * @param {HTMLCanvasElement} fullCanvas
+     * @param {'left'|'right'} side
+     * @returns {string} dataURL
+     */
+    function splitCanvasHalfToDataUrl(fullCanvas, side) {
+        const w = fullCanvas.width;
+        const h = fullCanvas.height;
+        const halfW = Math.floor(w / 2);
+
+        const c = canvasAPI.createCanvas();
+        c.width = halfW;
+        c.height = h;
+        const ctx = c.getContext('2d');
+
+        const sx = side === 'left' ? 0 : halfW;
+        ctx.drawImage(fullCanvas, sx, 0, halfW, h, 0, 0, halfW, h);
+
+        return canvasAPI.canvasToDataURL(c, format, quality);
+    }
+
+    // For backward compatibility the renderer returns a function that
+    // renders a full page data URL. We attach helper utilities to that
+    // function so callers that need canvas-level access can use them.
+    async function renderPage(pageNumber) {
+        return renderPageFull(pageNumber);
+    }
+
+    // Attach helpers
+    renderPage.renderPageToCanvas = renderPageToCanvas;
+    renderPage.renderPageFull = renderPageFull;
+    renderPage.splitCanvasHalfToDataUrl = splitCanvasHalfToDataUrl;
+    renderPage.pdfPageCount = pageCount;
+
+    return renderPage;
 }
 
 /**
@@ -162,6 +232,8 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
 export async function processPdf(input, options = {}, canvasAPI = defaultCanvasAPI) {
     const normalizedOptions = normalizeProcessorOptions(options);
 
+    const { doubleSpread } = normalizedOptions;
+
     let arrayBuffer;
     if (input instanceof ArrayBuffer) {
         arrayBuffer = input;
@@ -173,12 +245,42 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
     }
 
     const pdf = await loadPdfDocument(arrayBuffer);
-    const pageCount = pdf.numPages;
-    const renderPage = createPageRenderer(pdf, normalizedOptions, canvasAPI);
+    // Create a renderer helper that exposes canvas-level rendering and
+    // splitting utilities. This keeps splitting logic local and avoids
+    // re-rendering PDF pages when generating both halves.
+    const renderer = createPageRenderer(pdf, normalizedOptions, canvasAPI);
 
-    return {
-        pageCount,
-        renderPage
-    };
+    // If doubleSpread is enabled, we expose a flattened "half-page"
+    // indexing: 1..(pdf.numPages * 2) where odd indices are left halves
+    // and even indices are right halves.
+    if (doubleSpread) {
+        const halfPageCount = pdf.numPages * 2;
+
+        async function renderPage(halfIndex) {
+            if (!Number.isInteger(halfIndex) || halfIndex < 1 || halfIndex > halfPageCount) {
+                throw new Error(`Page ${halfIndex} is out of range (1-${halfPageCount})`);
+            }
+
+            const pdfPageNumber = Math.ceil(halfIndex / 2);
+            const side = halfIndex % 2 === 1 ? 'left' : 'right';
+
+            // Render or fetch full canvas and split
+            const fullCanvas = await renderer.renderPageToCanvas(pdfPageNumber);
+            return renderer.splitCanvasHalfToDataUrl(fullCanvas, side);
+        }
+
+        return {
+            pageCount: halfPageCount,
+            renderPage
+        };
+    }
+
+    // Default (no splitting) behaviour: keep existing contract
+    const pageCount = pdf.numPages;
+    async function renderPage(pageNumber) {
+        return renderer.renderPageFull(pageNumber);
+    }
+
+    return { pageCount, renderPage };
 }
 

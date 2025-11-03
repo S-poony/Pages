@@ -21,6 +21,7 @@ class FlipbookApp {
     initializeElements() {
         this.uploadArea = document.getElementById('upload-area');
         this.fileInput = document.getElementById('file-input');
+        this.doubleSpreadToggle = document.getElementById('double-spread-toggle');
         this.progressContainer = document.getElementById('progress-container');
         this.progressBar = document.getElementById('progress-bar');
         this.progressText = document.getElementById('progress-text');
@@ -104,10 +105,13 @@ class FlipbookApp {
         this.showProgress(0, 'Loading PDF...');
 
         try {
+            const doubleSpread = !!this.doubleSpreadToggle?.checked;
+
             const { pageCount, renderPage } = await processPdf(file, {
                 scale: 2,
                 format: 'image/jpeg',
-                quality: 0.92
+                quality: 0.92,
+                doubleSpread
             });
 
             this.showProgress(10, `Processing ${pageCount} pages...`);
@@ -129,7 +133,8 @@ class FlipbookApp {
             };
             
             const html = await generateFlipbookHtml(pageImages, {
-                title: file.name.replace('.pdf', '')
+                title: file.name.replace('.pdf', ''),
+                doubleSpread
             }, assetLoader);
             
             this.currentHtml = html;

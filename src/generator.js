@@ -72,7 +72,8 @@ export function generatePagesHtml(pageImages) {
     const pagesHtml = Array.from({ length: pageCount }, (_, i) => {
         const pageNum = i + 1;
         const imgSrc = pageImages[i]?.replace(/"/g, '&quot;') || '';
-        return `            <div class="page" id="page-${pageNum}">
+        const sideClass = (pageNum % 2 === 1) ? 'left' : 'right';
+        return `            <div class="page ${sideClass}" id="page-${pageNum}">
                 <div class="page-face page-face-front"><img src="${imgSrc}" alt="Page ${pageNum}" style="display: none;" /></div>
                 <div class="page-face page-face-back" id="page-${pageNum}-back"><img src="${imgSrc}" alt="Page ${pageNum}" style="display: none;" /></div>
             </div>`;
@@ -107,6 +108,7 @@ export async function generateFlipbookHtml(pageImages, options = {}, assetLoader
     ]);
 
     const pagesHtml = generatePagesHtml(pageImages);
+    const doubleSpreadFlag = !!options.doubleSpread;
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -116,14 +118,15 @@ export async function generateFlipbookHtml(pageImages, options = {}, assetLoader
     <title>${title}</title>
     <style>${css}</style>
 </head>
-<body>
+    <body>
     <div id="flipbook-wrapper">
-        <div id="book-container" data-page-count="${pageCount}">
+        <div id="book-container" data-page-count="${pageCount}" data-double-spread="${doubleSpreadFlag}">
             ${pagesHtml}
         </div>
     </div>
     <script>
         window.__PAGE_COUNT__ = ${pageCount};
+        window.__DOUBLE_SPREAD__ = ${doubleSpreadFlag};
     </script>
     <script>${js}</script>
 </body>

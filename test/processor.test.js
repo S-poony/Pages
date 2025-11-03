@@ -81,7 +81,8 @@ describe('PDF Processor', () => {
             assert.deepStrictEqual(result, {
                 scale: 2,
                 format: 'image/jpeg',
-                quality: 0.92
+                quality: 0.92,
+                doubleSpread: false
             });
         });
 
@@ -89,7 +90,8 @@ describe('PDF Processor', () => {
             assert.deepStrictEqual(normalizeProcessorOptions({ scale: 1 }), {
                 scale: 1,
                 format: 'image/jpeg',
-                quality: 0.92
+                quality: 0.92,
+                doubleSpread: false
             });
 
             assert.throws(() => normalizeProcessorOptions({ scale: 0 }), {
@@ -109,7 +111,8 @@ describe('PDF Processor', () => {
             assert.deepStrictEqual(normalizeProcessorOptions({ format: 'image/png' }), {
                 scale: 2,
                 format: 'image/png',
-                quality: 0.92
+                quality: 0.92,
+                doubleSpread: false
             });
 
             assert.throws(() => normalizeProcessorOptions({ format: 'invalid' }), {
@@ -121,7 +124,8 @@ describe('PDF Processor', () => {
             assert.deepStrictEqual(normalizeProcessorOptions({ quality: 0.8 }), {
                 scale: 2,
                 format: 'image/jpeg',
-                quality: 0.8
+                quality: 0.8,
+                doubleSpread: false
             });
 
             assert.throws(() => normalizeProcessorOptions({ quality: -0.1 }), {
