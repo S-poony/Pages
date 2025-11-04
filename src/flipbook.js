@@ -106,7 +106,15 @@ class Flipbook {
         this.preloadImage(imageSrc).then(() => {
             img.style.display = '';
             img.setAttribute('loading', 'eager');
+            
+            // Fix: Remove the placeholder after successful load
+            const placeholder = faceEl.querySelector('.loading-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+            
         }).catch(() => {
+            // Keep the error fallback
             faceEl.innerHTML = '<div class="loading-placeholder">Failed to load page ' + pageIndex + '</div>';
         });
     }
@@ -182,9 +190,13 @@ class Flipbook {
         this.loadFaceContent(versoPageIndex, 'back', turningPage);
 
         const frontFace = turningPage.querySelector('.page-face-front');
-        if (frontFace) {
+        const frontImg = frontFace.querySelector('img'); // Get the image element
+        const placeholder = frontFace.querySelector('.loading-placeholder'); // Get the placeholder
+
+        if (frontImg || placeholder) {
             setTimeout(() => {
-                frontFace.innerHTML = '';
+                if (frontImg) frontImg.style.display = 'none'; // Safely hide the image
+                if (placeholder) placeholder.remove(); // Remove placeholder if present
             }, Math.round(this.transitionMs / 2));
         }
 
@@ -223,9 +235,13 @@ class Flipbook {
         this.loadFaceContent(versoPageIndex, 'back', turningPage);
 
         const frontFace = turningPage.querySelector('.page-face-front');
-        if (frontFace) {
+        const frontImg = frontFace.querySelector('img'); // Get the image element
+        const placeholder = frontFace.querySelector('.loading-placeholder'); // Get the placeholder
+
+        if (frontImg || placeholder) {
             setTimeout(() => {
-                frontFace.innerHTML = '';
+                if (frontImg) frontImg.style.display = 'none'; // Safely hide the image
+                if (placeholder) placeholder.remove(); // Remove placeholder if present
             }, Math.round(this.transitionMs / 2));
         }
 
