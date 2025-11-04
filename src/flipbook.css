@@ -43,7 +43,6 @@ body {
     transform-origin: left center;
     transform: rotateY(0deg);
     transition: transform 0.8s ease-in-out;
-    backface-visibility: hidden;
     visibility: hidden;
 }
 

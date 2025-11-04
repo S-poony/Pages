@@ -133,10 +133,25 @@ class Flipbook {
         pageEl.style.zIndex = this.totalPages - pageIndex;
 
         this.loadFaceContent(pageIndex, 'front', pageEl);
-
         const backFace = pageEl.querySelector('.page-face-back');
-        if (backFace) backFace.innerHTML = '<div class="loading-placeholder">Loading...</div>';
+        if (backFace) {
+            const backImg = backFace.querySelector('img');
+            let placeholder = backFace.querySelector('.loading-placeholder');
 
+            // 1. Hide the image (as the back face should not be seen)
+            if (backImg) {
+                backImg.style.display = 'none';
+            }
+            
+            // 2. Ensure the placeholder div is present and visible (by removing/re-adding)
+            if (!placeholder) {
+                placeholder = document.createElement('div');
+                placeholder.className = 'loading-placeholder';
+                backFace.appendChild(placeholder);
+            }
+            placeholder.textContent = 'Loading...'; // Reset text just in case
+        }
+        
         if (pageIndex % 2 !== 0) {
             pageEl.style.left = '0%';
             pageEl.style.transformOrigin = 'right center';
@@ -186,6 +201,17 @@ class Flipbook {
             this.setupPageForDisplay(revealedPageIndex);
             this.pages[revealedPageIndex - 1].classList.add('visible');
         }
+        // Load back face content before turning so it is visible during the turn
+        const backFace = turningPage.querySelector('.page-face-back');
+        const backImg = backFace.querySelector('img');
+        const backPlaceholder = backFace.querySelector('.loading-placeholder');
+
+        if (backPlaceholder) {
+            backPlaceholder.remove();
+        }
+        if (backImg) {
+            backImg.style.display = '';
+        }
 
         this.loadFaceContent(versoPageIndex, 'back', turningPage);
 
@@ -230,6 +256,18 @@ class Flipbook {
         if (revealedPageIndex >= 1) {
             this.setupPageForDisplay(revealedPageIndex);
             this.pages[revealedPageIndex - 1].classList.add('visible');
+        }
+
+        // Load back face content before turning so it is visible during the turn
+        const backFace = turningPage.querySelector('.page-face-back');
+        const backImg = backFace.querySelector('img');
+        const backPlaceholder = backFace.querySelector('.loading-placeholder');
+
+        if (backPlaceholder) {
+            backPlaceholder.remove();
+        }
+        if (backImg) {
+            backImg.style.display = '';
         }
 
         this.loadFaceContent(versoPageIndex, 'back', turningPage);
