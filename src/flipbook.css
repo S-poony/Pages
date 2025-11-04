@@ -128,17 +128,21 @@ body {
     left: 0;
     overflow: hidden;
     transform-style: preserve-3d;
+    
+    /* CRITICAL FIX APPLIED HERE */
+    backface-visibility: hidden; 
 }
 
 .page-face-front {
     transform: rotateY(0deg);
     z-index: 2;
-    backface-visibility: hidden;
+    /* backface-visibility inherited from .page-face */
 }
 
 .page-face-back {
     transform: rotateY(-180deg);
     z-index: 1;
+    /* backface-visibility inherited from .page-face */
 }
 
 .page-face img {
@@ -169,4 +173,3 @@ body {
     box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
     pointer-events: none;
 }
-
