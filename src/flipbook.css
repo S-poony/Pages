@@ -1,3 +1,7 @@
+/* ============================================================
+   Flipbook 3D Rendering - Full CSS (with Deep 3D Fix)
+   ============================================================ */
+
 /* Base reset and viewport */
 body {
     margin: 0;
@@ -23,35 +27,42 @@ body {
     height: 90vh;
     position: relative;
     transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
     perspective: 1500px;
     perspective-origin: center center;
 }
 
-/* Base styles for a single page */
+/* ============================================================
+   Page Setup
+   ============================================================ */
+
 .page {
     width: 50%;
     height: 100%;
     position: absolute;
     top: 0;
     left: 0;
-    background-color: white;
     box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
     overflow: hidden;
     padding: 0;
     box-sizing: border-box;
+
+    /* --- 3D & Compositing Configuration --- */
     transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
     transform-origin: left center;
-    transform: rotateY(0deg);
+    -webkit-transform-origin: left center;
+    transform: rotateY(0deg) translateZ(0);
+    -webkit-transform: rotateY(0deg) translateZ(0);
+    will-change: transform;
+    isolation: isolate;
+
     transition: transform 0.8s ease-in-out;
     visibility: hidden;
 }
 
-/* When the generated flipbook signals double-spread layout, remove any
-   visible gap at the center so a single image spanning both pages appears
-   contiguous. This relies on the generator setting data-double-spread="true"
-   on #book-container. */
+/* Remove center gap for double-spread images */
 #book-container[data-double-spread="true"] .page {
-    /* ensure no visible gap between left/right pages */
     box-shadow: 0 5px 15px rgba(0,0,0,0.4);
 }
 
@@ -64,7 +75,7 @@ body {
     visibility: visible !important;
 }
 
-/* Align image halves to the inner edge (spine) for double-spread mode */
+/* Align image halves for double-spread mode */
 #book-container[data-double-spread="true"] .page.left {
     left: 0%;
     transform-origin: right center;
@@ -76,9 +87,6 @@ body {
 }
 
 #book-container[data-double-spread="true"] .page .page-face img {
-    /* Make sure the image is not centered — left images stick to right edge,
-       right images stick to left edge. We achieve this by using object-position
-       when available and falling back to transform for broader support. */
     position: absolute;
     width: 200%;
     height: 100%;
@@ -88,12 +96,12 @@ body {
 }
 
 #book-container[data-double-spread="true"] .page.left .page-face img {
-    transform: translateX(0%); /* show left half */
+    transform: translateX(0%);
     object-position: left center;
 }
 
 #book-container[data-double-spread="true"] .page.right .page-face img {
-    transform: translateX(-50%); /* show right half */
+    transform: translateX(-50%);
     object-position: right center;
 }
 
@@ -102,24 +110,34 @@ body {
     display: none;
 }
 
+/* ============================================================
+   Turning States
+   ============================================================ */
+
 .page.visible {
     visibility: visible;
 }
 
-.page.turned, .page.turned-back {
+.page.turned,
+.page.turned-back {
     z-index: 1000 !important;
     visibility: visible !important;
 }
 
 .page.turned {
     transform: rotateY(-180deg) !important;
+    -webkit-transform: rotateY(-180deg) !important;
 }
 
 .page.turned-back {
     transform: rotateY(180deg) !important;
+    -webkit-transform: rotateY(180deg) !important;
 }
 
-/* Styles for the individual faces of the page */
+/* ============================================================
+   Face Definitions (with Deep 3D Fix)
+   ============================================================ */
+
 .page-face {
     position: absolute;
     width: 100%;
@@ -127,23 +145,65 @@ body {
     top: 0;
     left: 0;
     overflow: hidden;
+
     transform-style: preserve-3d;
-    
-    /* CRITICAL FIX APPLIED HERE */
-    backface-visibility: hidden; 
+    -webkit-transform-style: preserve-3d;
+
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+
+    will-change: transform, opacity;
+    display: block;
 }
 
-.page-face-front {
-    transform: rotateY(0deg);
-    z-index: 2;
-    /* backface-visibility inherited from .page-face */
+/* Guaranteed solid background (physical paper) */
+.page-face::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: white;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform, opacity;
+    z-index: 0;
 }
 
-.page-face-back {
-    transform: rotateY(-180deg);
+/* Ensure content (img, text, etc.) is above the pseudo-background */
+.page-face > * {
+    position: relative;
     z-index: 1;
-    /* backface-visibility inherited from .page-face */
 }
+
+/* Front Face */
+.page-face-front {
+    transform: rotateY(0deg) translateZ(0);
+    -webkit-transform: rotateY(0deg) translateZ(0);
+    background: transparent;
+}
+
+/* Back Face */
+.page-face-back {
+    transform: rotateY(-180deg) translateZ(0);
+    -webkit-transform: rotateY(-180deg) translateZ(0);
+    background: transparent;
+}
+
+/* 3D isolation for turned page */
+.page.turned .page-face-back,
+.page.turned-back .page-face-back {
+    transform: rotateY(0deg) translateZ(2px) !important;
+    -webkit-transform: rotateY(0deg) translateZ(2px) !important;
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* ============================================================
+   Media and Placeholder Styling
+   ============================================================ */
 
 .page-face img {
     width: 100%;
@@ -162,6 +222,10 @@ body {
     color: #999;
     font-size: 0.875rem;
 }
+
+/* ============================================================
+   Book Spine
+   ============================================================ */
 
 .book-spine {
     position: absolute;
