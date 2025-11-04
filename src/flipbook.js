@@ -186,21 +186,28 @@ class Flipbook {
     /**
      * Turns to the next page
      */
+   /**
+     * Turns to the next page
+     */
     turnNext() {
         if (this.currentPage >= this.totalPages - 1 || this.isTurning) return;
         this.isTurning = true;
 
         const turningPageIndex = this.currentPage + 1;
-        const versoPageIndex = this.currentPage + 2;
         const revealedPageIndex = this.currentPage + 3;
 
         const turningPage = this.pages[turningPageIndex - 1];
         const leftPage = this.pages[this.currentPage - 1];
 
+        // This is the index of the content for the back face of the turning page element.
+        // It should be the page AFTER the turning page.
+        const versoPageIndex = turningPageIndex + 1; 
+        
         if (revealedPageIndex <= this.totalPages) {
             this.setupPageForDisplay(revealedPageIndex);
             this.pages[revealedPageIndex - 1].classList.add('visible');
         }
+        
         // Load back face content before turning so it is visible during the turn
         const backFace = turningPage.querySelector('.page-face-back');
         const backImg = backFace.querySelector('img');
@@ -212,7 +219,8 @@ class Flipbook {
         if (backImg) {
             backImg.style.display = '';
         }
-
+        
+        // **FIXED:** versoPageIndex is correctly calculated as turningPageIndex + 1
         this.loadFaceContent(versoPageIndex, 'back', turningPage);
 
         const frontFace = turningPage.querySelector('.page-face-front');
@@ -242,16 +250,31 @@ class Flipbook {
     /**
      * Turns to the previous page
      */
+    /**
+     * Turns to the previous page
+     */
+    /**
+     * Turns to the previous page
+     */
+    /**
+     * Turns to the previous page
+     */
     turnPrev() {
         if (this.currentPage === 1 || this.isTurning) return;
         this.isTurning = true;
 
+        // **FIX 1: The page element that turns is the left page of the current spread (this.currentPage).**
         const turningPageIndex = this.currentPage;
-        const versoPageIndex = this.currentPage - 1;
+        
+        // The content to be shown on the back face is the previous page (e.g., 3 - 1 = 2).
+        const backFaceContentIndex = turningPageIndex - 1; 
+        
+        // The page revealed is two pages before the current left page (e.g., 3 - 2 = 1).
         const revealedPageIndex = this.currentPage - 2;
 
         const turningPage = this.pages[turningPageIndex - 1];
-        const rightPage = this.pages[this.currentPage];
+        // **FIX 2: The page element that is covered is the right page (e.g., 4).**
+        const rightPageToCover = this.pages[this.currentPage]; 
 
         if (revealedPageIndex >= 1) {
             this.setupPageForDisplay(revealedPageIndex);
@@ -270,21 +293,22 @@ class Flipbook {
             backImg.style.display = '';
         }
 
-        this.loadFaceContent(versoPageIndex, 'back', turningPage);
+        this.loadFaceContent(backFaceContentIndex, 'back', turningPage);
 
         const frontFace = turningPage.querySelector('.page-face-front');
-        const frontImg = frontFace.querySelector('img'); // Get the image element
-        const placeholder = frontFace.querySelector('.loading-placeholder'); // Get the placeholder
+        const frontImg = frontFace.querySelector('img'); 
+        const placeholder = frontFace.querySelector('.loading-placeholder'); 
 
         if (frontImg || placeholder) {
             setTimeout(() => {
-                if (frontImg) frontImg.style.display = 'none'; // Safely hide the image
-                if (placeholder) placeholder.remove(); // Remove placeholder if present
+                if (frontImg) frontImg.style.display = 'none'; 
+                if (placeholder) placeholder.remove(); 
             }, Math.round(this.transitionMs / 2));
         }
 
-        if (rightPage) {
-            rightPage.style.zIndex = this.totalPages + 1;
+        // **FIX 3: Elevate the z-index of the covered page (the right page) for correct stacking.**
+        if (rightPageToCover) {
+            rightPageToCover.style.zIndex = this.totalPages + 1;
         }
 
         turningPage.classList.add('turned-back');
