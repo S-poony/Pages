@@ -59,8 +59,8 @@ function init() { /* ... */ }
             const result = generatePagesHtml(pageImages);
             assert(result.includes('class="page left"'));
             assert(result.includes('id="page-1"'));
-            assert(result.includes('id="page-1-back"'));
             assert(result.includes('src="data:image/jpeg;base64,test"'));
+            assert(result.includes('loading="lazy"'));
         });
 
         it('should generate correct HTML for multiple pages', () => {
@@ -69,9 +69,8 @@ function init() { /* ... */ }
             assert(result.includes('id="page-1"'));
             assert(result.includes('id="page-2"'));
             assert(result.includes('id="page-3"'));
-            assert(result.includes('id="page-1-back"'));
-            assert(result.includes('id="page-2-back"'));
-            assert(result.includes('id="page-3-back"'));
+            assert(result.includes('class="page left"'));
+            assert(result.includes('class="page right"'));
             assert(result.includes('src="data:image/jpeg;base64,test1"'));
             assert(result.includes('src="data:image/jpeg;base64,test2"'));
             assert(result.includes('src="data:image/jpeg;base64,test3"'));
@@ -138,15 +137,14 @@ function init() { /* ... */ }
             const pageImages = ['data:image/jpeg;base64,test'];
             const result = await generateFlipbookHtml(pageImages, {}, mockAssetLoader);
 
-            // Check that all required elements are present
             assert(result.includes('<meta charset="UTF-8">'));
             assert(result.includes('<meta name="viewport"'));
             assert(result.includes('<div id="flipbook-wrapper">'));
             assert(result.includes('id="book-container"'));
-            // page element should exist (may include side class left/right)
-            assert(result.includes('class="page') && result.includes('id="page-1"'));
-            assert(result.includes('<div class="page-face page-face-front"><img'));
-            assert(result.includes('<div class="page-face page-face-back" id="page-1-back"><img'));
+            assert(result.includes('class="page left"'));
+            assert(result.includes('id="page-1"'));
+            assert(result.includes('<img src="data:image/jpeg;base64,test"'));
+            assert(result.includes('loading="lazy"'));
         });
 
         it('should escape special characters in HTML attributes', async () => {
