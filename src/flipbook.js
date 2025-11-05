@@ -87,35 +87,39 @@ class Flipbook {
      */
     loadFaceContent(pageIndex, faceType, pageEl) {
         if (pageIndex < 1 || pageIndex > this.totalPages) {
-            return;
+            // Return a rejected promise so .finally() still works
+            return Promise.reject(new Error('Page index out of bounds'));
         }
 
         if (!pageEl) {
             pageEl = this.pages[pageIndex - 1];
         }
-        if (!pageEl) return;
+        if (!pageEl) return Promise.reject(new Error('Page element not found'));
 
         const faceEl = pageEl.querySelector('.page-face-' + faceType);
-        if (!faceEl) return;
+        if (!faceEl) return Promise.reject(new Error('Face element not found'));
 
         const img = faceEl.querySelector('img');
-        if (!img) return;
+        if (!img) return Promise.reject(new Error('Image element not found'));
 
         const imageSrc = img.src;
 
-        this.preloadImage(imageSrc).then(() => {
+        // VVV ADD THE 'return' KEYWORD HERE VVV
+        return this.preloadImage(imageSrc).then(() => {
             img.style.display = '';
             img.setAttribute('loading', 'eager');
             
-            // Fix: Remove the placeholder after successful load
             const placeholder = faceEl.querySelector('.loading-placeholder');
             if (placeholder) {
                 placeholder.remove();
             }
             
-        }).catch(() => {
+        }).catch((err) => {
             // Keep the error fallback
             faceEl.innerHTML = '<div class="loading-placeholder">Failed to load page ' + pageIndex + '</div>';
+            // Re-throw the error so the .finally() in turnNext knows something failed
+            // (though .finally() runs either way, this is good practice)
+            throw err; 
         });
     }
 
@@ -166,26 +170,22 @@ class Flipbook {
      * @param {number} index - 1-based page index for left page
      */
     updateSpread(index) {
-        this.pages.forEach(p => {
-            p.classList.remove('visible', 'turned', 'turned-back');
-        });
+            this.pages.forEach(p => {
+                p.classList.remove('visible', 'turned', 'turned-back');
+            });
 
-        const oddPageIndex = index;
-        if (oddPageIndex >= 1 && oddPageIndex <= this.totalPages) {
-            this.setupPageForDisplay(oddPageIndex);
-            this.pages[oddPageIndex - 1].classList.add('visible');
+            const oddPageIndex = index;
+            if (oddPageIndex >= 1 && oddPageIndex <= this.totalPages) {
+                this.setupPageForDisplay(oddPageIndex);
+                this.pages[oddPageIndex - 1].classList.add('visible');
+            }
+
+            const evenPageIndex = index + 1;
+            if (evenPageIndex >= 1 && evenPageIndex <= this.totalPages) {
+                this.setupPageForDisplay(evenPageIndex);
+                this.pages[evenPageIndex - 1].classList.add('visible');
+            }
         }
-
-        const evenPageIndex = index + 1;
-        if (evenPageIndex >= 1 && evenPageIndex <= this.totalPages) {
-            this.setupPageForDisplay(evenPageIndex);
-            this.pages[evenPageIndex - 1].classList.add('visible');
-        }
-    }
-
-    /**
-     * Turns to the next page
-     */
    /**
      * Turns to the next page
      */
@@ -198,49 +198,42 @@ class Flipbook {
         const versoRightPageIndex = turningPageIndex + 1; 
         const turningPage = this.pages[turningPageIndex - 1];
         const leftPage = this.pages[this.currentPage - 1];
-        
+
+        // 1. Setup the new page that will be revealed
         if (revealedPageIndex <= this.totalPages) {
             this.setupPageForDisplay(revealedPageIndex);
             this.pages[revealedPageIndex - 1].classList.add('visible');
         }
         
-        // Load back face content before turning so it is visible during the turn
-        const backFace = turningPage.querySelector('.page-face-back');
-        const backImg = backFace.querySelector('img');
-        const backPlaceholder = backFace.querySelector('.loading-placeholder');
-
-        if (backPlaceholder) {
-            backPlaceholder.remove();
-        }
-        if (backImg) {
-            backImg.style.display = '';
-        }
-        
-        // **FIXED:** versoPageIndex is correctly calculated as turningPageIndex + 1
-        this.loadFaceContent(versoRightPageIndex, 'back', turningPage);
-
         const frontFace = turningPage.querySelector('.page-face-front');
-        const frontImg = frontFace.querySelector('img'); // Get the image element
-        const placeholder = frontFace.querySelector('.loading-placeholder'); // Get the placeholder
-
-        if (frontImg || placeholder) {
-            setTimeout(() => {
-                if (frontImg) frontImg.style.display = 'none'; // Safely hide the image
-                if (placeholder) placeholder.remove(); // Remove placeholder if present
-            }, Math.round(this.transitionMs / 2));
-        }
+        const frontImg = frontFace.querySelector('img');
+        const placeholder = frontFace.querySelector('.loading-placeholder');
 
         if (leftPage) {
             leftPage.style.zIndex = this.totalPages + 1;
         }
+        
+        // 2. Load the backface content AND WAIT
+        this.loadFaceContent(versoRightPageIndex, 'back', turningPage).finally(() => {
+            
+            // 3. NOW that the backface is loaded, start the turn
+            turningPage.classList.add('turned');
 
-        turningPage.classList.add('turned');
+            // 4. Hide front face mid-turn
+            if (frontImg || placeholder) {
+                setTimeout(() => {
+                    if (frontImg) frontImg.style.display = 'none';
+                    if (placeholder) placeholder.remove();
+                }, Math.round(this.transitionMs / 2));
+            }
 
-        setTimeout(() => {
-            this.currentPage += 2;
-            this.updateSpread(this.currentPage);
-            this.isTurning = false;
-        }, this.transitionMs);
+            // 5. Set final state after animation finishes
+            setTimeout(() => {
+                this.currentPage += 2;
+                this.updateSpread(this.currentPage);
+                this.isTurning = false;
+            }, this.transitionMs/2);
+        });
     }
 
     /**
