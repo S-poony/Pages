@@ -4,6 +4,8 @@ class Flipbook {
         this.pages = pages;
         this.transitionMs = transitionMs;
         this.currentPage = 1;
+        // Flag to prevent concurrent animations
+        this.isTurning = false; 
 
         this.updateSpread(this.currentPage);
         this.setupListeners();
@@ -22,13 +24,17 @@ class Flipbook {
     }
 
     turnNext() {
-        if (this.currentPage >= this.totalPages - 1) return;
-
+        // Return early if an animation is in progress
+        if (this.isTurning || this.currentPage >= this.totalPages - 1) return;
+        
         const oldRightPage = this.pages[this.currentPage];
         const newLeftPage = this.pages[this.currentPage + 1];
         const newRightPage = this.pages[this.currentPage + 2];
 
         if (!oldRightPage || !newLeftPage) return;
+
+        // Set flag to true to start the animation lock
+        this.isTurning = true;
 
         if (newRightPage) {
             newRightPage.classList.add('visible', 'immediate');
@@ -41,17 +47,23 @@ class Flipbook {
         oldRightPage.addEventListener('transitionend', () => {
             this.currentPage += 2;
             this.updateSpread(this.currentPage);
+            // **Modification:** Reset flag when animation is complete
+            this.isTurning = false; 
         }, { once: true });
     }
 
     turnPrev() {
-        if (this.currentPage === 1) return;
+        // **Modification:** Return early if an animation is in progress
+        if (this.isTurning || this.currentPage === 1) return;
 
         const oldLeftPage = this.pages[this.currentPage - 1];
         const newRightPage = this.pages[this.currentPage - 2];
         const newLeftPage = this.pages[this.currentPage - 3];
 
         if (!oldLeftPage || !newRightPage) return;
+
+        // Set flag to true to start the animation lock
+        this.isTurning = true;
 
         if (newLeftPage) {
             newLeftPage.classList.add('visible', 'immediate');
@@ -64,6 +76,8 @@ class Flipbook {
         oldLeftPage.addEventListener('transitionend', () => {
             this.currentPage -= 2;
             this.updateSpread(this.currentPage);
+            // Reset flag when animation is complete
+            this.isTurning = false;
         }, { once: true });
     }
 
