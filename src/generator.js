@@ -124,6 +124,18 @@ export async function generateFlipbookHtml(pageImages, options = {}, assetLoader
         <div id="book-container" data-page-count="${actualPageCount}" data-double-spread="${doubleSpreadFlag}">
             ${pagesHtml}
         </div>
+   <div id="controls-panel">
+            <label for="page-input">Page:</label>
+            <input type="number" id="page-input" min="1" max="${actualPageCount}" value="1" style="width: 50px; text-align: center;">
+
+            <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1" title="Zoom">
+            <div id="zoom-level">100%</div>
+        </div>
+    </div>
+    <div id="flipbook-wrapper">
+        <div id="book-container" data-page-count="${actualPageCount}" data-double-spread="${doubleSpreadFlag}">
+            ${pagesHtml}
+        </div>
    <!-- Zoom & Pan controls -->
         <div id="controls-panel">
             <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1" title="Zoom">

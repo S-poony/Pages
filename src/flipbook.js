@@ -23,6 +23,14 @@ class Flipbook {
         if (rightPage) rightPage.classList.add('visible');
     }
 
+    _updatePageIndicator() {
+            const pageInput = document.getElementById('page-input');
+            if (pageInput) {
+                // Update the input field with the new current page number (left page of the visible spread)
+                pageInput.value = this.currentPage;
+            }
+        }
+
     turnNext() {
         // Return early if an animation is in progress
         if (this.isTurning || this.currentPage >= this.totalPages - 1) return;
@@ -49,6 +57,7 @@ class Flipbook {
             this.updateSpread(this.currentPage);
             // Reset flag when animation is complete
             this.isTurning = false; 
+            this._updatePageIndicator();
         }, { once: true });
     }
 
@@ -78,11 +87,48 @@ class Flipbook {
             this.updateSpread(this.currentPage);
             // Reset flag when animation is complete
             this.isTurning = false;
+            this._updatePageIndicator();
         }, { once: true });
+    }
+
+    //goToPage
+    goToPage(targetPage) {
+        // Ensure the target page is a valid number
+        const pageIndex = parseInt(targetPage);
+        if (isNaN(pageIndex) || pageIndex < 1) return;
+
+        // The flipbook displays spreads: [left, right]
+        // We only care about the *starting* page of the spread (which is always an odd number 1, 3, 5, ...)
+        let newCurrentPage = pageIndex;
+        if (newCurrentPage % 2 === 0) {
+            // If an even page is requested (e.g., page 2 or 4), we treat the spread as starting with the previous page (1 or 3)
+            newCurrentPage = Math.max(1, newCurrentPage - 1);
+        }
+
+        // Clamp to valid range (1 is the first spread, totalPages-1 is the last spread's left page)
+        newCurrentPage = Math.max(1, Math.min(newCurrentPage, this.totalPages - 1));
+
+        if (newCurrentPage === this.currentPage) return; // Already there
+
+        // Check the animation flag and wait if an animation is in progress
+        if (this.isTurning) {
+             // Defer the jump until the current animation is complete
+             this.pages[this.currentPage - 1].addEventListener('transitionend', () => {
+                // Re-run the function once free, passing the original target
+                this.goToPage(targetPage); 
+             }, { once: true });
+             return;
+        }
+
+        this.currentPage = newCurrentPage;
+        // Use an immediate update to skip the transition animation
+        this.updateSpread(this.currentPage);
+        this._updatePageIndicator(); // Update the UI element
     }
 
     setupListeners() {
         const container = document.getElementById('book-container');
+        const pageInput = document.getElementById('page-input');
         
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') {
@@ -100,6 +146,14 @@ class Flipbook {
                 this.turnPrev();
             }
         });
+        
+        if (pageInput) {
+             pageInput.addEventListener('change', (e) => {
+                this.goToPage(e.target.value);
+            });
+             // Set initial value
+             pageInput.value = this.currentPage;
+        }
     }
 }
 
