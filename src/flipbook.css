@@ -1,17 +1,11 @@
-/* ============================================================
-   Flipbook 3D Rendering - Full CSS (with Deep 3D Fix)
-   ============================================================ */
-
-/* Base reset and viewport */
 body {
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
+    overflow: hidden;
     background-color: #333;
     font-family: sans-serif;
 }
 
-/* Wrapper establishes the central viewport for the book */
 #flipbook-wrapper {
     width: 100vw;
     height: 100vh;
@@ -21,219 +15,88 @@ body {
     perspective: 2000px;
 }
 
-/* Book container that holds the pages and serves as the 3D rotation pivot */
 #book-container {
     width: 90vw;
     height: 90vh;
     position: relative;
     transform-style: preserve-3d;
-    -webkit-transform-style: preserve-3d;
-    perspective: 1500px;
-    perspective-origin: center center;
 }
-
-/* ============================================================
-   Page Setup
-   ============================================================ */
 
 .page {
     width: 50%;
     height: 100%;
     position: absolute;
     top: 0;
-    left: 0;
     box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
     overflow: hidden;
-    padding: 0;
     box-sizing: border-box;
-
-    /* --- 3D & Compositing Configuration --- */
     transform-style: preserve-3d;
-    -webkit-transform-style: preserve-3d;
-    transform-origin: left center;
-    -webkit-transform-origin: left center;
-    transform: rotateY(0deg) translateZ(0);
-    -webkit-transform: rotateY(0deg) translateZ(0);
-    will-change: transform;
-    isolation: isolate;
-
-    transition: transform 0.8s ease-in-out;
+    backface-visibility: hidden;
     visibility: hidden;
+    transition: transform 0.8s ease-in-out;
 }
 
-/* Remove center gap for double-spread images */
-#book-container[data-double-spread="true"] .page {
-    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-}
-
-#book-container[data-double-spread="true"] .page.visible {
-    visibility: visible;
-}
-
-#book-container[data-double-spread="true"] .page.turned,
-#book-container[data-double-spread="true"] .page.turned-back {
-    visibility: visible !important;
-}
-
-/* Align image halves for double-spread mode */
-#book-container[data-double-spread="true"] .page.left {
+.page.left {
     left: 0%;
     transform-origin: right center;
 }
 
-#book-container[data-double-spread="true"] .page.right {
+.page.right {
     left: 50%;
     transform-origin: left center;
 }
 
-#book-container[data-double-spread="true"] .page .page-face img {
-    position: absolute;
-    width: 200%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    object-fit: cover;
-}
-
-#book-container[data-double-spread="true"] .page.left .page-face img {
-    transform: translateX(0%);
-    object-position: left center;
-}
-
-#book-container[data-double-spread="true"] .page.right .page-face img {
-    transform: translateX(-50%);
-    object-position: right center;
-}
-
-/* Hide any explicit book-spine element visually in double-spread mode */
-#book-container[data-double-spread="true"] .book-spine {
-    display: none;
-}
-
-/* ============================================================
-   Turning States
-   ============================================================ */
-
 .page.visible {
     visibility: visible;
+    transform: rotateY(0deg);
 }
 
-.page.turned,
-.page.turned-back {
-    z-index: 1000 !important;
-    visibility: visible !important;
+.page.left:not(.visible) {
+    transform: rotateY(180deg);
 }
 
-.page.turned {
-    transform: rotateY(-180deg) !important;
-    -webkit-transform: rotateY(-180deg) !important;
+.page.right:not(.visible) {
+    transform: rotateY(-180deg);
 }
 
-.page.turned-back {
-    transform: rotateY(180deg) !important;
-    -webkit-transform: rotateY(180deg) !important;
+.page.right.turning-forward {
+    transform: rotateY(-180deg);
 }
 
-/* ============================================================
-   Face Definitions (with Deep 3D Fix)
-   ============================================================ */
-
-.page-face {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    overflow: hidden;
-
-    transform-style: preserve-3d;
-    -webkit-transform-style: preserve-3d;
-
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-
-    display: block;
+.page.left.turning-forward {
+    transform: rotateY(0deg);
 }
 
-/* Guaranteed solid background (physical paper) */
-.page-face {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: white;
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    will-change: transform, opacity;
-    z-index: 0;
+.page.left.turning-backward {
+    transform: rotateY(180deg);
 }
 
-/* Ensure content (img, text, etc.) is above the pseudo-background */
-.page-face > * {
-    position: relative;
-    z-index: 1;
-    background: blue;
+.page.right.turning-backward {
+    transform: rotateY(0deg);
 }
 
-/* Front Face */
-.page-face-front {
-    transform: rotateY(0deg) translateZ(0);
-    -webkit-transform: rotateY(0deg) translateZ(0);
-    background: transparent;
+.page.visible.immediate {
+    transition: none;
 }
 
-/* Back Face */
-.page-face-back {
-    transform: rotateY(-180deg) translateZ(0);
-    -webkit-transform: rotateY(-180deg) translateZ(0);
-    background: transparent;
-}
-
-/* 3D isolation for turned page */
-.page.turned .page-face-back,
-.page.turned-back .page-face-back {
-    transform: rotateY(0deg) translateZ(2px) !important;
-    -webkit-transform: rotateY(0deg) translateZ(2px) !important;
-    will-change: transform;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-
-/* ============================================================
-   Media and Placeholder Styling
-   ============================================================ */
-
-.page-face img {
+.page img {
     width: 100%;
     height: 100%;
     object-fit: contain;
     display: block;
+    backface-visibility: hidden;
 }
 
-.page-face .loading-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #ff0000;
-    color: #999;
-    font-size: 0.875rem;
+#book-container[data-double-spread="true"] .page.left img {
+    width: 200%;
+    object-fit: cover;
+    object-position: left center;
+    transform: translateX(0%);
 }
 
-/* ============================================================
-   Book Spine
-   ============================================================ */
-
-.book-spine {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    width: 2px;
-    height: 100%;
+#book-container[data-double-spread="true"] .page.right img {
+    width: 200%;
+    object-fit: cover;
+    object-position: right center;
     transform: translateX(-50%);
-    box-shadow: inset 0 0 30px rgb(255, 0, 0);
-    pointer-events: none;
 }

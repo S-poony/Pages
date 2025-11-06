@@ -62,24 +62,35 @@ export function wrapFlipbookJs(jsContent) {
  * @param {string[]} pageImages - Array of base64 image data URLs
  * @returns {string} HTML string for all pages
  */
-export function generatePagesHtml(pageImages) {
+export function generatePagesHtml(pageImages, doubleSpread = false) {
     if (!Array.isArray(pageImages)) {
         throw new Error('pageImages must be an array');
     }
 
-    const pageCount = pageImages.length;
-
-    const pagesHtml = Array.from({ length: pageCount }, (_, i) => {
-        const pageNum = i + 1;
-        const imgSrc = pageImages[i]?.replace(/"/g, '&quot;') || '';
-        const sideClass = (pageNum % 2 === 1) ? 'left' : 'right';
-        return `            <div class="page ${sideClass}" id="page-${pageNum}">
-                <div class="page-face page-face-front"><img src="${imgSrc}" alt="Page ${pageNum}" style="display: none;" /></div>
-                <div class="page-face page-face-back" id="page-${pageNum}-back"><img src="${imgSrc}" alt="Page ${pageNum}" style="display: none;" /></div>
+    if (doubleSpread) {
+        const pagesHtml = Array.from({ length: pageImages.length }, (_, i) => {
+            const imgSrc = pageImages[i]?.replace(/"/g, '&quot;') || '';
+            const leftPageNum = i * 2 + 1;
+            const rightPageNum = i * 2 + 2;
+            return `            <div class="page left" id="page-${leftPageNum}">
+                <img src="${imgSrc}" alt="Page ${leftPageNum}" loading="lazy" />
+            </div>
+            <div class="page right" id="page-${rightPageNum}">
+                <img src="${imgSrc}" alt="Page ${rightPageNum}" loading="lazy" />
             </div>`;
-    }).join('');
-
-    return pagesHtml;
+        }).join('');
+        return pagesHtml;
+    } else {
+        const pagesHtml = Array.from({ length: pageImages.length }, (_, i) => {
+            const pageNum = i + 1;
+            const imgSrc = pageImages[i]?.replace(/"/g, '&quot;') || '';
+            const sideClass = (pageNum % 2 === 1) ? 'left' : 'right';
+            return `            <div class="page ${sideClass}" id="page-${pageNum}">
+                <img src="${imgSrc}" alt="Page ${pageNum}" loading="lazy" />
+            </div>`;
+        }).join('');
+        return pagesHtml;
+    }
 }
 
 /**
@@ -107,8 +118,9 @@ export async function generateFlipbookHtml(pageImages, options = {}, assetLoader
         assetLoader.loadJs().catch(() => '')
     ]);
 
-    const pagesHtml = generatePagesHtml(pageImages);
     const doubleSpreadFlag = !!options.doubleSpread;
+    const pagesHtml = generatePagesHtml(pageImages, doubleSpreadFlag);
+    const actualPageCount = doubleSpreadFlag ? pageImages.length * 2 : pageImages.length;
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -120,12 +132,12 @@ export async function generateFlipbookHtml(pageImages, options = {}, assetLoader
 </head>
     <body>
     <div id="flipbook-wrapper">
-        <div id="book-container" data-page-count="${pageCount}" data-double-spread="${doubleSpreadFlag}">
+        <div id="book-container" data-page-count="${actualPageCount}" data-double-spread="${doubleSpreadFlag}">
             ${pagesHtml}
         </div>
     </div>
     <script>
-        window.__PAGE_COUNT__ = ${pageCount};
+        window.__PAGE_COUNT__ = ${actualPageCount};
         window.__DOUBLE_SPREAD__ = ${doubleSpreadFlag};
     </script>
     <script>${js}</script>
