@@ -117,9 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
     flipbook.turnPrev = () => { if (zoom === 1) origPrev(); };
 
     console.log('Flipbook initialized. Use Arrow keys or click to turn pages.');
-});
-
-// --- Zoom & Pan support ---
+    
+});// --- Zoom & Pan support ---
 const wrapper = document.getElementById('flipbook-wrapper');
 const book = document.getElementById('book-container');
 const zoomSlider = document.getElementById('zoom-slider');
@@ -128,26 +127,59 @@ const zoomText = document.getElementById('zoom-level');
 let zoom = 1;
 let isPanning = false;
 let startX = 0, startY = 0;
-let panX = 0, panY = 0;
+let panX = 0, panY = 0; // The total translation in pixels
+
+// Dimensions used for clamping pan. Initialize here, or better, in a resize observer.
+// Assuming book width/height are the size of the *full spread* at zoom=1.
+const BOOK_WIDTH_AT_1X = 1000; // Replace with actual size or dynamically fetch book.clientWidth
+const BOOK_HEIGHT_AT_1X = 500; // Replace with actual size or dynamically fetch book.clientHeight
+
+// Add a small tolerance for checking if zoom is 100%
+const ZOOM_RESET_TOLERANCE = 0.01; 
+
 
 function updateTransform() {
+    // Get current wrapper dimensions
+    const wrapperWidth = wrapper.clientWidth;
+    const wrapperHeight = wrapper.clientHeight;
+    
+    // --- Pan Clamping Logic (for better UX when zoomed) ---
+    if (zoom > 1) {
+        // Calculate the maximum allowed pan (half the difference between zoomed size and wrapper size)
+        const maxPanX = Math.max(0, (BOOK_WIDTH_AT_1X * zoom - wrapperWidth) / 2);
+        const maxPanY = Math.max(0, (BOOK_HEIGHT_AT_1X * zoom - wrapperHeight) / 2);
+        
+        // Clamp panX and panY within the bounds
+        panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
+        panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
+    } else {
+        // Ensure pan is 0 when not zoomed
+        panX = 0;
+        panY = 0;
+    }
+    
+    // Apply the transformation
     book.style.transform = `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px)`;
 }
 
 // Handle zoom slider
 zoomSlider?.addEventListener('input', e => {
     if (flipbook.isTurning) return;
-    const newZoom = parseFloat(e.target.value);
-    const factor = newZoom / zoom;
-    panX *= factor;
-    panY *= factor;
+    let newZoom = parseFloat(e.target.value);
+    
+    // Check if the new zoom is close to 1 (100%)
+    if (Math.abs(newZoom - 1) < ZOOM_RESET_TOLERANCE) {
+        newZoom = 1; // Snap to 1.0 for a clean reset
+    }
+    
+    // We update panX/Y and handle reset/clamping inside updateTransform() now
     zoom = newZoom;
     updateTransform();
     zoomText.textContent = `${Math.round(zoom * 100)}%`;
     wrapper.style.cursor = zoom > 1 ? 'grab' : 'default';
 });
 
-// Mouse pan logic
+// Mouse pan logic (No changes needed here as clamping is in updateTransform)
 wrapper.addEventListener('mousedown', e => {
     if (zoom === 1 || flipbook.isTurning) return;
     isPanning = true;
@@ -158,9 +190,10 @@ wrapper.addEventListener('mousedown', e => {
 
 window.addEventListener('mousemove', e => {
     if (!isPanning) return;
+    // Calculate the new pan position based on the current mouse position and the start position
     panX = e.clientX - startX;
     panY = e.clientY - startY;
-    updateTransform();
+    updateTransform(); // updateTransform will now automatically clamp the pan values
 });
 
 window.addEventListener('mouseup', () => {
