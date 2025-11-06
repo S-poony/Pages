@@ -56,7 +56,6 @@ export function wrapFlipbookJs(jsContent) {
 
     return modifiedJs;
 }
-
 /**
  * Generates HTML for individual pages
  * @param {string[]} pageImages - Array of base64 image data URLs
@@ -67,32 +66,22 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
         throw new Error('pageImages must be an array');
     }
 
-    if (doubleSpread) {
-        const pagesHtml = Array.from({ length: pageImages.length }, (_, i) => {
-            const imgSrc = pageImages[i]?.replace(/"/g, '&quot;') || '';
-            const leftPageNum = i * 2 + 1;
-            const rightPageNum = i * 2 + 2;
-            return `            <div class="page left" id="page-${leftPageNum}">
-                <img src="${imgSrc}" alt="Page ${leftPageNum}" loading="lazy" />
-            </div>
-            <div class="page right" id="page-${rightPageNum}">
-                <img src="${imgSrc}" alt="Page ${rightPageNum}" loading="lazy" />
-            </div>`;
-        }).join('');
-        return pagesHtml;
-    } else {
-        const pagesHtml = Array.from({ length: pageImages.length }, (_, i) => {
-            const pageNum = i + 1;
-            const imgSrc = pageImages[i]?.replace(/"/g, '&quot;') || '';
-            const sideClass = (pageNum % 2 === 1) ? 'left' : 'right';
-            return `            <div class="page ${sideClass}" id="page-${pageNum}">
-                <img src="${imgSrc}" alt="Page ${pageNum}" loading="lazy" />
-            </div>`;
-        }).join('');
-        return pagesHtml;
-    }
-}
+    // The doubleSpread flag is only relevant for the container's data attribute
+    // and for the total page count (handled in generateFlipbookHtml).
+    // The page HTML structure remains the same: one page div per image.
 
+    const pagesHtml = Array.from({ length: pageImages.length }, (_, i) => {
+        const pageNum = i + 1;
+        const imgSrc = pageImages[i]?.replace(/"/g, '&quot;') || '';
+        // Page 1, 3, 5... are 'left'. Page 2, 4, 6... are 'right'.
+        const sideClass = (pageNum % 2 === 1) ? 'left' : 'right'; 
+        return `            <div class="page ${sideClass}" id="page-${pageNum}">
+            <img src="${imgSrc}" alt="Page ${pageNum}" loading="lazy" />
+        </div>`;
+    }).join('');
+    
+    return pagesHtml;
+}
 /**
  * Generates the complete HTML structure for the flipbook
  * @param {string[]} pageImages - Array of base64 image data URLs
