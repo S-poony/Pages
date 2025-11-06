@@ -47,13 +47,13 @@ class Flipbook {
         oldRightPage.addEventListener('transitionend', () => {
             this.currentPage += 2;
             this.updateSpread(this.currentPage);
-            // **Modification:** Reset flag when animation is complete
+            // Reset flag when animation is complete
             this.isTurning = false; 
         }, { once: true });
     }
 
     turnPrev() {
-        // **Modification:** Return early if an animation is in progress
+        // Return early if an animation is in progress
         if (this.isTurning || this.currentPage === 1) return;
 
         const oldLeftPage = this.pages[this.currentPage - 1];

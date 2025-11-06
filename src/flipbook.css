@@ -35,6 +35,7 @@ body {
     visibility: hidden;
     transition: transform 0.8s ease-in-out;
     background-color: white;
+    z-index: 1; /* Add a default z-index */
 }
 
 [data-double-spread="true"] .page {
@@ -67,22 +68,27 @@ body {
 
 .page.right.turning-forward {
     transform: rotateY(-180deg);
+    z-index: 2;
 }
 
 .page.left.turning-forward {
     transform: rotateY(0deg);
+    z-index: 2;
 }
 
 .page.left.turning-backward {
     transform: rotateY(180deg);
+    z-index: 2;
 }
 
 .page.right.turning-backward {
     transform: rotateY(0deg);
+    z-index: 2;
 }
 
 .page.visible.immediate {
     transition: none;
+    z-index: 0;
 }
 
 .page img {
