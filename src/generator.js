@@ -109,8 +109,7 @@ export async function generateFlipbookHtml(pageImages, options = {}, assetLoader
 
     const doubleSpreadFlag = !!options.doubleSpread;
     const pagesHtml = generatePagesHtml(pageImages, doubleSpreadFlag);
-    const actualPageCount = doubleSpreadFlag ? pageImages.length * 2 : pageImages.length;
-
+    const actualPageCount = pageImages.length;
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
