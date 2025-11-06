@@ -27,7 +27,6 @@ body {
     height: 100%;
     position: absolute;
     top: 0;
-    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
     overflow: hidden;
     box-sizing: border-box;
     transform-style: preserve-3d;
@@ -36,11 +35,6 @@ body {
     transition: transform 0.8s ease-in-out;
     background-color: white;
     z-index: 1; /* Add a default z-index */
-}
-
-[data-double-spread="true"] .page {
-    /* Override the original box-shadow when double-spread is active */
-    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
 }
 
 .page.left {
