@@ -104,3 +104,38 @@ body {
     object-fit: contain;
     object-position: left center;
 }
+
+/* Zoom and Pan behavior */
+#book-container {
+    transform-origin: center center;
+    transition: transform 0.15s ease-out;
+}
+
+#controls-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+    background: rgba(255,255,255,0.8);
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#zoom-slider {
+    width: 150px;
+}
+
+#zoom-level {
+    margin-top: 5px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.page img {
+    -webkit-user-drag: none;
+    user-select: none;
+    pointer-events: none; /* images won't block pointer events from wrapper */
+}
