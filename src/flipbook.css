@@ -37,6 +37,11 @@ body {
     background-color: white;
 }
 
+[data-double-spread="true"] .page {
+    /* Override the original box-shadow when double-spread is active */
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+}
+
 .page.left {
     left: 0%;
     transform-origin: right center;
@@ -90,12 +95,12 @@ body {
 
 #book-container[data-double-spread="true"] .page.left img {
     width: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: right center;
 }
 
 #book-container[data-double-spread="true"] .page.right img {
     width: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: left center;
 }
