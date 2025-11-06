@@ -34,6 +34,7 @@ body {
     backface-visibility: hidden;
     visibility: hidden;
     transition: transform 0.8s ease-in-out;
+    background-color: white;
 }
 
 .page.left {
