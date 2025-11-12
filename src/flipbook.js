@@ -163,6 +163,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const pages = Array.from(document.querySelectorAll('.page'));
     
     window.flipbook = new Flipbook(totalPages, pages);
+    const book = document.getElementById('book-container');
+    BOOK_WIDTH_AT_1X = book.clientWidth;
+    BOOK_HEIGHT_AT_1X = book.clientHeight;
 
     // Block page turns while zoomed
     const origNext = flipbook.turnNext.bind(flipbook);
@@ -177,16 +180,15 @@ const wrapper = document.getElementById('flipbook-wrapper');
 const book = document.getElementById('book-container');
 const zoomSlider = document.getElementById('zoom-slider');
 const zoomText = document.getElementById('zoom-level');
+// Dimensions used for clamping pan.
+let BOOK_WIDTH_AT_1X = 0;
+let BOOK_HEIGHT_AT_1X = 0;
 
 let zoom = 1;
 let isPanning = false;
 let startX = 0, startY = 0;
 let panX = 0, panY = 0; // The total translation in pixels
 
-// Dimensions used for clamping pan. Initialize here, or better, in a resize observer.
-// Assuming book width/height are the size of the *full spread* at zoom=1.
-const BOOK_WIDTH_AT_1X = 1000; // Replace with actual size or dynamically fetch book.clientWidth
-const BOOK_HEIGHT_AT_1X = 500; // Replace with actual size or dynamically fetch book.clientHeight
 
 // Add a small tolerance for checking if zoom is 100%
 const ZOOM_RESET_TOLERANCE = 0.01; 
