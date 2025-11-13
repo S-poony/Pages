@@ -16,15 +16,22 @@ body {
     cursor: default;
 }
 
-/* Turn.js container - receives zoom/pan transform */
-#flipbook {
+/* NEW: Container for zoom/pan transforms */
+#flipbook-container {
     width: 90vw;
     height: 90vh;
     position: relative;
     transition: transform 0.15s ease-out;
+    transform-origin: center center; /* Scale from center */
 }
 
-/* Images inside pages */
+/* REMOVE width/height from #flipbook - it inherits from container */
+#flipbook {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
 #flipbook img {
     width: 100%;
     height: 100%;
@@ -35,12 +42,11 @@ body {
     pointer-events: none;
 }
 
-/* Controls panel - fixed position over flipbook */
 #controls-panel {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 1000; /* Above turn.js pages */
+    z-index: 1000;
     background: rgba(255, 255, 255, 0.9);
     padding: 8px 12px;
     border-radius: 8px;
