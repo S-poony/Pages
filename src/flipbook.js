@@ -229,7 +229,7 @@ window.addEventListener('mousemove', e => {
 window.addEventListener('mouseup', () => {
     if (isPanning) {
         isPanning = false;
-        wrapper.style.cursor = 'grab';
+        wrapper.style.cursor = zoom > 1 ? 'grab' : 'default';
     }
 });
 
