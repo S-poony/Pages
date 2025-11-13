@@ -364,7 +364,8 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
  */
 export async function processPdf(input, options = {}, canvasAPI = defaultCanvasAPI) {
     const normalizedOptions = normalizeProcessorOptions(options);
-    const { scale, scales, doubleSpread } = normalizedOptions;
+    // FIX: Extract format and quality here so they're in scope for double-spread functions
+    const { scale, scales, doubleSpread, format, quality } = normalizedOptions;
 
     let arrayBuffer;
     if (input instanceof ArrayBuffer) {
@@ -378,55 +379,89 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
     const pdf = await loadPdfDocument(arrayBuffer);
     const renderer = createPageRenderer(pdf, normalizedOptions, canvasAPI);
 
-    // Helper to get all variants for a page
+    // Helper to get all variants for a page (for non-double-spread mode)
     const renderPageVariants = async (pageNumber) => {
         return renderer.renderPageVariants(pageNumber);
     };
-
     /* ----------------------------------------------------------
-       PARTIE DOUBLE-SPREAD  (inchangée sauf ajout de renderPage)
+       DOUBLE-SPREAD : render EACH HALF at its OWN resolution
        ---------------------------------------------------------- */
     if (doubleSpread) {
         const halfPageCount = pdf.numPages * 2;
 
-        // Fonction legacy : une seule data URL
-        async function renderPage(halfIndex) {
-            if (!Number.isInteger(halfIndex) || halfIndex < 1 || halfIndex > halfPageCount) {
+        async function renderHalfPageVariant(halfIndex, renderScale) {
+            if (!Number.isInteger(halfIndex) || halfIndex < 1 || halfIndex > halfPageCount)
                 throw new Error(`Page ${halfIndex} is out of range (1-${halfPageCount})`);
-            }
+
             const pdfPageNumber = Math.ceil(halfIndex / 2);
-            const side = halfIndex % 2 === 1 ? 'left' : 'right';
-            const fullCanvas = await renderer.renderPageToCanvas(pdfPageNumber, scale);
-            const variant = await renderer.splitCanvasHalfToVariant(fullCanvas, side, scale);
+            const side          = halfIndex % 2 === 1 ? 'left' : 'right';
+
+            const page    = await pdf.getPage(pdfPageNumber);
+            const wholeVp = page.getViewport({ scale: renderScale });
+
+            const halfWidth = Math.floor(wholeVp.width / 2);
+
+            const canvas = canvasAPI.createCanvas();
+            canvas.width  = halfWidth;
+            canvas.height = Math.round(wholeVp.height);
+
+            // For right half, shift rendering area left by halfWidth to capture the right side
+            const transform = side === 'right' ? [1, 0, 0, 1, -halfWidth, 0] : undefined;
+
+            const t0 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+            await page.render({
+                canvasContext: canvas.getContext('2d'),
+                viewport     : wholeVp,
+                transform    : transform
+            }).promise;
+            const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+
+            const dataUrl = canvasAPI.canvasToDataURL(canvas, format, quality);
+
+            try {
+                if (typeof window !== 'undefined') {
+                    window.__RENDER_METRICS__ = window.__RENDER_METRICS__ || [];
+                    window.__RENDER_METRICS__.push({
+                        page : pdfPageNumber,
+                        side,
+                        scale: renderScale,
+                        step : 'renderHalf',
+                        ms   : Math.round(t1 - t0)
+                    });
+                }
+            } catch (e) {}
+
+            return {
+                scale : renderScale,
+                width : canvas.width,
+                height: canvas.height,
+                dataUrl
+            };
+        }
+
+        async function renderPage(halfIndex) {
+            const variant = await renderHalfPageVariant(halfIndex, scale);
             return variant.dataUrl;
         }
 
-        // Fonction responsive : tableau de variants
-        async function renderPageVariantsForHalf(halfIndex) {
-            if (!Number.isInteger(halfIndex) || halfIndex < 1 || halfIndex > halfPageCount) {
-                throw new Error(`Page ${halfIndex} is out of range (1-${halfPageCount})`);
-            }
-            const pdfPageNumber = Math.ceil(halfIndex / 2);
-            const side = halfIndex % 2 === 1 ? 'left' : 'right';
+        async function renderPageVariants(halfIndex) {
             const effectiveScales = scales || [scale];
             const variants = [];
-            for (const renderScale of effectiveScales) {
-                const fullCanvas = await renderer.renderPageToCanvas(pdfPageNumber, renderScale);
-                const variant = await renderer.splitCanvasHalfToVariant(fullCanvas, side, renderScale);
-                variants.push(variant);
+            for (const s of effectiveScales) {
+                variants.push(await renderHalfPageVariant(halfIndex, s));
             }
             return variants;
         }
 
         return {
-            pageCount: halfPageCount,
+            pageCount        : halfPageCount,
             renderPage,
-            renderPageVariants: renderPageVariantsForHalf
+            renderPageVariants
         };
     }
 
     /* ----------------------------------------------------------
-       MODE SIMPLE PAGE (default) – on définit renderPage AVANT de le renvoyer
+       MODE SIMPLE PAGE (default)
        ---------------------------------------------------------- */
     async function renderPage(pageNumber) {
         if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > pdf.numPages) {
