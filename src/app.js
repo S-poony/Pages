@@ -5,6 +5,9 @@
 
 import { processPdf } from './processor.js';
 import { generateFlipbookHtml, wrapFlipbookJs } from './generator.js';
+import turnCss from './turn.css?raw';
+import turnJs from './lib/turn.min.js?raw';
+import jqueryJs from './lib/jquery.min.js?raw';
 import flipbookCss from './flipbook.css?raw';
 import flipbookJs from './flipbook.js?raw';
 
@@ -105,8 +108,11 @@ class FlipbookApp {
         title: file.name.replace(/\.pdf$/i,''),
         doubleSpread
       }, {
-        loadCss: async()=>flipbookCss,
-        loadJs : async()=>wrapFlipbookJs(flipbookJs)
+        loadCss: async() => flipbookCss,
+        loadTurnCss: async() => turnCss,
+        loadJs: async() => wrapFlipbookJs(flipbookJs),
+        loadTurnJs: async() => turnJs,     // NEW
+        loadJqueryJs: async() => jqueryJs  // NEW
       });
 
       this.currentHtml = html;

@@ -32,7 +32,24 @@ export const defaultAssetLoader = {
             const response = await fetch('./src/flipbook.css');
             return await response.text();
         } catch (error) {
-            console.warn('Could not load CSS file, using fallback');
+            console.warn('Could not load flipbook.css, using fallback');
+            return '';
+        }
+    },
+    
+    async loadTurnJs() {
+        try {
+            const response = await fetch('./src/lib/turn.min.js');
+            return await response.text();
+        } catch {
+            return '';
+        }
+    },
+    async loadJqueryJs() {
+        try {
+            const response = await fetch('./src/lib/jquery.min.js');
+            return await response.text();
+        } catch {
             return '';
         }
     },
@@ -105,33 +122,30 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
         const pageNum = i + 1;
         const pageData = pageImages[i];
         
-        // Format detection: string (legacy) vs array (responsive)
         const isLegacyFormat = typeof pageData === 'string';
         
         let imgTag;
         if (isLegacyFormat) {
-            // Legacy format: simple img with src
             const imgSrc = pageData.replace(/"/g, '&quot;') || '';
             imgTag = `<img src="${imgSrc}" alt="Page ${pageNum}" loading="lazy" />`;
         } else {
-            // Responsive format: img with srcset
             const variants = pageData;
             if (!Array.isArray(variants) || variants.length === 0) {
                 throw new Error(`Page ${pageNum} has no image variants`);
             }
             
-            // Use the smallest image as src fallback
             const src = variants[0].dataUrl.replace(/"/g, '&quot;');
-            const srcset = generateSrcset(variants);
-            const sizes = generateSizes(doubleSpread);
+        const srcset = generateSrcset(variants);
+        const sizes = generateSizes(doubleSpread);
+        const objectPosition = doubleSpread ? (pageNum % 2 === 0 ? 'left' : 'right') : 'center';
             
-            imgTag = `<img src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page ${pageNum}" loading="lazy" />`;
+            imgTag = `<img src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page 
+            ${pageNum}" loading="lazy" style="object-position: ${objectPosition} center;" />`;
         }
         
-        const sideClass = (pageNum % 2 === 1) ? 'left' : 'right';
-        return `            <div class="page ${sideClass}" id="page-${pageNum}">
-            ${imgTag}
-        </div>`;
+        
+        // turn.js requires direct child divs (no classes needed)
+        return `            <div>${imgTag}</div>`;
     }).join('');
     
     return pagesHtml;
@@ -144,7 +158,8 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
  * @param {AssetLoader} assetLoader - Asset loader (optional, defaults to file loader)
  * @returns {Promise<string>} Complete HTML document
  */
-export async function generateFlipbookHtml(pageImages, options = {}, assetLoader = defaultAssetLoader) {
+export async function generateFlipbookHtml(pageImages, options = {},
+     assetLoader = defaultAssetLoader) {
     if (!Array.isArray(pageImages)) {
         throw new Error('pageImages must be an array');
     }
@@ -154,33 +169,39 @@ export async function generateFlipbookHtml(pageImages, options = {}, assetLoader
     }
 
     const { title = 'Flipbook', doubleSpread = false } = options;
-
-    const [css, js] = await Promise.all([
+    const [baseCss, turnCss, js, turnJs, jqueryJs] = await Promise.all([
         assetLoader.loadCss().catch(() => ''),
-        assetLoader.loadJs().catch(() => '')
+        assetLoader.loadTurnCss().catch(() => ''),
+        assetLoader.loadJs().catch(() => ''),
+        assetLoader.loadTurnJs().catch(() => ''),
+        assetLoader.loadJqueryJs().catch(() => '')
     ]);
 
-    const pagesHtml = generatePagesHtml(pageImages, doubleSpread);
-    const actualPageCount = pageImages.length;
+    // Add blank cover + content pages
+    const pagesHtml = [
+        // Blank cover (single page, right side)
+        '<div><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" alt="Cover" loading="lazy" /></div>',
+        // Content pages (handled by existing logic)
+        generatePagesHtml(pageImages, doubleSpread)
+    ].join('');
+
+    // Account for blank cover in page count
+    const actualPageCount = pageImages.length + 1;
     
-    // Remove duplicate flipbook-wrapper that was in original code
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
-    <style>${css}</style>
+    <style>${turnCss}${baseCss}</style>
 </head>
 <body>
     <div id="flipbook-wrapper">
-        <div id="book-container" data-page-count="${actualPageCount}" data-double-spread="${doubleSpread}">
-            ${pagesHtml}
-        </div>
+        <div id="flipbook" data-double-spread="${doubleSpread}">${pagesHtml}</div>
         <div id="controls-panel">
-            <input type="number" id="page-input" min="1" max="${actualPageCount}" value="1" style="width: 50px; text-align: center;">
-            
-            <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1" title="Zoom">
+            <input type="number" id="page-input" min="2" max="${actualPageCount}" value="2">
+            <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1">
             <div id="zoom-level">100%</div>
         </div>
     </div>
@@ -188,6 +209,8 @@ export async function generateFlipbookHtml(pageImages, options = {}, assetLoader
         window.__PAGE_COUNT__ = ${actualPageCount};
         window.__DOUBLE_SPREAD__ = ${doubleSpread};
     </script>
+    <script>${jqueryJs}</script>
+    <script>${turnJs}</script>
     <script>${js}</script>
 </body>
 </html>`;

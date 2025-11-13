@@ -13,115 +13,41 @@ body {
     justify-content: center;
     align-items: center;
     perspective: 2000px;
+    cursor: default;
 }
 
-#book-container {
+/* Turn.js container - receives zoom/pan transform */
+#flipbook {
     width: 90vw;
     height: 90vh;
     position: relative;
-    transform-style: preserve-3d;
+    transition: transform 0.15s ease-out;
 }
 
-.page {
-    width: 50%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    overflow: hidden;
-    box-sizing: border-box;
-    transform-style: preserve-3d;
-    backface-visibility: hidden;
-    visibility: hidden;
-    transition: transform 0.8s ease-in-out;
-    background-color: white;
-    z-index: 1; /* Add a default z-index */
-}
-
-.page.left {
-    left: 0%;
-    transform-origin: right center;
-}
-
-.page.right {
-    left: 50%;
-    transform-origin: left center;
-}
-
-.page.visible {
-    visibility: visible;
-    transform: rotateY(0deg);
-}
-
-.page.left:not(.visible) {
-    transform: rotateY(180deg);
-}
-
-.page.right:not(.visible) {
-    transform: rotateY(-180deg);
-}
-
-.page.right.turning-forward {
-    transform: rotateY(-180deg);
-    z-index: 2;
-}
-
-.page.left.turning-forward {
-    transform: rotateY(0deg);
-    z-index: 2;
-}
-
-.page.left.turning-backward {
-    transform: rotateY(180deg);
-    z-index: 2;
-}
-
-.page.right.turning-backward {
-    transform: rotateY(0deg);
-    z-index: 2;
-}
-
-.page.visible.immediate {
-    transition: none;
-    z-index: 0;
-}
-
-.page img {
+/* Images inside pages */
+#flipbook img {
     width: 100%;
     height: 100%;
     object-fit: contain;
     display: block;
-    backface-visibility: hidden;
+    -webkit-user-drag: none;
+    user-select: none;
+    pointer-events: none;
 }
 
-#book-container[data-double-spread="true"] .page.left img {
-    width: 100%;
-    object-fit: contain;
-    object-position: right center;
-}
-
-#book-container[data-double-spread="true"] .page.right img {
-    width: 100%;
-    object-fit: contain;
-    object-position: left center;
-}
-
-/* Zoom and Pan behavior */
-#book-container {
-    transform-origin: center center;
-    transition: transform 0.15s ease-out;
-}
-
+/* Controls panel - fixed position over flipbook */
 #controls-panel {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 100;
-    background: rgba(255, 255, 255, 0.515);
-    padding: 4px 8px;
+    z-index: 1000; /* Above turn.js pages */
+    background: rgba(255, 255, 255, 0.9);
+    padding: 8px 12px;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 5px;
 }
 
 #zoom-slider {
@@ -129,12 +55,10 @@ body {
 }
 
 #zoom-level {
-    margin-top: 3px;
     font-size: 0.9em;
 }
 
-.page img {
-    -webkit-user-drag: none;
-    user-select: none;
-    pointer-events: none; /* images won't block pointer events from wrapper */
+/* Turn.js requires this */
+.turn-page {
+    background-color: white;
 }

@@ -1,185 +1,53 @@
-class Flipbook {
-    constructor(totalPages, pages, transitionMs = 800) {
-        this.totalPages = totalPages;
-        this.pages = pages;
-        this.transitionMs = transitionMs;
-        this.currentPage = 1;
-        this.isTurning = false;
+/**
+ * Turn.js Flipbook Implementation
+ * Replaces custom CSS animations with turn.js page turning
+ */
 
-        this.updateSpread(this.currentPage);
-        this.setupListeners();
-    }
-
-    updateSpread(pageIndex) {
-        this.pages.forEach(p => {
-            p.classList.remove('visible', 'turning-forward', 'turning-backward', 'immediate');
-        });
-
-        const leftPage = this.pages[pageIndex - 1];
-        const rightPage = this.pages[pageIndex];
-
-        if (leftPage) leftPage.classList.add('visible');
-        if (rightPage) rightPage.classList.add('visible');
-    }
-
-    _updatePageIndicator() {
-        const pageInput = document.getElementById('page-input');
-        if (pageInput) {
-            pageInput.value = this.currentPage;
-        }
-    }
-
-    turnNext() {
-        if (this.isTurning || this.currentPage >= this.totalPages - 1) return;
-        
-        const oldRightPage = this.pages[this.currentPage];
-        const newLeftPage = this.pages[this.currentPage + 1];
-        const newRightPage = this.pages[this.currentPage + 2];
-
-        if (!oldRightPage || !newLeftPage) return;
-
-        this.isTurning = true;
-
-        if (newRightPage) {
-            newRightPage.classList.add('visible', 'immediate');
-        }
-
-        newLeftPage.classList.add('visible');
-        oldRightPage.classList.add('turning-forward');
-        newLeftPage.classList.add('turning-forward');
-
-        oldRightPage.addEventListener('transitionend', () => {
-            this.currentPage += 2;
-            this.updateSpread(this.currentPage);
-            this.isTurning = false;
-            this._updatePageIndicator();
-            this.updateImageSizes(); // Update sizes for new visible pages
-        }, { once: true });
-    }
-
-    turnPrev() {
-        if (this.isTurning || this.currentPage === 1) return;
-
-        const oldLeftPage = this.pages[this.currentPage - 1];
-        const newRightPage = this.pages[this.currentPage - 2];
-        const newLeftPage = this.pages[this.currentPage - 3];
-
-        if (!oldLeftPage || !newRightPage) return;
-
-        this.isTurning = true;
-
-        if (newLeftPage) {
-            newLeftPage.classList.add('visible', 'immediate');
-        }
-
-        newRightPage.classList.add('visible');
-        oldLeftPage.classList.add('turning-backward');
-        newRightPage.classList.add('turning-backward');
-
-        oldLeftPage.addEventListener('transitionend', () => {
-            this.currentPage -= 2;
-            this.updateSpread(this.currentPage);
-            this.isTurning = false;
-            this._updatePageIndicator();
-            this.updateImageSizes(); // Update sizes for new visible pages
-        }, { once: true });
-    }
-
-    goToPage(targetPage) {
-        const pageIndex = parseInt(targetPage);
-        if (isNaN(pageIndex) || pageIndex < 1) return;
-
-        let newCurrentPage = pageIndex;
-        if (newCurrentPage % 2 === 0) {
-            newCurrentPage = Math.max(1, newCurrentPage - 1);
-        }
-
-        newCurrentPage = Math.max(1, Math.min(newCurrentPage, this.totalPages - 1));
-
-        if (newCurrentPage === this.currentPage) return;
-
-        if (this.isTurning) {
-             this.pages[this.currentPage - 1].addEventListener('transitionend', () => {
-                this.goToPage(targetPage); 
-             }, { once: true });
-             return;
-        }
-
-        this.currentPage = newCurrentPage;
-        this.updateSpread(this.currentPage);
-        this._updatePageIndicator();
-        this.updateImageSizes(); // Update sizes when jumping pages
-    }
-
-    setupListeners() {
-        const container = document.getElementById('book-container');
-        const pageInput = document.getElementById('page-input');
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') {
-                this.turnNext();
-            } else if (e.key === 'ArrowLeft') {
-                this.turnPrev();
-            }
-        });
-
-        container.addEventListener('click', (e) => {
-            const rect = container.getBoundingClientRect();
-            if (e.clientX > rect.left + rect.width / 2) {
-                this.turnNext();
-            } else {
-                this.turnPrev();
-            }
-        });
-        
-        if (pageInput) {
-            pageInput.addEventListener('change', (e) => {
-                this.goToPage(e.target.value);
-            });
-            pageInput.value = this.currentPage;
-        }
-    }
-
-    // CORRECTED: Update img sizes attribute based on zoom level
-    updateImageSizes() {
-        const isDoubleSpread = window.__DOUBLE_SPREAD__ || false;
-        const zoom = window.currentZoom || 1;
-        
-        // Calculate dynamic sizes based on actual zoom level
-        const baseSize = isDoubleSpread ? 50 : 100; // vw base
-        const zoomedSize = Math.round(baseSize * zoom);
-        
-        // Update sizes attribute for all visible images
-        document.querySelectorAll('.page.visible img').forEach(img => {
-            if (img && img.hasAttribute('srcset')) {
-                img.sizes = `${zoomedSize}vw`;
-            }
-        });
-    }
-}
-
-// --- Zoom & Pan support ---
-const wrapper = document.getElementById('flipbook-wrapper');
-const book = document.getElementById('book-container');
-const zoomSlider = document.getElementById('zoom-slider');
-const zoomText = document.getElementById('zoom-level');
-let BOOK_WIDTH_AT_1X = 0;
-let BOOK_HEIGHT_AT_1X = 0;
-
+// Global state
 let zoom = 1;
-window.currentZoom = 1; // Expose globally for updateImageSizes()
+window.currentZoom = 1; // Expose globally for responsive images
 let isPanning = false;
 let startX = 0, startY = 0;
 let panX = 0, panY = 0;
-const ZOOM_RESET_TOLERANCE = 0.01; 
+const ZOOM_RESET_TOLERANCE = 0.01;
+let BOOK_WIDTH_AT_1X = 0;
+let BOOK_HEIGHT_AT_1X = 0;
 
-function updateTransform() {
-    const wrapperWidth = wrapper.clientWidth;
-    const wrapperHeight = wrapper.clientHeight;
+/**
+ * Update img sizes attribute based on zoom level for currently visible pages
+ */
+function updateImageSizes() {
+    const isDoubleSpread = window.__DOUBLE_SPREAD__ || false;
+    const zoomLevel = window.currentZoom || 1;
     
+    // turn.js uses 'page-on' class for visible pages
+    document.querySelectorAll('#flipbook .page-on img').forEach(img => {
+        if (img && img.hasAttribute('srcset')) {
+            const baseSize = isDoubleSpread ? 50 : 100; // vw base
+            const zoomedSize = Math.round(baseSize * zoomLevel);
+            img.sizes = `${zoomedSize}vw`;
+        }
+    });
+}
+
+/**
+ * Apply pan transform to turn.js container
+ */
+function updateTransform() {
+    const wrapper = document.getElementById('flipbook-wrapper');
+    const book = document.getElementById('flipbook');
+    
+    if (!wrapper || !book) return;
+    
+    if (BOOK_WIDTH_AT_1X === 0) {
+        BOOK_WIDTH_AT_1X = wrapper.clientWidth;
+        BOOK_HEIGHT_AT_1X = wrapper.clientHeight;
+    }
+    
+    // Constrain pan
     if (zoom > 1) {
-        const maxPanX = Math.max(0, (BOOK_WIDTH_AT_1X * zoom - wrapperWidth) / 2);
-        const maxPanY = Math.max(0, (BOOK_HEIGHT_AT_1X * zoom - wrapperHeight) / 2);
+        const maxPanX = Math.max(0, (BOOK_WIDTH_AT_1X * zoom - wrapper.clientWidth) / 2);
+        const maxPanY = Math.max(0, (BOOK_HEIGHT_AT_1X * zoom - wrapper.clientHeight) / 2);
         panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
         panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
     } else {
@@ -187,71 +55,138 @@ function updateTransform() {
         panY = 0;
     }
     
-    book.style.transform = `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px)`;
+    // Apply ONLY translate for panning (scale is handled by turn.js)
+    book.style.transform = `translate(${panX}px, ${panY}px)`;
     
-    // Trigger responsive image loading when zoom changes
     window.currentZoom = zoom;
-    if (window.flipbook) {
-        window.flipbook.updateImageSizes();
-    }
+    updateImageSizes();
 }
 
-zoomSlider?.addEventListener('input', e => {
-    if (flipbook.isTurning) return;
-    let newZoom = parseFloat(e.target.value);
-    
-    if (Math.abs(newZoom - 1) < ZOOM_RESET_TOLERANCE) {
-        newZoom = 1;
-    }
-    
-    zoom = newZoom;
-    updateTransform();
-    zoomText.textContent = `${Math.round(zoom * 100)}%`;
-    wrapper.style.cursor = zoom > 1 ? 'grab' : 'default';
-});
-
-// Mouse pan logic
-wrapper.addEventListener('mousedown', e => {
-    if (zoom === 1 || flipbook.isTurning) return;
-    isPanning = true;
-    startX = e.clientX - panX;
-    startY = e.clientY - panY;
-    wrapper.style.cursor = 'grabbing';
-});
-
-window.addEventListener('mousemove', e => {
-    if (!isPanning) return;
-    panX = e.clientX - startX;
-    panY = e.clientY - startY;
-    updateTransform();
-});
-
-window.addEventListener('mouseup', () => {
-    if (isPanning) {
-        isPanning = false;
-        wrapper.style.cursor = zoom > 1 ? 'grab' : 'default';
-    }
-});
-
-// Initialisation
+// Initialize turn.js and all controls
 document.addEventListener('DOMContentLoaded', () => {
-    const container = document.getElementById('book-container');
-    const totalPages = parseInt(container?.dataset.pageCount) || window.__PAGE_COUNT__;
-    const pages = Array.from(document.querySelectorAll('.page'));
+    const pageCount = window.__PAGE_COUNT__ || 0;
+    const isDoubleSpread = window.__DOUBLE_SPREAD__ || false;
     
-    window.flipbook = new Flipbook(totalPages, pages);
-    const book = document.getElementById('book-container');
-    BOOK_WIDTH_AT_1X = book.clientWidth;
-    BOOK_HEIGHT_AT_1X = book.clientHeight;
-
-    // Block page turns while zoomed
-    const origNext = flipbook.turnNext.bind(flipbook);
-    const origPrev = flipbook.turnPrev.bind(flipbook);
-    flipbook.turnNext = () => { if (zoom === 1) origNext(); };
-    flipbook.turnPrev = () => { if (zoom === 1) origPrev(); };
-
-    // Initial call to set correct sizes
-    window.flipbook.updateImageSizes();
+    if (!pageCount) {
+        console.error('No page count found');
+        return;
+    }
     
-    console.log('Flipbook initialized. Use Arrow keys or click to turn pages.');
+    // Verify dependencies
+    if (typeof $ === 'undefined' || !$.fn.turn) {
+        console.error('turn.js or jQuery not loaded');
+        return;
+    }
+    
+    const $flipbook = $('#flipbook');
+    const wrapper = document.getElementById('flipbook-wrapper');
+    
+    // Calculate dimensions
+    BOOK_WIDTH_AT_1X = wrapper.clientWidth;
+    BOOK_HEIGHT_AT_1X = wrapper.clientHeight;
+    
+    // Initialize turn.js
+    $flipbook.turn({
+        width: BOOK_WIDTH_AT_1X,
+        height: BOOK_HEIGHT_AT_1X,
+        pages: pageCount,
+        display: 'double',
+        autoCenter: true,
+        elevation: 50,
+        gradients: true,
+        when: {
+            turned: function(event, page) {
+                // Update page indicator
+                const pageInput = document.getElementById('page-input');
+                if (pageInput) {
+                    pageInput.value = page;
+                }
+                // Update image sizes for newly visible pages
+                updateImageSizes();
+            }
+        }
+    });
+    
+    // Store reference for global access
+    window.flipbook = $flipbook;
+    
+    // Setup zoom slider
+    const zoomSlider = document.getElementById('zoom-slider');
+    const zoomText = document.getElementById('zoom-level');
+    
+    zoomSlider?.addEventListener('input', e => {
+        let newZoom = parseFloat(e.target.value);
+        
+        if (Math.abs(newZoom - 1) < ZOOM_RESET_TOLERANCE) {
+            newZoom = 1;
+        }
+        
+        zoom = newZoom;
+        
+        // Update turn.js size
+        $flipbook.turn('size', BOOK_WIDTH_AT_1X * zoom, BOOK_HEIGHT_AT_1X * zoom);
+        
+        // Disable turn.js mouse interaction when zoomed to allow panning
+        if (zoom > 1) {
+            $flipbook.turn('mouseAction', false);
+            wrapper.style.cursor = 'grab';
+        } else {
+            $flipbook.turn('mouseAction', true);
+            wrapper.style.cursor = 'default';
+        }
+        
+         const zoomTextElement = document.getElementById('zoom-level');
+        if (zoomTextElement) {
+            zoomTextElement.textContent = `${Math.round(zoom * 100)}%`;
+        }
+        updateTransform();
+    });
+    
+    // Setup keyboard navigation
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight') {
+            $flipbook.turn('next');
+        } else if (e.key === 'ArrowLeft') {
+            $flipbook.turn('previous');
+        }
+    });
+    
+    // Setup page input
+    const pageInput = document.getElementById('page-input');
+    if (pageInput) {
+        pageInput.addEventListener('change', e => {
+            const targetPage = parseInt(e.target.value);
+            if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= pageCount) {
+                $flipbook.turn('page', targetPage);
+            }
+        });
+        pageInput.value = 1;
+    }
+    
+    // Setup mouse panning
+    wrapper.addEventListener('mousedown', e => {
+        if (zoom === 1) return;
+        isPanning = true;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+        wrapper.style.cursor = 'grabbing';
+    });
+    
+    window.addEventListener('mousemove', e => {
+        if (!isPanning) return;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+    });
+    
+    window.addEventListener('mouseup', () => {
+        if (isPanning) {
+            isPanning = false;
+            wrapper.style.cursor = zoom > 1 ? 'grab' : 'default';
+        }
+    });
+    
+    // Initial image size update
+    updateImageSizes();
+    
+    console.log('Turn.js flipbook initialized');
 });
