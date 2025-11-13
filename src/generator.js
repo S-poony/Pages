@@ -184,9 +184,8 @@ export async function generateFlipbookHtml(pageImages, options = {},
         // Content pages (handled by existing logic)
         generatePagesHtml(pageImages, doubleSpread)
     ].join('');
-
-    // Account for blank cover in page count
-    const actualPageCount = pageImages.length + 1;
+    
+    const actualPageCount = pageImages.length;
     
        return `<!DOCTYPE html>
 <html lang="en">
