@@ -9,247 +9,152 @@ import flipbookCss from './flipbook.css?raw';
 import flipbookJs from './flipbook.js?raw';
 
 class FlipbookApp {
-    constructor() {
-        this.initializeElements();
-        this.setupEventListeners();
-        this.currentHtml = null;
-    }
+  constructor() {
+    this.initializeElements();
+    this.setupEventListeners();
+    this.currentHtml = null;
+    this.enableResponsive = true; // passez à false pour le mode legacy
+  }
 
-    /**
-     * Initialize DOM element references
-     */
-    initializeElements() {
-        this.uploadArea = document.getElementById('upload-area');
-        this.fileInput = document.getElementById('file-input');
-        this.doubleSpreadToggle = document.getElementById('double-spread-toggle');
-        this.progressContainer = document.getElementById('progress-container');
-        this.progressBar = document.getElementById('progress-bar');
-        this.progressText = document.getElementById('progress-text');
-        this.resultContainer = document.getElementById('result-container');
-        this.previewIframe = document.getElementById('preview-iframe');
-        this.downloadBtn = document.getElementById('download-btn');
-        this.openTabBtn = document.getElementById('open-tab-btn');
-        this.resetBtn = document.getElementById('reset-btn');
-        this.errorMessage = document.getElementById('error-message');
-    }
+  /* ----------  UI initialisation  ---------- */
+  initializeElements() {
+    this.uploadArea        = document.getElementById('upload-area');
+    this.fileInput         = document.getElementById('file-input');
+    this.doubleSpreadToggle= document.getElementById('double-spread-toggle');
+    this.progressContainer = document.getElementById('progress-container');
+    this.progressBar       = document.getElementById('progress-bar');
+    this.progressText      = document.getElementById('progress-text');
+    this.resultContainer   = document.getElementById('result-container');
+    this.previewIframe     = document.getElementById('preview-iframe');
+    this.downloadBtn       = document.getElementById('download-btn');
+    this.openTabBtn        = document.getElementById('open-tab-btn');
+    this.resetBtn          = document.getElementById('reset-btn');
+    this.errorMessage      = document.getElementById('error-message');
+  }
 
-    /**
-     * Setup all event listeners
-     */
-    setupEventListeners() {
-        this.uploadArea.addEventListener('click', () => this.fileInput.click());
-        this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
-        
-        this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
-        this.uploadArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
-        this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e));
-        
-        this.downloadBtn.addEventListener('click', () => this.downloadFlipbook());
-        this.openTabBtn.addEventListener('click', () => this.openInNewTab());
-        this.resetBtn.addEventListener('click', () => this.reset());
-    }
+  setupEventListeners() {
+    this.uploadArea.addEventListener('click', () => this.fileInput.click());
+    this.fileInput.addEventListener('change', e => this.handleFileSelect(e));
+    ['dragover','dragleave','drop'].forEach(evt =>
+      this.uploadArea.addEventListener(evt, e => this[`handle${evt.charAt(0).toUpperCase()+evt.slice(1)}`](e))
+    );
+    this.downloadBtn.addEventListener('click', () => this.downloadFlipbook());
+    this.openTabBtn .addEventListener('click', () => this.openInNewTab());
+    this.resetBtn   .addEventListener('click', () => this.reset());
+  }
 
-    /**
-     * Handle file input selection
-     * @param {Event} e - Input change event
-     */
-    handleFileSelect(e) {
-        const file = e.target.files[0];
-        if (file && file.type === 'application/pdf') {
-            this.processFile(file);
-        } else {
-            this.showError('Please select a valid PDF file.');
+  handleDragOver(e)  { e.preventDefault(); this.uploadArea.classList.add('dragover'); }
+  handleDragLeave(e){ e.preventDefault(); this.uploadArea.classList.remove('dragover'); }
+  handleDrop(e){
+    e.preventDefault();
+    this.uploadArea.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file?.type === 'application/pdf') this.processFile(file);
+    else this.showError('Please drop a valid PDF file.');
+  }
+  handleFileSelect(e){
+    const file = e.target.files[0];
+    if (file?.type === 'application/pdf') this.processFile(file);
+    else this.showError('Please select a valid PDF file.');
+  }
+
+  /* ----------  PDF processing  ---------- */
+  async processFile(file){
+    this.hideError();
+    this.showProgress(0,'Loading PDF…');
+
+    try{
+      const doubleSpread = !!this.doubleSpreadToggle?.checked;
+
+      const opts = this.enableResponsive
+        ? { scales:[1,2,4], format:'image/jpeg', quality:0.92, doubleSpread }
+        : { scale:2,        format:'image/jpeg', quality:0.92, doubleSpread };
+
+      const {pageCount, renderPage, renderPageVariants} = await processPdf(file, opts);
+
+      this.showProgress(10, `Processing ${pageCount} pages…`);
+
+      const useVariants = this.enableResponsive && renderPageVariants;
+      const pageImages  = [];
+      const slowThreshold = 2000;
+      const slowPages   = [];
+
+      for (let i=1; i<=pageCount; i++){
+        const progress = 10 + (i/pageCount*80);
+        this.showProgress(progress, `Rendering page ${i} of ${pageCount}…`);
+
+        const start = (typeof performance!=='undefined'?performance.now():Date.now());
+
+        if (useVariants){
+          const variants = await renderPageVariants(i);
+          pageImages.push(variants);
+        }else{
+          const url = await renderPage(i);
+          pageImages.push(url);
         }
-    }
 
-    /**
-     * Handle drag over event
-     * @param {Event} e - Drag event
-     */
-    handleDragOver(e) {
-        e.preventDefault();
-        this.uploadArea.classList.add('dragover');
-    }
-
-    /**
-     * Handle drag leave event
-     * @param {Event} e - Drag event
-     */
-    handleDragLeave(e) {
-        e.preventDefault();
-        this.uploadArea.classList.remove('dragover');
-    }
-
-    /**
-     * Handle drop event
-     * @param {Event} e - Drag event
-     */
-    handleDrop(e) {
-        e.preventDefault();
-        this.uploadArea.classList.remove('dragover');
-        
-        const file = e.dataTransfer.files[0];
-        if (file && file.type === 'application/pdf') {
-            this.processFile(file);
-        } else {
-            this.showError('Please drop a valid PDF file.');
+        const dur = ((typeof performance!=='undefined'?performance.now():Date.now()) - start);
+        if (dur > slowThreshold){
+          slowPages.push({index:i, ms:Math.round(dur)});
+          console.warn(`Slow render: page ${i} took ${Math.round(dur)}ms`);
         }
+      }
+
+      this.showProgress(95,'Generating flipbook…');
+      const html = await generateFlipbookHtml(pageImages, {
+        title: file.name.replace(/\.pdf$/i,''),
+        doubleSpread
+      }, {
+        loadCss: async()=>flipbookCss,
+        loadJs : async()=>wrapFlipbookJs(flipbookJs)
+      });
+
+      this.currentHtml = html;
+      this.showProgress(100,'Complete!');
+      setTimeout(()=>this.showResult(html), 500);
+
+    }catch(err){
+      console.error('Error processing PDF:', err);
+      this.showError(`Failed to process PDF: ${err.message}`);
+      this.reset();
     }
+  }
 
-    /**
-     * Process the PDF file
-     * @param {File} file - The PDF file to process
-     */
-    async processFile(file) {
-        this.hideError();
-        this.showProgress(0, 'Loading PDF...');
-
-        try {
-            const doubleSpread = !!this.doubleSpreadToggle?.checked;
-
-            const { pageCount, renderPage } = await processPdf(file, {
-                scale: 2,
-                format: 'image/jpeg',
-                quality: 0.92,
-                doubleSpread
-            });
-
-            this.showProgress(10, `Processing ${pageCount} pages...`);
-            const pageImages = [];
-            
-            const slowThreshold = 2000; // ms
-            const slowPages = [];
-
-            for (let i = 1; i <= pageCount; i++) {
-                const progress = 10 + (i / pageCount * 80);
-                this.showProgress(progress, `Rendering page ${i} of ${pageCount}...`);
-
-                const start = (typeof performance !== 'undefined') ? performance.now() : Date.now();
-                const imageDataUrl = await renderPage(i);
-                const duration = ((typeof performance !== 'undefined') ? performance.now() : Date.now()) - start;
-
-                if (duration > slowThreshold) {
-                    slowPages.push({ index: i, ms: Math.round(duration) });
-                    console.warn(`Slow render: page ${i} took ${Math.round(duration)}ms`);
-                }
-
-                pageImages.push(imageDataUrl);
-            }
-
-            this.showProgress(95, 'Generating flipbook...');
-            
-            const assetLoader = {
-                loadCss: async () => flipbookCss,
-                loadJs: async () => wrapFlipbookJs(flipbookJs)
-            };
-            
-            const html = await generateFlipbookHtml(pageImages, {
-                title: file.name.replace('.pdf', ''),
-                doubleSpread
-            }, assetLoader);
-            
-            this.currentHtml = html;
-
-            // If any pages were slow to render, show a non-blocking warning
-            if (typeof slowPages !== 'undefined' && slowPages.length > 0) {
-                this.errorMessage.textContent = `Warning: ${slowPages.length} page(s) were slow to render (>${slowThreshold}ms). Consider lowering scale or splitting spreads.`;
-                this.errorMessage.classList.remove('hidden');
-            }
-
-            this.showProgress(100, 'Complete!');
-            setTimeout(() => this.showResult(html), 500);
-            
-        } catch (error) {
-            console.error('Error processing PDF:', error);
-            this.showError(`Failed to process PDF: ${error.message}`);
-            this.reset();
-        }
-    }
-
-    /**
-     * Show progress bar and status text
-     * @param {number} percent - Progress percentage (0-100)
-     * @param {string} text - Status text to display
-     */
-    showProgress(percent, text) {
-        this.progressContainer.classList.remove('hidden');
-        this.uploadArea.classList.add('hidden');
-        this.progressBar.style.width = `${percent}%`;
-        this.progressText.textContent = text;
-    }
-
-    /**
-     * Show the result view with preview iframe
-     * @param {string} html - The generated HTML content
-     */
-    showResult(html) {
-        this.progressContainer.classList.add('hidden');
-        this.resultContainer.classList.remove('hidden');
-        
-        const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        this.previewIframe.src = url;
-    }
-
-    /**
-     * Download the generated flipbook HTML file
-     */
-    downloadFlipbook() {
-        if (!this.currentHtml) return;
-        
-        const blob = new Blob([this.currentHtml], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'flipbook.html';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    /**
-     * Open the flipbook in a new tab
-     */
-    openInNewTab() {
-        if (!this.currentHtml) return;
-        
-        const blob = new Blob([this.currentHtml], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-    }
-
-    /**
-     * Reset the application to initial state
-     */
-    reset() {
-        this.uploadArea.classList.remove('hidden');
-        this.progressContainer.classList.add('hidden');
-        this.resultContainer.classList.add('hidden');
-        this.hideError();
-        this.fileInput.value = '';
-        this.currentHtml = null;
-    }
-
-    /**
-     * Show error message
-     * @param {string} message - Error message to display
-     */
-    showError(message) {
-        this.errorMessage.textContent = message;
-        this.errorMessage.classList.remove('hidden');
-    }
-
-    /**
-     * Hide error message
-     */
-    hideError() {
-        this.errorMessage.classList.add('hidden');
-    }
+  /* ----------  UI helpers  ---------- */
+  showProgress(pct, txt){
+    this.progressContainer.classList.remove('hidden');
+    this.uploadArea.classList.add('hidden');
+    this.progressBar.style.width = `${pct}%`;
+    this.progressText.textContent = txt;
+  }
+  showResult(html){
+    this.progressContainer.classList.add('hidden');
+    this.resultContainer.classList.remove('hidden');
+    const blob = new Blob([html], {type:'text/html'});
+    this.previewIframe.src = URL.createObjectURL(blob);
+  }
+  downloadFlipbook(){
+    if (!this.currentHtml) return;
+    const blob = new Blob([this.currentHtml], {type:'text/html'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    Object.assign(a, {href:url, download:'flipbook.html', style:'display:none'});
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+  openInNewTab(){
+    if (!this.currentHtml) return;
+    const blob = new Blob([this.currentHtml], {type:'text/html'});
+    window.open(URL.createObjectURL(blob), '_blank');
+  }
+  reset(){
+    this.uploadArea.classList.remove('hidden');
+    [this.progressContainer, this.resultContainer, this.errorMessage].forEach(el=>el.classList.add('hidden'));
+    this.fileInput.value = '';
+    this.currentHtml = null;
+  }
+  showError(msg){ this.errorMessage.textContent = msg; this.errorMessage.classList.remove('hidden'); }
+  hideError()   { this.errorMessage.classList.add('hidden'); }
 }
 
-// Initialize the application when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    new FlipbookApp();
-});
-
+document.addEventListener('DOMContentLoaded', () => new FlipbookApp());

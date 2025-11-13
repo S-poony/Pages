@@ -1,9 +1,11 @@
 /**
  * Flipbook HTML Generator
  * Creates a standalone HTML file with embedded CSS, JavaScript, and page images
+ * Supports both legacy format (array of data URLs) and responsive format (array of variants)
  *
  * @typedef {Object} GeneratorOptions
  * @property {string} title - Title of the flipbook
+ * @property {boolean} doubleSpread - Whether to enable double spread mode
  */
 
 /**
@@ -11,6 +13,14 @@
  * @typedef {Object} AssetLoader
  * @property {Function} loadCss - Function to load CSS content
  * @property {Function} loadJs - Function to load JS content
+ */
+
+/**
+ * @typedef {Object} RenderVariant
+ * @property {number} scale - The scale factor used
+ * @property {number} width - Image width in pixels
+ * @property {number} height - Image height in pixels
+ * @property {string} dataUrl - The data URL for this variant
  */
 
 /**
@@ -56,9 +66,34 @@ export function wrapFlipbookJs(jsContent) {
 
     return modifiedJs;
 }
+
+/**
+ * Generates srcset string from image variants
+ * @param {Array<RenderVariant>} variants - Array of image variants
+ * @returns {string} srcset attribute value
+ */
+function generateSrcset(variants) {
+    if (!variants || variants.length === 0) return '';
+    
+    return variants
+        .map(v => `${v.dataUrl} ${v.width}w`)
+        .join(', ');
+}
+
+/**
+ * Generates sizes string based on layout mode
+ * @param {boolean} doubleSpread - Whether in double spread mode
+ * @returns {string} sizes attribute value
+ */
+function generateSizes(doubleSpread) {
+    // In double spread mode, each half-page takes roughly half the viewport
+    return doubleSpread ? '50vw' : '100vw';
+}
+
 /**
  * Generates HTML for individual pages
- * @param {string[]} pageImages - Array of base64 image data URLs
+ * @param {Array<string|Array<RenderVariant>>} pageImages - Array of either data URLs or variant arrays
+ * @param {boolean} doubleSpread - Whether in double spread mode
  * @returns {string} HTML string for all pages
  */
 export function generatePagesHtml(pageImages, doubleSpread = false) {
@@ -66,25 +101,45 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
         throw new Error('pageImages must be an array');
     }
 
-    // The doubleSpread flag is only relevant for the container's data attribute
-    // and for the total page count (handled in generateFlipbookHtml).
-    // The page HTML structure remains the same: one page div per image.
-
     const pagesHtml = Array.from({ length: pageImages.length }, (_, i) => {
         const pageNum = i + 1;
-        const imgSrc = pageImages[i]?.replace(/"/g, '&quot;') || '';
-        // Page 1, 3, 5... are 'left'. Page 2, 4, 6... are 'right'.
-        const sideClass = (pageNum % 2 === 1) ? 'left' : 'right'; 
+        const pageData = pageImages[i];
+        
+        // Format detection: string (legacy) vs array (responsive)
+        const isLegacyFormat = typeof pageData === 'string';
+        
+        let imgTag;
+        if (isLegacyFormat) {
+            // Legacy format: simple img with src
+            const imgSrc = pageData.replace(/"/g, '&quot;') || '';
+            imgTag = `<img src="${imgSrc}" alt="Page ${pageNum}" loading="lazy" />`;
+        } else {
+            // Responsive format: img with srcset
+            const variants = pageData;
+            if (!Array.isArray(variants) || variants.length === 0) {
+                throw new Error(`Page ${pageNum} has no image variants`);
+            }
+            
+            // Use the smallest image as src fallback
+            const src = variants[0].dataUrl.replace(/"/g, '&quot;');
+            const srcset = generateSrcset(variants);
+            const sizes = generateSizes(doubleSpread);
+            
+            imgTag = `<img src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page ${pageNum}" loading="lazy" />`;
+        }
+        
+        const sideClass = (pageNum % 2 === 1) ? 'left' : 'right';
         return `            <div class="page ${sideClass}" id="page-${pageNum}">
-            <img src="${imgSrc}" alt="Page ${pageNum}" loading="lazy" />
+            ${imgTag}
         </div>`;
     }).join('');
     
     return pagesHtml;
 }
+
 /**
  * Generates the complete HTML structure for the flipbook
- * @param {string[]} pageImages - Array of base64 image data URLs
+ * @param {Array<string|Array<RenderVariant>>} pageImages - Array of either data URLs or variant arrays
  * @param {GeneratorOptions} options - Generator options
  * @param {AssetLoader} assetLoader - Asset loader (optional, defaults to file loader)
  * @returns {Promise<string>} Complete HTML document
@@ -98,18 +153,17 @@ export async function generateFlipbookHtml(pageImages, options = {}, assetLoader
         throw new Error('pageImages must contain at least one image');
     }
 
-    const pageCount = pageImages.length;
-
-    const { title = 'Flipbook' } = options;
+    const { title = 'Flipbook', doubleSpread = false } = options;
 
     const [css, js] = await Promise.all([
         assetLoader.loadCss().catch(() => ''),
         assetLoader.loadJs().catch(() => '')
     ]);
 
-    const doubleSpreadFlag = !!options.doubleSpread;
-    const pagesHtml = generatePagesHtml(pageImages, doubleSpreadFlag);
+    const pagesHtml = generatePagesHtml(pageImages, doubleSpread);
     const actualPageCount = pageImages.length;
+    
+    // Remove duplicate flipbook-wrapper that was in original code
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -118,36 +172,24 @@ export async function generateFlipbookHtml(pageImages, options = {}, assetLoader
     <title>${title}</title>
     <style>${css}</style>
 </head>
-    <body>
+<body>
     <div id="flipbook-wrapper">
-        <div id="book-container" data-page-count="${actualPageCount}" data-double-spread="${doubleSpreadFlag}">
+        <div id="book-container" data-page-count="${actualPageCount}" data-double-spread="${doubleSpread}">
             ${pagesHtml}
         </div>
-   <div id="controls-panel">
+        <div id="controls-panel">
             <label for="page-input">Page:</label>
             <input type="number" id="page-input" min="1" max="${actualPageCount}" value="1" style="width: 50px; text-align: center;">
-
-            <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1" title="Zoom">
-            <div id="zoom-level">100%</div>
-        </div>
-    </div>
-    <div id="flipbook-wrapper">
-        <div id="book-container" data-page-count="${actualPageCount}" data-double-spread="${doubleSpreadFlag}">
-            ${pagesHtml}
-        </div>
-   <!-- Zoom & Pan controls -->
-        <div id="controls-panel">
+            
             <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1" title="Zoom">
             <div id="zoom-level">100%</div>
         </div>
     </div>
     <script>
         window.__PAGE_COUNT__ = ${actualPageCount};
-        window.__DOUBLE_SPREAD__ = ${doubleSpreadFlag};
+        window.__DOUBLE_SPREAD__ = ${doubleSpread};
     </script>
     <script>${js}</script>
 </body>
 </html>`;
 }
-
-
