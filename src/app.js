@@ -67,7 +67,7 @@ class FlipbookApp {
       const doubleSpread = !!this.doubleSpreadToggle?.checked;
 
       const opts = this.enableResponsive
-        ? { scales:[1,2,4], format:'image/jpeg', quality:0.92, doubleSpread }
+        ? { scales:[1.5,3,5], format:'image/jpeg', quality:0.92, doubleSpread }
         : { scale:2,        format:'image/jpeg', quality:0.92, doubleSpread };
 
       const {pageCount, renderPage, renderPageVariants} = await processPdf(file, opts);
