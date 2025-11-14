@@ -177,13 +177,23 @@ export async function generateFlipbookHtml(pageImages, options = {},
         assetLoader.loadJqueryJs().catch(() => '')
     ]);
 
-    // Add blank cover + content pages
-    const pagesHtml = [
-        // Blank cover (single page, right side)
-        '<div><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" alt="Cover" loading="lazy" /></div>',
-        // Content pages (handled by existing logic)
+    // Construct the array of pages conditionally
+    const pagesArray = [];
+    
+    // Add blank cover (single page, right side) only if doubleSpread is true
+    if (doubleSpread) {
+        pagesArray.push(
+            '<div><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" alt="Cover" loading="lazy" /></div>'
+        );
+    }
+
+    // Add content pages
+    pagesArray.push(
         generatePagesHtml(pageImages, doubleSpread)
-    ].join('');
+    );
+    
+    // Join all page HTML
+    const pagesHtml = pagesArray.join('');
     
     const actualPageCount = pageImages.length;
     
@@ -203,6 +213,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
         <div id="controls-panel">
             <input type="number" id="page-input" min="2" max="${actualPageCount}" value="2">
             <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1">
+            <div id="zoom-level">100%</div>
         </div>
     </div>
     <script>
