@@ -6,6 +6,7 @@
  * @typedef {Object} GeneratorOptions
  * @property {string} title - Title of the flipbook
  * @property {boolean} doubleSpread - Whether to enable double spread mode
+ * @property {boolean} addBlankPage - Whether to add a blank page at start (only applies when doubleSpread is true)
  */
 
 /**
@@ -168,7 +169,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
         throw new Error('pageImages must contain at least one image');
     }
 
-    const { title = 'Flipbook', doubleSpread = false } = options;
+    const { title = 'Flipbook', doubleSpread = false, addBlankPage = false } = options;
     const [baseCss, turnCss, js, turnJs, jqueryJs] = await Promise.all([
         assetLoader.loadCss().catch(() => ''),
         assetLoader.loadTurnCss().catch(() => ''),
@@ -180,8 +181,8 @@ export async function generateFlipbookHtml(pageImages, options = {},
     // Construct the array of pages conditionally
     const pagesArray = [];
     
-    // Add blank cover (single page, right side) only if doubleSpread is true
-    if (doubleSpread) {
+    // Add blank cover (single page, right side) only if both doubleSpread AND addBlankPage are true
+    if (doubleSpread && addBlankPage) {
         pagesArray.push(
             '<div><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" alt="Cover" loading="lazy" /></div>'
         );

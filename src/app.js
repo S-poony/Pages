@@ -24,6 +24,8 @@ class FlipbookApp {
     this.uploadArea        = document.getElementById('upload-area');
     this.fileInput         = document.getElementById('file-input');
     this.doubleSpreadToggle= document.getElementById('double-spread-toggle');
+    this.blankPageToggle   = document.getElementById('blank-page-toggle');
+    this.blankPageOption   = document.getElementById('blank-page-option');
     this.progressContainer = document.getElementById('progress-container');
     this.progressBar       = document.getElementById('progress-bar');
     this.progressText      = document.getElementById('progress-text');
@@ -41,6 +43,7 @@ class FlipbookApp {
     ['dragover','dragleave','drop'].forEach(evt =>
       this.uploadArea.addEventListener(evt, e => this[`handle${evt.charAt(0).toUpperCase()+evt.slice(1)}`](e))
     );
+    this.doubleSpreadToggle.addEventListener('change', () => this.handleDoubleSpreadToggle());
     this.downloadBtn.addEventListener('click', () => this.downloadFlipbook());
     this.openTabBtn .addEventListener('click', () => this.openInNewTab());
     this.resetBtn   .addEventListener('click', () => this.reset());
@@ -61,6 +64,15 @@ class FlipbookApp {
     else this.showError('Please select a valid PDF file.');
   }
 
+  handleDoubleSpreadToggle() {
+    const isChecked = this.doubleSpreadToggle.checked;
+    if (isChecked) {
+      this.blankPageOption.classList.add('visible');
+    } else {
+      this.blankPageOption.classList.remove('visible');
+    }
+  }
+
   /* ----------  PDF processing  ---------- */
   async processFile(file){
     this.hideError();
@@ -68,6 +80,7 @@ class FlipbookApp {
 
     try{
       const doubleSpread = !!this.doubleSpreadToggle?.checked;
+      const addBlankPage = doubleSpread && !!this.blankPageToggle?.checked;
 
       const opts = this.enableResponsive
         ? { scales:[1.5,3,5], format:'image/jpeg', quality:0.92, doubleSpread }
@@ -106,13 +119,14 @@ class FlipbookApp {
       this.showProgress(95,'Generating flipbook…');
       const html = await generateFlipbookHtml(pageImages, {
         title: file.name.replace(/\.pdf$/i,''),
-        doubleSpread
+        doubleSpread,
+        addBlankPage // NEW: pass this option to generator
       }, {
         loadCss: async() => flipbookCss,
         loadTurnCss: async() => turnCss,
         loadJs: async() => wrapFlipbookJs(flipbookJs),
-        loadTurnJs: async() => turnJs,     // NEW
-        loadJqueryJs: async() => jqueryJs  // NEW
+        loadTurnJs: async() => turnJs,
+        loadJqueryJs: async() => jqueryJs
       });
 
       this.currentHtml = html;
@@ -158,6 +172,7 @@ class FlipbookApp {
     [this.progressContainer, this.resultContainer, this.errorMessage].forEach(el=>el.classList.add('hidden'));
     this.fileInput.value = '';
     this.currentHtml = null;
+    this.blankPageOption.classList.remove('visible'); // Hide extra option on reset
   }
   showError(msg){ this.errorMessage.textContent = msg; this.errorMessage.classList.remove('hidden'); }
   hideError()   { this.errorMessage.classList.add('hidden'); }

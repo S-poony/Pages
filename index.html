@@ -28,12 +28,19 @@
                 <input type="file" id="file-input" accept=".pdf" style="display: none;">
             </div>
 
-            <!-- Checkbox moved outside upload area -->
+            <!-- Options container with both toggles -->
             <div class="options-container">
                 <label class="toggle-switch">
                     <input type="checkbox" id="double-spread-toggle">
                     <span class="slider"></span>
                     <span class="label-text">Double-spread (single image spans two pages)</span>
+                </label>
+                
+                <!-- New checkbox - hidden by default, appears when double-spread is checked -->
+                <label class="toggle-switch extra-option" id="blank-page-option">
+                    <input type="checkbox" id="blank-page-toggle" checked>
+                    <span class="slider"></span>
+                    <span class="label-text">Add blank page at start</span>
                 </label>
             </div>
 
