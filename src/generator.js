@@ -136,17 +136,26 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
             }
             
             const src = variants[0].dataUrl.replace(/"/g, '&quot;');
-        const srcset = generateSrcset(variants);
-        const sizes = generateSizes(doubleSpread);
-        const objectPosition = doubleSpread ? (pageNum % 2 === 0 ? 'left' : 'right') : 'center';
+            const srcset = generateSrcset(variants);
+            const sizes = generateSizes(doubleSpread);
+            const objectPosition = doubleSpread ? (pageNum % 2 === 0 ? 'left' : 'right') : 'center';
             
-            imgTag = `<img src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page 
-            ${pageNum}" loading="lazy" style="object-position: ${objectPosition} center;" />`;
+            imgTag = `<img src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page ${pageNum}" loading="lazy" style="object-position: ${objectPosition} center;" />`;
         }
         
-        
-        // turn.js requires direct child divs (no classes needed)
-        return `            <div>${imgTag}</div>`;
+        return `
+<!-- =================================================================== -->
+<!-- PAGE ${pageNum} - ENRICHMENT ZONE -->
+<!-- Keep the <img> tag. Add interactive elements INSIDE enrichment-layer -->
+<!-- =================================================================== -->
+<div class="page-container">
+  ${imgTag}
+  <div class="enrichment-layer">
+    <!-- PASTE YOUR CODE HERE -->
+  </div>
+</div>
+<!-- PAGE ${pageNum} END -->
+<!-- =================================================================== -->`;
     }).join('');
     
     return pagesHtml;
@@ -204,9 +213,41 @@ export async function generateFlipbookHtml(pageImages, options = {},
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
-    <style>${turnCss}${baseCss}</style>
+        <style>
+        /* --- ENRICHMENT UTILITIES --- */
+        .page-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        }
+
+        .page-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        }
+
+        .enrichment-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: auto;
+        z-index: 10;
+        }
+        /* --- END UTILITIES --- */
+
+        ${turnCss}${baseCss}
+        </style>
 </head>
 <body>
+
+<!-- 
+ENRICHMENT GUIDE:
+1. Find the PAGE number you want to edit (search for "PAGE 5 - ENRICHMENT ZONE")
+2. Add elements inside <div class="enrichment-layer">
+3. Use absolute positioning: style="top: 100px; left: 150px;"
+4. See CSS classes defined in <style> for building blocks
+-->
+
     <div id="flipbook-wrapper">
         <div id="flipbook-container">
             <div id="flipbook" data-double-spread="${doubleSpread}">${pagesHtml}</div>
