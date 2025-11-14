@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Googly Eyes Follow Mouse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Base page styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background-color: #262626; /* Dark background */
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+        }
+
+        /* --- GOOGLY EYE STYLES --- */
+        .eye-base {
+            width: 180px; 
+            height: 180px;
+            background-color: white;
+            border: 8px solid #000; 
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+            position: relative; 
+        }
+        .pupil-base {
+            width: 60px; 
+            height: 60px;
+            background-color: #000; 
+            border-radius: 50%;
+            position: absolute;
+            /* Smooth follow effect */
+            transition: transform 0.05s ease-out;
+        }
+        /* Full-screen wrapper for dynamic positioning */
+        #eyes-container-wrapper {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="eyes-container-wrapper" class="p-8">
+        <div id="eyes-container" class="flex space-x-16">
+            <div id="eye-left" class="eye-base">
+                <div id="pupil-left" class="pupil-base"></div>
+            </div>
+            <div id="eye-right" class="eye-base">
+                <div id="pupil-right" class="pupil-base"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Isolating scope with an IIFE
+        (function() {
+            // --- CONFIGURATION ---
+            const CONFIG = {
+                scaleFactor: .5, 
+                showLeftEye: true,
+                showRightEye: true,
+                
+                // Horizontal positioning: 'justify-center', 'justify-start', 'justify-end'
+                containerClass: 'justify-center', 
+
+                // Precise Offset Control (in pixels)
+                offsetX: 0, 
+                offsetY: 400,
+            };
+            // --- END CONFIGURATION ---
+
+            let pupilLeft, pupilRight, eyeLeft, eyeRight, eyesContainerWrapper, eyesContainer;
+            // Max pupil movement distance (in pixels)
+            const PUPIL_MOVE_LIMIT = 50; 
+
+            function applyConfig() {
+                eyesContainerWrapper = document.getElementById('eyes-container-wrapper');
+                eyesContainer = document.getElementById('eyes-container');
+                eyeLeft = document.getElementById('eye-left');
+                eyeRight = document.getElementById('eye-right');
+
+                if (eyesContainerWrapper && eyesContainer) {
+                    // 1. Apply Positioning Wrapper
+                    eyesContainerWrapper.className = 'p-8 ' + CONFIG.containerClass + ' flex w-full h-full items-center';
+
+                    // 2. Apply Scale and Precise Offset
+                    let transform = '';
+                    if (CONFIG.scaleFactor !== 1.0) {
+                        transform += `scale(${CONFIG.scaleFactor}) `;
+                    }
+                    if (CONFIG.offsetX !== 0 || CONFIG.offsetY !== 0) {
+                        transform += `translate(${CONFIG.offsetX}px, ${CONFIG.offsetY}px)`;
+                    }
+
+                    eyesContainer.style.transform = transform.trim();
+                    eyesContainer.style.transformOrigin = 'center';
+
+                    // 3. Apply Visibility
+                    eyeLeft.classList.toggle('hidden', !CONFIG.showLeftEye);
+                    eyeRight.classList.toggle('hidden', !CONFIG.showRightEye);
+                }
+            }
+
+            function setupGooglyEyes() {
+                eyeLeft = document.getElementById('eye-left');
+                pupilLeft = document.getElementById('pupil-left');
+                eyeRight = document.getElementById('eye-right');
+                pupilRight = document.getElementById('pupil-right');
+
+                applyConfig();
+
+                if (eyeLeft && pupilLeft && eyeRight && pupilRight) {
+                    window.addEventListener('mousemove', onMouseMoveEyes, false);
+                    window.addEventListener('resize', onMouseMoveEyes, false);
+                } else {
+                    console.warn("Googly Eyes: Required elements not found. Feature disabled.");
+                }
+            }
+
+            function onMouseMoveEyes(event) {
+                const mouseX = event ? event.clientX : 0;
+                const mouseY = event ? event.clientY : 0;
+
+                if (CONFIG.showLeftEye) movePupil(pupilLeft, eyeLeft, mouseX, mouseY);
+                if (CONFIG.showRightEye) movePupil(pupilRight, eyeRight, mouseX, mouseY);
+            }
+
+            function movePupil(pupilElement, eyeElement, mouseX, mouseY) {
+                if (!eyeElement || !pupilElement) {
+                    return; 
+                }
+                
+                const eyeRect = eyeElement.getBoundingClientRect();
+                
+                // Calculate eye center coordinates
+                const eyeCenter = {
+                    x: eyeRect.left + eyeRect.width / 2,
+                    y: eyeRect.top + eyeRect.height / 2
+                };
+
+                // Distance vector from eye center to mouse
+                const dx = mouseX - eyeCenter.x;
+                const dy = mouseY - eyeCenter.y;
+                
+                // Distance and angle
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx);
+                
+                // Clamp movement distance
+                const actualMoveDist = Math.min(PUPIL_MOVE_LIMIT, distance);
+
+                // New pupil position
+                const pupilX = actualMoveDist * Math.cos(angle);
+                const pupilY = actualMoveDist * Math.sin(angle);
+
+                // Apply position shift
+                pupilElement.style.transform = `translate(${pupilX}px, ${pupilY}px)`;
+            }
+
+            document.addEventListener('DOMContentLoaded', setupGooglyEyes);
+        })();
+    </script>
+
+</body>
+</html>
