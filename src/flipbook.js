@@ -5,13 +5,15 @@
 
 // Global state
 let zoom = 1;
-window.currentZoom = 1; // Expose globally for responsive images
+window.currentZoom = 1;
 let isPanning = false;
 let startX = 0, startY = 0;
 let panX = 0, panY = 0;
 const ZOOM_RESET_TOLERANCE = 0.01;
 let BOOK_WIDTH_AT_1X = 0;
 let BOOK_HEIGHT_AT_1X = 0;
+let isPageJumping = false;
+let $flipbook = null; // Local reference to avoid timing issues
 
 /**
  * Update img sizes attribute based on zoom level for currently visible pages
@@ -22,7 +24,7 @@ function updateImageSizes() {
     
     document.querySelectorAll('#flipbook .page-on img').forEach(img => {
         if (img && img.hasAttribute('srcset')) {
-            const baseSize = isDoubleSpread ? 50 : 100; // vw base
+            const baseSize = isDoubleSpread ? 50 : 100;
             const zoomedSize = Math.round(baseSize * zoomLevel);
             img.sizes = `${zoomedSize}vw`;
         }
@@ -30,7 +32,7 @@ function updateImageSizes() {
 }
 
 /**
- * Apply zoom and pan transforms to the container (not turn.js directly)
+ * Apply zoom and pan transforms to the container
  */
 function updateTransform() {
     const wrapper = document.getElementById('flipbook-wrapper');
@@ -43,7 +45,7 @@ function updateTransform() {
         BOOK_HEIGHT_AT_1X = wrapper.clientHeight * 0.9;
     }
     
-    // Constrain pan when zoomed
+    // Constrain pan
     if (zoom > 1) {
         const maxPanX = Math.max(0, (BOOK_WIDTH_AT_1X * zoom - wrapper.clientWidth) / 2);
         const maxPanY = Math.max(0, (BOOK_HEIGHT_AT_1X * zoom - wrapper.clientHeight) / 2);
@@ -54,8 +56,23 @@ function updateTransform() {
         panY = 0;
     }
     
-    // Apply scale + translate to container
+    // Apply transform
     container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+    
+    // Update mouse state if flipbook is ready
+    if ($flipbook && !isPageJumping) {
+        try {
+            if (zoom > 1) {
+                $flipbook.turn('disable', true);
+                wrapper.style.cursor = 'grab';
+            } else {
+                $flipbook.turn('disable', false);
+                wrapper.style.cursor = 'default';
+            }
+        } catch (e) {
+            // Silently ignore if turn.js isn't fully ready
+        }
+    }
     
     window.currentZoom = zoom;
     updateImageSizes();
@@ -76,14 +93,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    const $flipbook = $('#flipbook');
+    // Store local reference FIRST
+    $flipbook = $('#flipbook');
     const wrapper = document.getElementById('flipbook-wrapper');
     
-    // Calculate dimensions (90% of viewport)
+    // Calculate dimensions
     BOOK_WIDTH_AT_1X = wrapper.clientWidth * 0.9;
     BOOK_HEIGHT_AT_1X = wrapper.clientHeight * 0.9;
     
-    // Initialize turn.js at 1x size
+    // Initialize turn.js
     $flipbook.turn({
         width: BOOK_WIDTH_AT_1X,
         height: BOOK_HEIGHT_AT_1X,
@@ -103,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // Store globally for debugging
     window.flipbook = $flipbook;
     
     // Cache control elements
@@ -110,21 +129,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomText = document.getElementById('zoom-level');
     const pageInput = document.getElementById('page-input');
     
-    // Zoom slider handler
+    // Zoom slider
     zoomSlider?.addEventListener('input', e => {
         let newZoom = parseFloat(e.target.value);
         if (Math.abs(newZoom - 1) < ZOOM_RESET_TOLERANCE) newZoom = 1;
-        
         zoom = newZoom;
-        
-        // Update zoom percentage display
-        if (zoomText) {
-            zoomText.textContent = `${Math.round(zoom * 100)}%`;
-        }
-        
-        // Apply transform
+        if (zoomText) zoomText.textContent = `${Math.round(zoom * 100)}%`;
         updateTransform();
     });
+    
+    // Page input handler (PREVENTS ANIMATIONS)
+    if (pageInput) {
+        let pageJumpTimeout = null;
+        
+        pageInput.addEventListener('change', e => {
+            const targetPage = parseInt(e.target.value);
+            if (!isNaN(targetPage) && targetPage >= 2 && targetPage <= pageCount) {
+                if (pageJumpTimeout) clearTimeout(pageJumpTimeout);
+                
+                isPageJumping = true;
+                $flipbook.turn('stop');
+                $flipbook.turn('disable', true);
+                
+                // Use 0ms delay to avoid event loop issues
+                $flipbook.turn('page', targetPage);
+                
+                // Re-enable after DOM stabilizes
+                setTimeout(() => {
+                    isPageJumping = false;
+                    updateTransform();
+                }, 200);
+            }
+        });
+        
+        pageInput.value = 2;
+    }
     
     // Keyboard navigation
     document.addEventListener('keydown', e => {
@@ -134,17 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
             $flipbook.turn('previous');
         }
     });
-    
-    // Page input handler
-    if (pageInput) {
-        pageInput.addEventListener('change', e => {
-            const targetPage = parseInt(e.target.value);
-            if (!isNaN(targetPage) && targetPage >= 2 && targetPage <= pageCount) {
-                $flipbook.turn('page', targetPage);
-            }
-        });
-        pageInput.value = 2;
-    }
     
     // Mouse panning
     wrapper.addEventListener('mousedown', e => {
