@@ -16,16 +16,15 @@ body {
     cursor: default;
 }
 
-/* NEW: Container for zoom/pan transforms */
 #flipbook-container {
     width: 90vw;
     height: 90vh;
     position: relative;
     transition: transform 0.15s ease-out;
-    transform-origin: center center; /* Scale from center */
+    transform-origin: center center;
 }
 
-/* REMOVE width/height from #flipbook - it inherits from container */
+
 #flipbook {
     position: relative;
     width: 100%;
@@ -45,7 +44,15 @@ body {
 #controls-panel {
     position: fixed;
     bottom: 20px;
-    right: 20px;
+
+    left: 0;
+    right: 0;
+    max-width: 100px;
+    margin: 0 auto;
+
+    opacity: 0.08; 
+    transition: opacity 0.3s ease-in-out; 
+ 
     z-index: 1000;
     background: rgba(255, 255, 255, 0.9);
     padding: 8px 12px;
@@ -54,6 +61,10 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 5px;
+}
+
+#controls-panel:hover {
+    opacity: 1;
 }
 
 #zoom-slider {
