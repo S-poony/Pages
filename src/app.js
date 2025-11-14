@@ -35,6 +35,15 @@ class FlipbookApp {
     this.openTabBtn        = document.getElementById('open-tab-btn');
     this.resetBtn          = document.getElementById('reset-btn');
     this.errorMessage      = document.getElementById('error-message');
+    this.optionsContainer  = document.querySelector('.options-container');
+    
+    // Restore and initialize UI state
+    const savedDoubleSpread = localStorage.getItem('doubleSpread');
+    if (savedDoubleSpread !== null) {
+      this.doubleSpreadToggle.checked = savedDoubleSpread === 'true';
+    }
+    // Initialize visibility based on current state
+    this.handleDoubleSpreadToggle();
   }
 
   setupEventListeners() {
@@ -66,11 +75,10 @@ class FlipbookApp {
 
   handleDoubleSpreadToggle() {
     const isChecked = this.doubleSpreadToggle.checked;
-    if (isChecked) {
-      this.blankPageOption.classList.add('visible');
-    } else {
-      this.blankPageOption.classList.remove('visible');
-    }
+    localStorage.setItem('doubleSpread', isChecked);
+    
+    // Single source of truth - visibility always matches checkbox state
+    this.blankPageOption.classList.toggle('visible', isChecked);
   }
 
   /* ----------  PDF processing  ---------- */
@@ -144,12 +152,14 @@ class FlipbookApp {
   showProgress(pct, txt){
     this.progressContainer.classList.remove('hidden');
     this.uploadArea.classList.add('hidden');
+    this.optionsContainer.classList.add('hidden'); // Hide options during loading
     this.progressBar.style.width = `${pct}%`;
     this.progressText.textContent = txt;
   }
   showResult(html){
     this.progressContainer.classList.add('hidden');
     this.resultContainer.classList.remove('hidden');
+    this.optionsContainer.classList.add('hidden'); // Hide options
     const blob = new Blob([html], {type:'text/html'});
     this.previewIframe.src = URL.createObjectURL(blob);
   }
@@ -169,10 +179,11 @@ class FlipbookApp {
   }
   reset(){
     this.uploadArea.classList.remove('hidden');
+    this.optionsContainer.classList.remove('hidden'); // Show options again
     [this.progressContainer, this.resultContainer, this.errorMessage].forEach(el=>el.classList.add('hidden'));
     this.fileInput.value = '';
     this.currentHtml = null;
-    this.blankPageOption.classList.remove('visible'); // Hide extra option on reset
+    this.blankPageOption.classList.remove('visible');
   }
   showError(msg){ this.errorMessage.textContent = msg; this.errorMessage.classList.remove('hidden'); }
   hideError()   { this.errorMessage.classList.add('hidden'); }

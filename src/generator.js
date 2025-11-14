@@ -184,7 +184,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
     // Add blank cover (single page, right side) only if both doubleSpread AND addBlankPage are true
     if (doubleSpread && addBlankPage) {
         pagesArray.push(
-            '<div><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" alt="Cover" loading="lazy" /></div>'
+            '<div style="background-color: white;"></div>'
         );
     }
 
