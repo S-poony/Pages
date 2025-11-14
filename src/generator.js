@@ -203,7 +203,6 @@ export async function generateFlipbookHtml(pageImages, options = {},
         <div id="controls-panel">
             <input type="number" id="page-input" min="2" max="${actualPageCount}" value="2">
             <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1">
-            <div id="zoom-level">100%</div>
         </div>
     </div>
     <script>
