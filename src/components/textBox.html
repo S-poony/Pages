@@ -1,8 +1,5 @@
-<!-- ============= TEXT BOX ENRICHMENT ============= -->
-<!-- Copy and paste this block - works multiple times per page -->
-
-  <div class="textbox-instance" data-marker="TEXTBOX_MULTIPASTE" style="position: absolute; z-index: 100; transition: all 0.3s ease; font-family: Inter, sans-serif;">
-    <div class="textbox-content p-4 custom-scrollbar"></div>
+<div class="textbox-instance" data-marker="TEXTBOX_MULTIPASTE" style="position: absolute; z-index: 100; transition: all 0.3s ease; font-family: Inter, sans-serif;">
+    <div class="textbox-content custom-scrollbar"></div>
   </div>
 
   <script>
@@ -63,7 +60,8 @@ You can add as much content as you like here. If the content exceeds the fixed h
       container.dataset.initialized = 'true';
 
       // Clear any existing content and rebuild
-      container.innerHTML = '<div class="textbox-content p-4 custom-scrollbar"></div>';
+      //Control padding manually below
+      container.innerHTML = '<div class="textbox-content custom-scrollbar"></div>';
       const contentArea = container.querySelector('.textbox-content');
 
       // Apply styling
@@ -74,28 +72,33 @@ You can add as much content as you like here. If the content exceeds the fixed h
       container.style.border = `${CONFIG.BORDER_WIDTH} solid ${CONFIG.BORDER_COLOR}`;
       container.style.boxShadow = CONFIG.BOX_SHADOW;
       container.style.borderRadius = CONFIG.BORDER_RADIUS;
+      container.style.boxSizing = 'border-box'; // Ensures padding doesn't break width calculations
 
       // Add title if enabled
       if (CONFIG.SHOW_TITLE) {
           const titleHeader = document.createElement('div');
           titleHeader.className = 'textbox-title';
-          titleHeader.style.padding = '1rem';
+          // Padding for Title: Top/Bottom 1rem, Left/Right 1.5rem
+          titleHeader.style.padding = '1rem 1.5rem'; 
           titleHeader.style.borderBottom = '1px solid #e5e7eb';
           titleHeader.style.backgroundColor = '#f9fafb';
           titleHeader.style.borderTopLeftRadius = CONFIG.BORDER_RADIUS;
-          titleHeader.innerHTML = `<h2 style="font-size: 1.125rem; font-weight: 600; color: #111827;">${CONFIG.BOX_TITLE}</h2>`;
+          titleHeader.style.borderTopRightRadius = CONFIG.BORDER_RADIUS;
+          titleHeader.innerHTML = `<h2 style="font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0;">${CONFIG.BOX_TITLE}</h2>`;
           container.insertBefore(titleHeader, contentArea);
       }
 
       // Apply height and scrolling
+      // Explicitly set padding: Top Right Bottom Left
       if (CONFIG.FIXED_HEIGHT_ENABLED) {
           contentArea.style.height = CONFIG.BOX_HEIGHT;
           contentArea.style.overflowY = 'auto';
-          contentArea.style.paddingRight = '1.25rem';
+          // Padding: Top: 1rem, Right: 1rem (scrollbar space), Bottom: 1rem, Left: 1.5rem
+          contentArea.style.padding = '1rem 1rem 1rem 1.5rem'; 
       } else {
           contentArea.style.height = 'auto';
           contentArea.style.overflowY = 'visible';
-          contentArea.style.paddingRight = '1rem';
+          contentArea.style.padding = '1rem 1rem 1rem 1.5rem';
       }
 
       // Markdown parser
@@ -124,7 +127,7 @@ You can add as much content as you like here. If the content exceeds the fixed h
           html = html.split('\n\n').map(paragraph => {
               if (!paragraph.trim()) return '';
               paragraph = paragraph.trim().replace(/\n/g, ' '); 
-              return `<p style="margin-bottom: 0.75rem; font-size: 0.875rem; line-height: 1.5; color: #374151;">${paragraph}</p>`;
+              return `<p style="margin-bottom: 0.75rem; font-size: 0.875rem; line-height: 1.5; color: #374151; margin-top: 0;">${paragraph}</p>`;
           }).join('');
 
           return html;
