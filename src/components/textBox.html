@@ -1,134 +1,155 @@
-<div class="text-box-component shadow-xl bg-white border border-gray-200 rounded-t-lg" style="position: absolute; z-index: 100; transition: all 0.3s ease;">
-    <div class="text-box-content p-4 custom-scrollbar"></div>
-</div>
+<!-- ============= TEXT BOX ENRICHMENT ============= -->
+<!-- Copy and paste this block - works multiple times per page -->
 
-<script>
-(function() {
-    // ========== CONFIGURATION ==========
-    const CONFIG = {
-        OFFSET_TOP: '120px',
-        OFFSET_LEFT: '100px',
-        BOX_WIDTH: '350px',
-        FIXED_HEIGHT_ENABLED: true,
-        BOX_HEIGHT: '300px',
-        SHOW_TITLE: true,
-        BOX_TITLE: 'Markdown Entry Example',
-        TEXT_CONTENT_MARKDOWN: `
-This component accepts **Markdown**! This allows for much easier text entry compared to raw HTML.
+  <div class="textbox-instance" data-marker="TEXTBOX_MULTIPASTE" style="position: absolute; z-index: 100; transition: all 0.3s ease; font-family: Inter, sans-serif;">
+    <div class="textbox-content p-4 custom-scrollbar"></div>
+  </div>
 
-The width is fixed at <span class="font-bold text-indigo-600">350px</span>, forcing the text to wrap automatically.
+  <script>
+  (function() {
+      // ============= CONFIGURATION ZONE =============
+      const CONFIG = {
+          OFFSET_TOP: '120px',
+          OFFSET_LEFT: '100px',
+          BOX_WIDTH: '350px',
+          BACKGROUND_COLOR: 'white',
+          BORDER_COLOR: '#e5e7eb',
+          BORDER_WIDTH: '1px',
+          BOX_SHADOW: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)',
+          BORDER_RADIUS: '0.5rem',
+          SHOW_TITLE: true,
+          BOX_TITLE: 'Markdown Entry Example',
+          FIXED_HEIGHT_ENABLED: true,
+          BOX_HEIGHT: '300px',
+          TEXT_CONTENT_MARKDOWN: `
+          This component accepts **Markdown**! This allows for much easier text entry compared to raw HTML.
 
-Since **FIXED_HEIGHT_ENABLED** is set to <span class="font-bold text-red-600">true</span>, the box maintains a fixed height of <span class="font-bold text-red-600">300px</span>. Any content that overflows this limit can be viewed by scrolling.
+The width is fixed at <span style="font-weight: bold; color: #4f46e5;">350px</span>, forcing the text to wrap automatically.
+
+Since **FIXED_HEIGHT_ENABLED** is set to <span style="font-weight: bold; color: #dc2626;">true</span>, the box maintains a fixed height of <span style="font-weight: bold; color: #dc2626;">300px</span>. Any content that overflows this limit can be viewed by scrolling.
 
 This includes standard [external links](https://s-poony.github.io/Pages/) which open in a new tab. Note the use of backticks for 'code'.
 
 For turn.js, we use the custom link syntax. Click this to simulate jumping to [Page 5]({page:5}).
 
-**Scrollable Content Check:** This paragraph is intentionally long to demonstrate the scrolling functionality when fixed height is enabled. If you switch \`FIXED_HEIGHT_ENABLED\` to <span class="font-bold text-green-600">false</span> and reload the preview, the box will dynamically grow to fit all this text and the scrollbar will disappear. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-`,
-    };
+You can add as much content as you like here. If the content exceeds the fixed height, a scrollbar will appear on the right side of the box, allowing users to scroll through the content without affecting the overall layout of the page.
+`//<- be careful not to remove the ending and starting backtick
+      };
+      // ============= END CONFIGURATION =============
 
-    // ========== MARKDOWN PARSER ==========
-    function markdownToHtml(markdown) {
-        if (!markdown) return '';
+      // CSS (injected once per page)
+      if (!document.querySelector('#textbox-scrollbars-css')) {
+          const style = document.createElement('style');
+          style.id = 'textbox-scrollbars-css';
+          style.textContent = `
+            .textbox-instance .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+            .textbox-instance .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+            .textbox-instance .custom-scrollbar::-webkit-scrollbar-track { background-color: #f1f5f9; }
+          `;
+          document.head.appendChild(style);
+      }
 
-        let html = markdown.trim();
+      // Find this instance's container by marker
+      const container = document.querySelector('.textbox-instance[data-marker="TEXTBOX_MULTIPASTE"]:last-of-type');
+      if (!container) {
+          console.error('TextBox: Container not found. Add data-marker="TEXTBOX_MULTIPASTE" to the div.');
+          return;
+      }
 
-        // Custom Page Links: [text]({page:N})
-        html = html.replace(/\[([^\]]+)\]\(\{page:(\d+)\}\)/g, (match, text, page) => {
-            return `<a href="#" data-page="${page}" class="page-link text-purple-600 hover:text-purple-800 underline font-semibold transition duration-150">${text}</a>`;
-        });
+      // Prevent duplicate initialization
+      if (container.dataset.initialized === 'true') {
+          return;
+      }
+      container.dataset.initialized = 'true';
 
-        // Standard Links: [text](url)
-        html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, (match, text, url) => {
-            return `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800 underline transition duration-150">${text}</a>`;
-        });
+      // Clear any existing content and rebuild
+      container.innerHTML = '<div class="textbox-content p-4 custom-scrollbar"></div>';
+      const contentArea = container.querySelector('.textbox-content');
 
-        // Bold: **text** or __text__
-        html = html.replace(/(\*\*|__)(.*?)\1/g, '<strong>$2</strong>');
+      // Apply styling
+      container.style.top = CONFIG.OFFSET_TOP;
+      container.style.left = CONFIG.OFFSET_LEFT;
+      container.style.width = CONFIG.BOX_WIDTH;
+      container.style.backgroundColor = CONFIG.BACKGROUND_COLOR;
+      container.style.border = `${CONFIG.BORDER_WIDTH} solid ${CONFIG.BORDER_COLOR}`;
+      container.style.boxShadow = CONFIG.BOX_SHADOW;
+      container.style.borderRadius = CONFIG.BORDER_RADIUS;
 
-        // Code Spans: `code`
-        html = html.replace(/`([^`]+)`/g, '<code class="bg-gray-100 p-1 rounded">$1</code>');
-        
-        // Paragraphs
-        html = html.split('\n\n').map(paragraph => {
-            if (!paragraph.trim()) return '';
-            paragraph = paragraph.trim().replace(/\n/g, ' '); 
-            return `<p class="mb-3 text-sm leading-relaxed text-gray-700">${paragraph}</p>`;
-        }).join('');
+      // Add title if enabled
+      if (CONFIG.SHOW_TITLE) {
+          const titleHeader = document.createElement('div');
+          titleHeader.className = 'textbox-title';
+          titleHeader.style.padding = '1rem';
+          titleHeader.style.borderBottom = '1px solid #e5e7eb';
+          titleHeader.style.backgroundColor = '#f9fafb';
+          titleHeader.style.borderTopLeftRadius = CONFIG.BORDER_RADIUS;
+          titleHeader.innerHTML = `<h2 style="font-size: 1.125rem; font-weight: 600; color: #111827;">${CONFIG.BOX_TITLE}</h2>`;
+          container.insertBefore(titleHeader, contentArea);
+      }
 
-        return html;
-    }
+      // Apply height and scrolling
+      if (CONFIG.FIXED_HEIGHT_ENABLED) {
+          contentArea.style.height = CONFIG.BOX_HEIGHT;
+          contentArea.style.overflowY = 'auto';
+          contentArea.style.paddingRight = '1.25rem';
+      } else {
+          contentArea.style.height = 'auto';
+          contentArea.style.overflowY = 'visible';
+          contentArea.style.paddingRight = '1rem';
+      }
 
-    // ========== INITIALIZATION ==========
-    function initComponent() {
-        const scriptEl = document.currentScript;
-        const boxContainer = scriptEl.previousElementSibling;
-        
-        if (!boxContainer || !boxContainer.classList.contains('text-box-component')) {
-            console.error('Text box component: Could not find container element');
-            return;
-        }
+      // Markdown parser
+      function markdownToHtml(markdown) {
+          if (!markdown) return '';
 
-        const contentArea = boxContainer.querySelector('.text-box-content');
+          let html = markdown.trim();
 
-        // Apply positioning and width
-        boxContainer.style.top = CONFIG.OFFSET_TOP;
-        boxContainer.style.left = CONFIG.OFFSET_LEFT;
-        boxContainer.style.width = CONFIG.BOX_WIDTH;
+          // Custom Page Links: [text]({page:N})
+          html = html.replace(/\[([^\]]+)\]\(\{page:(\d+)\}\)/g, (match, text, page) => {
+              return `<a href="#" data-page="${page}" class="page-link" style="color: #9333ea; text-decoration: underline; font-weight: 600;">${text}</a>`;
+          });
 
-        // Add Title Header
-        if (CONFIG.SHOW_TITLE) {
-            const titleHeader = document.createElement('div');
-            titleHeader.className = 'p-4 border-b border-gray-200 bg-gray-50 rounded-t-xl';
-            titleHeader.innerHTML = `<h2 class="text-lg font-semibold text-gray-800">${CONFIG.BOX_TITLE}</h2>`;
-            boxContainer.prepend(titleHeader);
-        }
+          // Standard Links: [text](url)
+          html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, (match, text, url) => {
+              return `<a href="${url}" target="_blank" style="color: #2563eb; text-decoration: underline;">${text}</a>`;
+          });
 
-        // Apply Height and Scrolling
-        if (CONFIG.FIXED_HEIGHT_ENABLED) {
-            contentArea.style.height = CONFIG.BOX_HEIGHT;
-            contentArea.style.overflowY = 'auto';
-            contentArea.classList.add('pr-5');
-        } else {
-            contentArea.style.height = 'auto';
-            contentArea.style.overflowY = 'visible';
-            contentArea.classList.add('pr-4');
-        }
+          // Bold: **text** or __text__
+          html = html.replace(/(\*\*|__)(.*?)\1/g, '<strong style="font-weight: bold;">$2</strong>');
 
-        // Inject Content
-        contentArea.innerHTML = markdownToHtml(CONFIG.TEXT_CONTENT_MARKDOWN);
+          // Code Spans: `code`
+          html = html.replace(/`([^`]+)`/g, '<code style="background-color: #f3f4f6; padding: 0.125rem 0.25rem; border-radius: 0.25rem;">$1</code>');
+          
+          // Paragraphs
+          html = html.split('\n\n').map(paragraph => {
+              if (!paragraph.trim()) return '';
+              paragraph = paragraph.trim().replace(/\n/g, ' '); 
+              return `<p style="margin-bottom: 0.75rem; font-size: 0.875rem; line-height: 1.5; color: #374151;">${paragraph}</p>`;
+          }).join('');
 
-        // Handle Page-Link Clicks
-        boxContainer.querySelectorAll('.page-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const pageNumber = parseInt(link.getAttribute('data-page'), 10);
-                
-                if (typeof $ !== 'undefined' && $('#flipbook').length) {
-                    try {
-                        $('#flipbook').turn('page', pageNumber);
-                    } catch (error) {
-                        console.error('turn.js navigation failed:', error);
-                    }
-                } else {
-                    console.error('jQuery or flipbook not available. Ensure both are loaded.');
-                }
-            });
-        });
-    }
+          return html;
+      }
 
-    // ========== DOM READY CHECK ==========
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initComponent);
-    } else {
-        initComponent();
-    }
-})();
-</script>
+      // Inject content
+      contentArea.innerHTML = markdownToHtml(CONFIG.TEXT_CONTENT_MARKDOWN);
 
-<style>
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
-.custom-scrollbar::-webkit-scrollbar-track { background-color: #f1f5f9; }
-</style>
+      // Handle page links
+      contentArea.querySelectorAll('.page-link').forEach(link => {
+          link.addEventListener('click', (e) => {
+              e.preventDefault();
+              const pageNumber = parseInt(link.getAttribute('data-page'), 10);
+              
+              if (typeof $ !== 'undefined' && $('#flipbook').length) {
+                  try {
+                      $('#flipbook').turn('page', pageNumber);
+                  } catch (error) {
+                      console.error('turn.js navigation failed:', error);
+                  }
+              } else {
+                  console.error('jQuery or flipbook not available for navigation.');
+              }
+          });
+      });
+  })();
+  // TEXTBOX_MULTIPASTE_v1 - Do not remove this marker
+  </script>

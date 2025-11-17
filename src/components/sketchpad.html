@@ -1,0 +1,228 @@
+<!-- ============= SKETCHPAD ENRICHMENT ============= -->
+<!-- Copy and paste this block - works multiple times per page, per-enrichment configuration -->
+  <div class="sketchpad-instance" style="position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; font-family: Inter, sans-serif;">
+    <canvas class="sketchpad-canvas" style="flex: 1; min-height: 0; border: 2px solid #3b82f6; cursor: crosshair; touch-action: none; display: block; background: transparent;"></canvas>
+    
+    <div class="sketchpad-controls" style="padding: 1rem; background: #1f2937; border-top: 1px solid #374151; display: flex; gap: 1rem; align-items: center; justify-content: center; flex-wrap: wrap;">
+      <input type="color" class="sketchpad-color" value="#1c75c8" title="Line Color" style="padding: 0.25rem; height: 2.5rem; width: 3rem; cursor: pointer; border-radius: 0.5rem; border: 2px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+      
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <input type="range" class="sketchpad-width" min="1" max="50" value="5" title="Line Thickness" style="width: 6rem; cursor: pointer;">
+        <span class="sketchpad-width-display" style="color: white; font-size: 0.875rem; font-family: monospace; width: 1.5rem;">5</span>
+      </div>
+
+      <button class="sketchpad-undo" title="Undo Last Stroke" disabled style="background: #eab308; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); cursor: pointer; transition: opacity 0.15s; opacity: 0.5;">Undo</button>
+
+      <button class="sketchpad-clear" title="Clear Canvas" disabled style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); cursor: pointer; transition: opacity 0.15s; opacity: 0.5;">Clear</button>
+    </div>
+  </div>
+
+  <script>
+  // ============= CONFIGURATION ZONE =============
+  const SKETCHPAD_CONFIG = {
+    BACKGROUND_COLOR: 'transparent',
+    BORDER_COLOR: '#3b82f6',
+    BORDER_WIDTH: 2,
+    SHOW_SHADOW: true,
+    DEFAULT_PEN_COLOR: '#1c75c8',
+    DEFAULT_PEN_SIZE: 5,
+  };
+  // ============= END CONFIGURATION =============
+
+  (function() {
+    // Self-discovery mechanism
+    function findOurScript() {
+      if (document.currentScript) return document.currentScript;
+      const marker = 'SKETCHPAD_MULTIPASTE_v1';
+      const scripts = document.querySelectorAll('script');
+      for (let i = scripts.length - 1; i >= 0; i--) {
+        if (scripts[i].textContent && scripts[i].textContent.includes(marker)) {
+          return scripts[i];
+        }
+      }
+      return null;
+    }
+    
+    // Mark this script for self-discovery
+    // SKETCHPAD_MULTIPASTE_v1
+
+    const scriptEl = findOurScript();
+    if (!scriptEl) {
+      console.error('Sketchpad: Could not locate script element');
+      return;
+    }
+
+    // Find container
+    const container = scriptEl.previousElementSibling;
+    if (!container || !container.classList.contains('sketchpad-instance')) {
+      console.error('Sketchpad: Could not find container element');
+      return;
+    }
+
+    // Initialize after layout is complete
+    function init() {
+      const canvas = container.querySelector('.sketchpad-canvas');
+      const controls = container.querySelector('.sketchpad-controls');
+      const colorPicker = container.querySelector('.sketchpad-color');
+      const lineWidthSlider = container.querySelector('.sketchpad-width');
+      const lineWidthDisplay = container.querySelector('.sketchpad-width-display');
+      const clearButton = container.querySelector('.sketchpad-clear');
+      const undoButton = container.querySelector('.sketchpad-undo');
+      
+      const ctx = canvas.getContext('2d');
+
+      // Apply configuration
+      canvas.style.backgroundColor = SKETCHPAD_CONFIG.BACKGROUND_COLOR;
+      canvas.style.borderColor = SKETCHPAD_CONFIG.BORDER_COLOR;
+      canvas.style.borderWidth = SKETCHPAD_CONFIG.BORDER_WIDTH + 'px';
+      canvas.style.borderRadius = SKETCHPAD_CONFIG.BORDER_WIDTH > 0 ? '8px' : '0px';
+      canvas.style.boxShadow = SKETCHPAD_CONFIG.SHOW_SHADOW ? '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)' : 'none';
+
+      // Initialize canvas size
+      function resizeCanvas() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        redrawCanvas();
+      }
+
+      // Drawing state
+      let isDrawing = false;
+      let lastX = 0;
+      let lastY = 0;
+      let paths = [];
+      let currentPath = null;
+
+      // Apply default settings
+      colorPicker.value = SKETCHPAD_CONFIG.DEFAULT_PEN_COLOR;
+      lineWidthSlider.value = SKETCHPAD_CONFIG.DEFAULT_PEN_SIZE;
+      lineWidthDisplay.textContent = SKETCHPAD_CONFIG.DEFAULT_PEN_SIZE;
+      ctx.strokeStyle = SKETCHPAD_CONFIG.DEFAULT_PEN_COLOR;
+      ctx.lineWidth = SKETCHPAD_CONFIG.DEFAULT_PEN_SIZE;
+
+      function updateControlState() {
+        const hasPaths = paths.length > 0;
+        clearButton.disabled = !hasPaths;
+        undoButton.disabled = !hasPaths;
+        clearButton.style.opacity = hasPaths ? '1' : '0.5';
+        undoButton.style.opacity = hasPaths ? '1' : '0.5';
+      }
+
+      function redrawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        paths.forEach(path => {
+          if (path.points.length < 2) return;
+          
+          ctx.beginPath();
+          ctx.strokeStyle = path.color;
+          ctx.lineWidth = path.width;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          const startPixelX = path.points[0].x * canvas.width;
+          const startPixelY = path.points[0].y * canvas.height;
+          ctx.moveTo(startPixelX, startPixelY);
+          
+          for (let i = 1; i < path.points.length; i++) {
+            const pixelX = path.points[i].x * canvas.width;
+            const pixelY = path.points[i].y * canvas.height;
+            ctx.lineTo(pixelX, pixelY);
+          }
+          ctx.stroke();
+        });
+        
+        ctx.strokeStyle = colorPicker.value;
+        ctx.lineWidth = parseInt(lineWidthSlider.value);
+        updateControlState();
+      }
+
+      function getClientCoords(e) {
+        if (e.touches && e.touches.length > 0) {
+          return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      function getCanvasCoordinates(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        return [clientX - rect.left, clientY - rect.top];
+      }
+
+      function startDrawing(e) {
+        isDrawing = true;
+        const coords = getClientCoords(e);
+        const [startX, startY] = getCanvasCoordinates(coords.x, coords.y);
+        
+        currentPath = {
+          points: [{ x: startX / canvas.width, y: startY / canvas.height }],
+          color: ctx.strokeStyle,
+          width: ctx.lineWidth
+        };
+        
+        [lastX, lastY] = [startX, startY];
+      }
+
+      function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        
+        const coords = getClientCoords(e);
+        const [currentX, currentY] = getCanvasCoordinates(coords.x, coords.y);
+        
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+        
+        currentPath.points.push({
+          x: currentX / canvas.width,
+          y: currentY / canvas.height
+        });
+        
+        [lastX, lastY] = [currentX, currentY];
+      }
+
+      function stopDrawing() {
+        if (isDrawing && currentPath && currentPath.points.length > 1) {
+          paths.push(currentPath);
+          updateControlState();
+        }
+        isDrawing = false;
+        currentPath = null;
+      }
+
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseout', stopDrawing);
+      
+      canvas.addEventListener('touchstart', (e) => { if (e.touches.length === 1) startDrawing(e); }, { passive: false });
+      canvas.addEventListener('touchmove', draw, { passive: false });
+      canvas.addEventListener('touchend', stopDrawing);
+      canvas.addEventListener('touchcancel', stopDrawing);
+
+      colorPicker.addEventListener('input', (e) => { ctx.strokeStyle = e.target.value; });
+      lineWidthSlider.addEventListener('input', (e) => {
+        const width = parseInt(e.target.value);
+        ctx.lineWidth = width;
+        lineWidthDisplay.textContent = width;
+      });
+      
+      undoButton.addEventListener('click', () => { paths.pop(); redrawCanvas(); });
+      clearButton.addEventListener('click', () => { paths = []; redrawCanvas(); });
+      
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      updateControlState();
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setTimeout(init, 100));
+    } else {
+      setTimeout(init, 100);
+    }
+  })();
+  // SKETCHPAD_MULTIPASTE_v1
+  </script>
