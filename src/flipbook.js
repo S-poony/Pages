@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         pageInput.addEventListener('change', e => {
             const targetPage = parseInt(e.target.value);
-            if (!isNaN(targetPage) && targetPage >= 2 && targetPage <= pageCount) {
+            if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= pageCount) {
                 if (pageJumpTimeout) clearTimeout(pageJumpTimeout);
                 
                 isPageJumping = true;
