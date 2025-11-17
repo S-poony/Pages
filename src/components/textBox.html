@@ -1,40 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurable Text Box Component</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background-color: #f1f5f9; }
-        #text-box-component {
-            position: absolute;
-            z-index: 100;
-            transition: all 0.3s ease;
-        }
-    </style>
-</head>
-<body class="p-8 min-h-screen bg-gray-50">
-    <div id="text-box-component" class="shadow-xl bg-white border border-gray-200 rounded-t-lg">
-        <div id="text-box-content" class="p-4 custom-scrollbar"></div>
-    </div>
+<div class="text-box-component shadow-xl bg-white border border-gray-200 rounded-t-lg" style="position: absolute; z-index: 100; transition: all 0.3s ease;">
+    <div class="text-box-content p-4 custom-scrollbar"></div>
+</div>
 
-    <script>
-        /**************************************************************
-         * [1] CONFIGURATION SECTION
-         * Modify these variables to customize the component.
-         **************************************************************/
-        const CONFIG = {
-            OFFSET_TOP: '120px',
-            OFFSET_LEFT: '100px',
-            BOX_WIDTH: '350px',
-            FIXED_HEIGHT_ENABLED: true,
-            BOX_HEIGHT: '300px',
-            SHOW_TITLE: true,
-            BOX_TITLE: 'Markdown Entry Example',
-            TEXT_CONTENT_MARKDOWN: `
+<script>
+(function() {
+    // ========== CONFIGURATION ==========
+    const CONFIG = {
+        OFFSET_TOP: '120px',
+        OFFSET_LEFT: '100px',
+        BOX_WIDTH: '350px',
+        FIXED_HEIGHT_ENABLED: true,
+        BOX_HEIGHT: '300px',
+        SHOW_TITLE: true,
+        BOX_TITLE: 'Markdown Entry Example',
+        TEXT_CONTENT_MARKDOWN: `
 This component accepts **Markdown**! This allows for much easier text entry compared to raw HTML.
 
 The width is fixed at <span class="font-bold text-indigo-600">350px</span>, forcing the text to wrap automatically.
@@ -47,90 +26,109 @@ For turn.js, we use the custom link syntax. Click this to simulate jumping to [P
 
 **Scrollable Content Check:** This paragraph is intentionally long to demonstrate the scrolling functionality when fixed height is enabled. If you switch \`FIXED_HEIGHT_ENABLED\` to <span class="font-bold text-green-600">false</span> and reload the preview, the box will dynamically grow to fit all this text and the scrollbar will disappear. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 `,
-        };
+    };
 
-        function markdownToHtml(markdown) {
-            if (!markdown) return '';
+    // ========== MARKDOWN PARSER ==========
+    function markdownToHtml(markdown) {
+        if (!markdown) return '';
 
-            let html = markdown.trim();
+        let html = markdown.trim();
 
-            // 1. Handle Custom Page Links: [text]({page:N}) -> <a href="#" data-page="N">text</a>
-            html = html.replace(/\[([^\]]+)\]\(\{page:(\d+)\}\)/g, (match, text, page) => {
-                return `<a href="#" data-page="${page}" class="page-link text-purple-600 hover:text-purple-800 underline font-semibold transition duration-150">${text}</a>`;
-            });
+        // Custom Page Links: [text]({page:N})
+        html = html.replace(/\[([^\]]+)\]\(\{page:(\d+)\}\)/g, (match, text, page) => {
+            return `<a href="#" data-page="${page}" class="page-link text-purple-600 hover:text-purple-800 underline font-semibold transition duration-150">${text}</a>`;
+        });
 
-            // 2. Handle Standard Links: [text](url) -> <a href="url" target="_blank">text</a>
-            html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, (match, text, url) => {
-                return `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800 underline transition duration-150">${text}</a>`;
-            });
+        // Standard Links: [text](url)
+        html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, (match, text, url) => {
+            return `<a href="${url}" target="_blank" class="text-blue-600 hover:text-blue-800 underline transition duration-150">${text}</a>`;
+        });
 
-            // 3. Handle Bold: **text** or __text__ -> <strong>text</strong>
-            html = html.replace(/(\*\*|__)(.*?)\1/g, '<strong>$2</strong>');
+        // Bold: **text** or __text__
+        html = html.replace(/(\*\*|__)(.*?)\1/g, '<strong>$2</strong>');
 
-            // 4. Handle Code Spans: `code` -> <code class="bg-gray-100 p-1 rounded">code</code>
-            html = html.replace(/`([^`]+)`/g, '<code class="bg-gray-100 p-1 rounded">$1</code>');
-            
-            // 5. Handle Paragraphs
-            html = html.split('\n\n').map(paragraph => {
-                if (!paragraph.trim()) return '';
-                paragraph = paragraph.trim().replace(/\n/g, ' '); 
-                return `<p class="mb-3 text-sm leading-relaxed text-gray-700">${paragraph}</p>`;
-            }).join('');
+        // Code Spans: `code`
+        html = html.replace(/`([^`]+)`/g, '<code class="bg-gray-100 p-1 rounded">$1</code>');
+        
+        // Paragraphs
+        html = html.split('\n\n').map(paragraph => {
+            if (!paragraph.trim()) return '';
+            paragraph = paragraph.trim().replace(/\n/g, ' '); 
+            return `<p class="mb-3 text-sm leading-relaxed text-gray-700">${paragraph}</p>`;
+        }).join('');
 
-            return html;
+        return html;
+    }
+
+    // ========== INITIALIZATION ==========
+    function initComponent() {
+        const scriptEl = document.currentScript;
+        const boxContainer = scriptEl.previousElementSibling;
+        
+        if (!boxContainer || !boxContainer.classList.contains('text-box-component')) {
+            console.error('Text box component: Could not find container element');
+            return;
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const boxContainer = document.getElementById('text-box-component');
-            const contentArea = document.getElementById('text-box-content');
+        const contentArea = boxContainer.querySelector('.text-box-content');
 
-            // 1. Apply Positioning and Width
-            boxContainer.style.top = CONFIG.OFFSET_TOP;
-            boxContainer.style.left = CONFIG.OFFSET_LEFT;
-            boxContainer.style.width = CONFIG.BOX_WIDTH;
+        // Apply positioning and width
+        boxContainer.style.top = CONFIG.OFFSET_TOP;
+        boxContainer.style.left = CONFIG.OFFSET_LEFT;
+        boxContainer.style.width = CONFIG.BOX_WIDTH;
 
-            // 2. Add Title Header (Conditional)
-            if (CONFIG.SHOW_TITLE) {
-                const titleHeader = document.createElement('div');
-                titleHeader.className = 'p-4 border-b border-gray-200 bg-gray-50 rounded-t-xl';
-                titleHeader.innerHTML = `<h2 class="text-lg font-semibold text-gray-800">${CONFIG.BOX_TITLE}</h2>`;
-                boxContainer.prepend(titleHeader);
-            }
+        // Add Title Header
+        if (CONFIG.SHOW_TITLE) {
+            const titleHeader = document.createElement('div');
+            titleHeader.className = 'p-4 border-b border-gray-200 bg-gray-50 rounded-t-xl';
+            titleHeader.innerHTML = `<h2 class="text-lg font-semibold text-gray-800">${CONFIG.BOX_TITLE}</h2>`;
+            boxContainer.prepend(titleHeader);
+        }
 
-            // 3. Apply Height and Scrolling Logic
-            if (CONFIG.FIXED_HEIGHT_ENABLED) {
-                contentArea.style.height = CONFIG.BOX_HEIGHT;
-                contentArea.style.overflowY = 'auto';
-                contentArea.classList.add('pr-5');
-            } else {
-                contentArea.style.height = 'auto';
-                contentArea.style.overflowY = 'visible';
-                contentArea.classList.add('pr-4');
-            }
+        // Apply Height and Scrolling
+        if (CONFIG.FIXED_HEIGHT_ENABLED) {
+            contentArea.style.height = CONFIG.BOX_HEIGHT;
+            contentArea.style.overflowY = 'auto';
+            contentArea.classList.add('pr-5');
+        } else {
+            contentArea.style.height = 'auto';
+            contentArea.style.overflowY = 'visible';
+            contentArea.classList.add('pr-4');
+        }
 
-            // 4. Inject Content
-            contentArea.innerHTML += markdownToHtml(CONFIG.TEXT_CONTENT_MARKDOWN);
+        // Inject Content
+        contentArea.innerHTML = markdownToHtml(CONFIG.TEXT_CONTENT_MARKDOWN);
 
-            // 5. Handle Page-Link Click Event - NOW WITH REAL turn.js INTEGRATION
-            boxContainer.querySelectorAll('.page-link').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const pageNumber = parseInt(link.getAttribute('data-page'), 10);
-                    
-                    // REQUIREMENTS: jQuery and turn.js must be loaded on the host page
-                    // The flipbook element must have id="flipbook"
-                    if (typeof $ !== 'undefined' && $('#flipbook').length) {
-                        try {
-                            $('#flipbook').turn('page', pageNumber);
-                        } catch (error) {
-                            console.error('turn.js navigation failed:', error);
-                        }
-                    } else {
-                        console.error('jQuery or flipbook not available. Ensure both are loaded.');
+        // Handle Page-Link Clicks
+        boxContainer.querySelectorAll('.page-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageNumber = parseInt(link.getAttribute('data-page'), 10);
+                
+                if (typeof $ !== 'undefined' && $('#flipbook').length) {
+                    try {
+                        $('#flipbook').turn('page', pageNumber);
+                    } catch (error) {
+                        console.error('turn.js navigation failed:', error);
                     }
-                });
+                } else {
+                    console.error('jQuery or flipbook not available. Ensure both are loaded.');
+                }
             });
         });
-    </script>
-</body>
-</html>
+    }
+
+    // ========== DOM READY CHECK ==========
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initComponent);
+    } else {
+        initComponent();
+    }
+})();
+</script>
+
+<style>
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+.custom-scrollbar::-webkit-scrollbar-track { background-color: #f1f5f9; }
+</style>
