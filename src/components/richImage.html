@@ -1,0 +1,79 @@
+<!-- ============= BASE64 IMAGE ENRICHMENT ============= -->
+<!-- Copy and paste this block - works multiple times per page -->
+
+  <div class="base64-image-instance" data-marker="BASE64_MULTIPASTE" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="base64-image-container" style="pointer-events: auto; width: 100%; max-width: 400px; padding: 0.5rem; background: white; border-radius: 0.75rem; transition: all 0.5s ease; max-height: 60vh; overflow: hidden;">
+      <img class="base64-image-display" src="" alt="Image" style="width: 100%; height: auto; max-width: 400px; max-height: 400px; display: block; object-fit: contain; border-radius: 0.5rem; transition: transform 0.3s ease;">
+    </div>
+    <p class="base64-image-status" style="margin-top: 1rem; font-size: 0.875rem; color: #ef4444; position: absolute; bottom: 1rem;"></p>
+  </div>
+
+  <script>
+  (function() {
+      const CONFIG = { //string must start with "data:image/" to be valid
+          BASE64_IMAGE_STRING: "", //paste your base64 string between the quotes. You can convert an image to base64 here: https://www.base64-image.de/
+          APPLY_GLOW_EFFECT: true,
+          APPLY_ROTATION: false,
+          IS_CLICKABLE_LINK: true,
+          TARGET_LINK_URL: "https://s-poony.github.io/Pages/", //set the target URL if IS_CLICKABLE_LINK is true
+      };
+
+      const container = document.querySelector('.base64-image-instance[data-marker="BASE64_MULTIPASTE"]:last-of-type');
+      if (!container) return;
+      if (container.dataset.initialized === 'true') return;
+      container.dataset.initialized = 'true';
+
+      const imageContainer = container.querySelector('.base64-image-container');
+      const displayImage = container.querySelector('.base64-image-display');
+      const statusMessage = container.querySelector('.base64-image-status');
+
+      if (!document.querySelector('#base64-image-css')) {
+          const style = document.createElement('style');
+          style.id = 'base64-image-css';
+          style.textContent = `
+              @keyframes rotate360 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+              .base64-image-rotate { animation: rotate360 10s linear infinite; }
+              .base64-image-glow { box-shadow: 0 0 20px rgba(79, 70, 229, 0.7), 0 0 30px rgba(79, 70, 229, 0.5), 0 0 40px rgba(79, 70, 229, 0.3) !important; }
+              .base64-image-pointer { cursor: pointer; }
+              .base64-image-hover:hover { transform: scale(1.05); }
+          `;
+          document.head.appendChild(style);
+      }
+
+      function applyConfig() {
+          if (CONFIG.BASE64_IMAGE_STRING && CONFIG.BASE64_IMAGE_STRING.startsWith('data:image/')) {
+              displayImage.src = CONFIG.BASE64_IMAGE_STRING;
+              statusMessage.textContent = '';
+          } else {
+              displayImage.src = "https://placehold.co/400x400/CCCCCC/000000?text=Invalid+Image";
+              statusMessage.textContent = 'Error: Invalid Base64 format or missing image string.';
+          }
+
+          // Apply effects
+          imageContainer.classList.toggle('base64-image-glow', CONFIG.APPLY_GLOW_EFFECT);
+          imageContainer.classList.toggle('base64-image-rotate', CONFIG.APPLY_ROTATION);
+          imageContainer.classList.toggle('base64-image-pointer', CONFIG.IS_CLICKABLE_LINK);
+          imageContainer.classList.toggle('base64-image-hover', CONFIG.IS_CLICKABLE_LINK);
+          
+          // Reset default shadow when glow is active
+          if (CONFIG.APPLY_GLOW_EFFECT) {
+              imageContainer.style.boxShadow = 'none';
+          } else {
+              imageContainer.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.25)';
+          }
+
+          imageContainer.style.pointerEvents = 'auto';
+      }
+
+      function handleImageClick(event) {
+          if (CONFIG.IS_CLICKABLE_LINK && CONFIG.TARGET_LINK_URL) {
+              window.open(CONFIG.TARGET_LINK_URL, '_blank');
+          }
+      }
+
+      applyConfig();
+      displayImage.addEventListener('click', handleImageClick);
+  })();
+  // BASE64_MULTIPASTE_v1 - Do not remove this marker
+  </script>
+  <!-- ============= BASE64 IMAGE END ============= -->
