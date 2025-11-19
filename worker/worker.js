@@ -10,7 +10,7 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
-          "Access-Control-Allow-Origin": "*", 
+          "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, X-Custom-Auth-Key",
         },
@@ -32,19 +32,19 @@ export default {
       object.writeHttpMetadata(headers);
       headers.set("etag", object.httpEtag);
       headers.set("Content-Type", "text/html");
-      
+
       // --- SECURITY HEADERS (The "Checks") ---
-      
+
       // 1. CSP: The most important one.
       // - default-src 'self' 'unsafe-inline' data: blob: -> Allows the flipbook's own scripts and base64 images to run.
       // - object-src 'none' -> Blocks plugins like Flash or Java.
       // - base-uri 'none' -> Prevents base-hijacking attacks.
       // - img-src * data: blob: -> Allows images from anywhere (since users might link images).
       headers.set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' data: blob:; img-src * data: blob:; object-src 'none'; base-uri 'none';");
-      
+
       // 2. Prevent MIME-sniffing (stops browser from guessing a text file is actually a script)
       headers.set("X-Content-Type-Options", "nosniff");
-      
+
       // 3. Referrer Policy (Privacy)
       headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
@@ -53,21 +53,8 @@ export default {
 
     // 2. UPLOAD / PUBLISH (PUT request)
     if (request.method === "PUT") {
-      const authKey = request.headers.get("X-Custom-Auth-Key");
-      let siteId;
-      let secretToken;
-
-      if (authKey) {
-        // UPDATE existing
-        // In a real app, verify authKey matches a stored metadata file.
-        // For this MVP, we trust the key matches the folder name.
-        siteId = authKey; 
-        secretToken = authKey;
-      } else {
-        // CREATE new
-        siteId = crypto.randomUUID();
-        secretToken = siteId;
-      }
+      // ALWAYS CREATE new
+      const siteId = crypto.randomUUID();
 
       // Save to R2
       await env.FLIPBOOK_BUCKET.put(`${siteId}/index.html`, request.body);
@@ -75,8 +62,7 @@ export default {
       return new Response(JSON.stringify({
         success: true,
         siteId: siteId,
-        url: `https://${url.hostname}/${siteId}`,
-        adminToken: secretToken 
+        url: `https://${url.hostname}/${siteId}`
       }), {
         headers: {
           "Content-Type": "application/json",
