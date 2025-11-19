@@ -1,4 +1,5 @@
 // worker.js
+// This is what's in cloudflare. Putting it here for inspection by my big brother
 
 export default {
   async fetch(request, env) {
@@ -9,7 +10,7 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
-          "Access-Control-Allow-Origin": "*", // Change to "https://lojkine.art" for tighter security later
+          "Access-Control-Allow-Origin": "*", 
           "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, X-Custom-Auth-Key",
         },
@@ -17,11 +18,10 @@ export default {
     }
 
     // 1. SERVE THE SITE (GET request)
-    // Example: User visits content.lojkine.art/abc-123
     if (request.method === "GET") {
       if (!key) return new Response("Welcome to Page Maker Hosting", { status: 200 });
 
-      // specific file handling
+      // Retrieve from R2
       const object = await env.FLIPBOOK_BUCKET.get(`${key}/index.html`);
 
       if (object === null) {
@@ -32,43 +32,51 @@ export default {
       object.writeHttpMetadata(headers);
       headers.set("etag", object.httpEtag);
       headers.set("Content-Type", "text/html");
-      // SECURITY HEADERS
+      
+      // --- SECURITY HEADERS (The "Checks") ---
+      
+      // 1. CSP: The most important one.
+      // - default-src 'self' 'unsafe-inline' data: blob: -> Allows the flipbook's own scripts and base64 images to run.
+      // - object-src 'none' -> Blocks plugins like Flash or Java.
+      // - base-uri 'none' -> Prevents base-hijacking attacks.
+      // - img-src * data: blob: -> Allows images from anywhere (since users might link images).
+      headers.set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' data: blob:; img-src * data: blob:; object-src 'none'; base-uri 'none';");
+      
+      // 2. Prevent MIME-sniffing (stops browser from guessing a text file is actually a script)
       headers.set("X-Content-Type-Options", "nosniff");
+      
+      // 3. Referrer Policy (Privacy)
+      headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
       return new Response(object.body, { headers });
     }
 
     // 2. UPLOAD / PUBLISH (PUT request)
-    // Sent by your frontend when user clicks "Publish"
     if (request.method === "PUT") {
       const authKey = request.headers.get("X-Custom-Auth-Key");
       let siteId;
       let secretToken;
 
-      // Scenario A: UPDATING an existing site
       if (authKey) {
-        // In this simple version, the authKey IS the siteId for simplicity.
-        // A more complex version would store a metadata mapping.
-        // For now: The user keeps "abc-123-secret" as their key.
-        // We extract the ID from it or verify it matches the folder.
-        // LET'S KEEP IT SIMPLE: The key is the folder name.
+        // UPDATE existing
+        // In a real app, verify authKey matches a stored metadata file.
+        // For this MVP, we trust the key matches the folder name.
         siteId = authKey; 
         secretToken = authKey;
-      } 
-      // Scenario B: NEW site
-      else {
+      } else {
+        // CREATE new
         siteId = crypto.randomUUID();
-        secretToken = siteId; // Ideally, encrypt or hash this, but for a free MVP, this ID acts as the key.
+        secretToken = siteId;
       }
 
-      // Save the file to R2
+      // Save to R2
       await env.FLIPBOOK_BUCKET.put(`${siteId}/index.html`, request.body);
 
       return new Response(JSON.stringify({
         success: true,
         siteId: siteId,
         url: `https://${url.hostname}/${siteId}`,
-        adminToken: secretToken // User must save this to update later!
+        adminToken: secretToken 
       }), {
         headers: {
           "Content-Type": "application/json",
