@@ -14,6 +14,7 @@ import flipbookJs from './flipbook.js?raw';
 // --- CONFIGURATION ---
 const WORKER_URL = 'https://content.lojkine.art'; // Your Cloudflare Worker Domain
 const MAX_SIZE_BYTES = 300 * 1024 * 1024; // 300MB
+const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB
 
 
 class FlipbookApp {
@@ -191,20 +192,60 @@ class FlipbookApp {
     this.publishBtn.innerHTML = `<svg class="animate-spin btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke-width="2" stroke-linecap="round"/></svg> Publishing...`;
 
     try {
+      let data;
 
-      const headers = {
-        'Content-Type': 'text/html',
-      };
+      // SIMPLE UPLOAD (< 50MB)
+      if (blob.size < CHUNK_SIZE) {
+        const response = await fetch(`${WORKER_URL}/upload`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'text/html' },
+          body: this.currentHtml
+        });
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        data = await response.json();
+      }
+      // MULTIPART UPLOAD (>= 50MB)
+      else {
+        // 1. INIT
+        const initResp = await fetch(`${WORKER_URL}/upload/init`, { method: 'POST' });
+        if (!initResp.ok) throw new Error('Failed to init upload');
+        const { uploadId, key, siteId } = await initResp.json();
 
-      const response = await fetch(`${WORKER_URL}/upload`, {
-        method: 'PUT',
-        headers: headers,
-        body: this.currentHtml
-      });
+        // 2. UPLOAD PARTS
+        const parts = [];
+        const totalParts = Math.ceil(blob.size / CHUNK_SIZE);
 
-      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        for (let i = 0; i < totalParts; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, blob.size);
+          const chunk = blob.slice(start, end);
+          const partNumber = i + 1;
 
-      const data = await response.json();
+          // Update button text with progress
+          this.publishBtn.innerHTML = `<svg class="animate-spin btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke-width="2" stroke-linecap="round"/></svg> Uploading Part ${partNumber}/${totalParts}...`;
+
+          const partResp = await fetch(`${WORKER_URL}/upload/part?uploadId=${uploadId}&partNumber=${partNumber}&key=${encodeURIComponent(key)}`, {
+            method: 'PUT',
+            body: chunk
+          });
+
+          if (!partResp.ok) throw new Error(`Failed to upload part ${partNumber}`);
+          const partData = await partResp.json();
+          parts.push({ partNumber: partData.partNumber, etag: partData.etag });
+        }
+
+        // 3. COMPLETE
+        this.publishBtn.innerHTML = `<svg class="animate-spin btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke-width="2" stroke-linecap="round"/></svg> Finalizing...`;
+
+        const completeResp = await fetch(`${WORKER_URL}/upload/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uploadId, key, parts, siteId })
+        });
+
+        if (!completeResp.ok) throw new Error('Failed to complete upload');
+        data = await completeResp.json();
+      }
 
       // Show success
       alert(`🚀 Site Published Successfully!\n\nPublic URL: ${data.url}`);
@@ -213,7 +254,7 @@ class FlipbookApp {
 
     } catch (err) {
       console.error(err);
-      alert('Failed to publish. Please try again.');
+      alert(`Failed to publish: ${err.message}`);
       this.publishBtn.innerHTML = originalText;
     } finally {
       this.publishBtn.disabled = false;

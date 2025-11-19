@@ -53,16 +53,14 @@ export default {
       return new Response(object.body, { headers });
     }
 
-    // 2. UPLOAD / PUBLISH (PUT request)
-    if (request.method === "PUT") {
+    // 2. UPLOAD / PUBLISH (PUT request) - Simple Upload (< 50MB)
+    if (request.method === "PUT" && !url.searchParams.has('partNumber')) {
       // Check size limit
       const contentLength = request.headers.get("Content-Length");
       if (contentLength && parseInt(contentLength) > MAX_SIZE_BYTES) {
         return new Response("Payload Too Large", {
           status: 413,
-          headers: {
-            "Access-Control-Allow-Origin": "*"
-          }
+          headers: { "Access-Control-Allow-Origin": "*" }
         });
       }
 
@@ -81,6 +79,64 @@ export default {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*"
         }
+      });
+    }
+
+    // 3. MULTIPART UPLOAD HANDLERS
+
+    // INIT (POST /upload/init)
+    if (request.method === "POST" && url.pathname === "/upload/init") {
+      const siteId = crypto.randomUUID();
+      const key = `${siteId}/index.html`;
+      const multipartUpload = await env.FLIPBOOK_BUCKET.createMultipartUpload(key);
+
+      return new Response(JSON.stringify({
+        uploadId: multipartUpload.uploadId,
+        key: key,
+        siteId: siteId
+      }), {
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    // UPLOAD PART (PUT /upload/part?uploadId=...&partNumber=...)
+    if (request.method === "PUT" && url.pathname === "/upload/part") {
+      const uploadId = url.searchParams.get("uploadId");
+      const partNumber = parseInt(url.searchParams.get("partNumber"));
+      const key = url.searchParams.get("key");
+
+      if (!uploadId || !partNumber || !key) {
+        return new Response("Missing params", { status: 400, headers: { "Access-Control-Allow-Origin": "*" } });
+      }
+
+      const multipartUpload = await env.FLIPBOOK_BUCKET.resumeMultipartUpload(key, uploadId);
+      const uploadedPart = await multipartUpload.uploadPart(partNumber, request.body);
+
+      return new Response(JSON.stringify({
+        partNumber: partNumber,
+        etag: uploadedPart.etag
+      }), {
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    // COMPLETE (POST /upload/complete)
+    if (request.method === "POST" && url.pathname === "/upload/complete") {
+      const { uploadId, key, parts, siteId } = await request.json();
+
+      if (!uploadId || !key || !parts || !siteId) {
+        return new Response("Missing params", { status: 400, headers: { "Access-Control-Allow-Origin": "*" } });
+      }
+
+      const multipartUpload = await env.FLIPBOOK_BUCKET.resumeMultipartUpload(key, uploadId);
+      await multipartUpload.complete(parts);
+
+      return new Response(JSON.stringify({
+        success: true,
+        siteId: siteId,
+        url: `https://${url.hostname}/${siteId}`
+      }), {
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
       });
     }
 
