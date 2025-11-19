@@ -23,9 +23,11 @@
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                <h2 class="upload-title">Drop your PDF here</h2>
-                <p class="upload-subtitle">or click to browse</p>
-                <input type="file" id="file-input" accept=".pdf" style="display: none;">
+                <!-- Updated Text to reflect HTML support -->
+                <h2 class="upload-title">Drop PDF or HTML</h2>
+                <p class="upload-subtitle">Create new or update existing</p>
+                <!-- Added accept=".html" -->
+                <input type="file" id="file-input" accept=".pdf,.html" style="display: none;">
             </div>
 
             <!-- Options container with both toggles -->
@@ -36,7 +38,7 @@
                     <span class="label-text">Double-spread (single image spans two pages)</span>
                 </label>
                 
-                <!-- New checkbox - hidden by default, appears when double-spread is checked -->
+                <!-- checkbox - hidden by default, appears when double-spread is checked -->
                 <label class="toggle-switch extra-option" id="blank-page-option">
                     <input type="checkbox" id="blank-page-toggle" checked>
                     <span class="slider"></span>
@@ -55,7 +57,17 @@
                 <div class="result-header">
                     <h2 class="result-title">Your flipbook is ready</h2>
                     <div class="result-actions">
-                        <button id="download-btn" class="btn btn-primary">
+                        <!-- PUBLISH BUTTON -->
+                        <button id="publish-btn" class="btn btn-primary" style="background-color: #2563eb; border-color: #2563eb; color: white;">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21.2 15c.7 0 1.2.5 1.2 1.2v3.6c0 .7-.5 1.2-1.2 1.2H2.8c-.7 0-1.2-.5-1.2-1.2v-3.6c0-.7.5-1.2 1.2-1.2"></path>
+                                <path d="M12 3v13"></path>
+                                <path d="M16 7l-4-4-4 4"></path>
+                            </svg>
+                            Publish Online
+                        </button>
+
+                        <button id="download-btn" class="btn btn-secondary">
                             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
