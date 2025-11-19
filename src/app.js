@@ -13,6 +13,7 @@ import flipbookJs from './flipbook.js?raw';
 
 // --- CONFIGURATION ---
 const WORKER_URL = 'https://content.lojkine.art'; // Your Cloudflare Worker Domain
+const MAX_SIZE_BYTES = 300 * 1024 * 1024; // 300MB
 
 
 class FlipbookApp {
@@ -177,6 +178,13 @@ class FlipbookApp {
   /* ----------  Cloudflare Publishing  ---------- */
   async publishFlipbook() {
     if (!this.currentHtml) return;
+
+    // Check size limit
+    const blob = new Blob([this.currentHtml], { type: 'text/html' });
+    if (blob.size > MAX_SIZE_BYTES) {
+      alert(`File too large! Maximum size is 300MB. Your file is ${(blob.size / (1024 * 1024)).toFixed(2)}MB.`);
+      return;
+    }
 
     const originalText = this.publishBtn.innerHTML;
     this.publishBtn.disabled = true;

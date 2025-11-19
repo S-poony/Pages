@@ -1,6 +1,8 @@
 // worker.js
 // This is what's in cloudflare. Putting it here for inspection by my big brother
 
+const MAX_SIZE_BYTES = 300 * 1024 * 1024; // 300MB
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -53,6 +55,12 @@ export default {
 
     // 2. UPLOAD / PUBLISH (PUT request)
     if (request.method === "PUT") {
+      // Check size limit
+      const contentLength = request.headers.get("Content-Length");
+      if (contentLength && parseInt(contentLength) > MAX_SIZE_BYTES) {
+        return new Response("Payload Too Large", { status: 413 });
+      }
+
       // ALWAYS CREATE new
       const siteId = crypto.randomUUID();
 
