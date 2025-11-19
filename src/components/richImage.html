@@ -10,6 +10,7 @@
 
   <script>
   (function() {
+      // ============= CONFIGURATION ZONE =============
       const CONFIG = { //string must start with "data:image/" to be valid
           BASE64_IMAGE_STRING: "", //paste your base64 string between the quotes. You can convert an image to base64 here: https://www.base64-image.de/
           APPLY_GLOW_EFFECT: true,
@@ -17,6 +18,7 @@
           IS_CLICKABLE_LINK: true,
           TARGET_LINK_URL: "https://s-poony.github.io/Pages/", //set the target URL if IS_CLICKABLE_LINK is true
       };
+      // ============= END CONFIGURATION =============
 
       const container = document.querySelector('.base64-image-instance[data-marker="BASE64_MULTIPASTE"]:last-of-type');
       if (!container) return;
