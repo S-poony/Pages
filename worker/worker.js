@@ -58,7 +58,12 @@ export default {
       // Check size limit
       const contentLength = request.headers.get("Content-Length");
       if (contentLength && parseInt(contentLength) > MAX_SIZE_BYTES) {
-        return new Response("Payload Too Large", { status: 413 });
+        return new Response("Payload Too Large", {
+          status: 413,
+          headers: {
+            "Access-Control-Allow-Origin": "*"
+          }
+        });
       }
 
       // ALWAYS CREATE new
