@@ -21,7 +21,6 @@ class FlipbookApp {
     this.setupEventListeners();
 
     this.currentHtml = null;
-    this.enableResponsive = true;
   }
 
   /* ----------  UI initialisation  ---------- */
@@ -38,9 +37,9 @@ class FlipbookApp {
     this.previewIframe = document.getElementById('preview-iframe');
 
     // Buttons
-    this.publishBtn = document.getElementById('publish-btn'); // NEW
+    this.publishBtn = document.getElementById('publish-btn');
     this.downloadBtn = document.getElementById('download-btn');
-    this.openTabBtn = document.getElementById('open-tab-btn'); // Might be removed in HTML, but keeping ref is safe
+    this.openTabBtn = document.getElementById('open-tab-btn');
     this.resetBtn = document.getElementById('reset-btn');
 
     this.errorMessage = document.getElementById('error-message');
@@ -88,12 +87,12 @@ class FlipbookApp {
     this.routeFileProcessing(file);
   }
 
-  // NEW: Routes to PDF processor or HTML loader
+  // Routes to PDF processor or HTML loader
   routeFileProcessing(file) {
     if (!file) return;
 
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-      this.processFile(file); // Original PDF logic
+      this.processFile(file);
     } else {
       this.showError('Please drop a valid PDF file.');
     }
@@ -116,15 +115,12 @@ class FlipbookApp {
       const doubleSpread = !!this.doubleSpreadToggle?.checked;
       const addBlankPage = doubleSpread && !!this.blankPageToggle?.checked;
 
-      const opts = this.enableResponsive
-        ? { scales: null, format: 'image/jpeg', quality: 0.92, doubleSpread }
-        : { scale: 3, format: 'image/jpeg', quality: 0.92, doubleSpread };
+      const opts = { scales: [1, 2, 3], format: 'image/jpeg', quality: 0.92, doubleSpread };
 
       const { pageCount, renderPage, renderPageVariants } = await processPdf(file, opts);
 
       this.showProgress(10, `Processing ${pageCount} pages…`);
 
-      const useVariants = this.enableResponsive && renderPageVariants;
       const pageImages = [];
       const slowThreshold = 2000;
       const slowPages = [];
@@ -135,10 +131,12 @@ class FlipbookApp {
 
         const start = (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
-        if (useVariants) {
+        // Always use variants since we are using multi-scale
+        if (renderPageVariants) {
           const variants = await renderPageVariants(i);
           pageImages.push(variants);
         } else {
+          // Fallback if something goes wrong, though it shouldn't with scales set
           const url = await renderPage(i);
           pageImages.push(url);
         }

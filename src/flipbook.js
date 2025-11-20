@@ -22,10 +22,16 @@ function updateImageSizes() {
     const isDoubleSpread = window.__DOUBLE_SPREAD__ || false;
     const zoomLevel = window.currentZoom || 1;
 
-    // Optimize: Only target visible pages
+    // Only target visible pages
     // StPageFlip doesn't expose visible pages directly easily, but we can guess based on current index.
     // We'll check a range around the current page.
-    const currentIndex = pageFlip ? pageFlip.getCurrentPageIndex() : 0;
+    let currentIndex = 0;
+    try {
+        currentIndex = pageFlip ? pageFlip.getCurrentPageIndex() : 0;
+    } catch (e) {
+        console.warn('StPageFlip not ready yet', e);
+        return;
+    }
     // Check pages from index - 2 to index + 3 (covers double spread + buffer)
     // StPageFlip clones pages, so we need to be careful.
     // Actually, querying all images is fast, but setting sizes/srcset forces layout.
@@ -40,11 +46,12 @@ function updateImageSizes() {
         // StPageFlip adds classes like --active to visible pages? No.
         // It uses z-index.
 
-        // Simple optimization: if zoom > 1, we REALLY need high res.
+        // If zoom > 1, we need high res.
         // If zoom == 1, we can stick to base.
 
         if (img && img.hasAttribute('srcset')) {
-            const baseSize = isDoubleSpread ? 50 : 100;
+            // We always show 2 pages (approx 50% width each)
+            const baseSize = 50;
             const zoomedSize = Math.round(baseSize * zoomLevel);
             const newSizes = `${zoomedSize}vw`;
 
@@ -60,7 +67,7 @@ function updateImageSizes() {
                 }
             }
 
-            // Only apply hack if zoomed
+            // Apply hack if zoomed
             if (zoomLevel > 1) {
                 img.style.transform = 'translateZ(0)';
             } else {
@@ -165,8 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const flipbookEl = document.getElementById('flipbook');
 
     // Calculate dimensions
-    // RESOLUTION_FACTOR = 1. We rely on resizing the container for zoom.
-    const RESOLUTION_FACTOR = 1;
 
     BOOK_WIDTH_AT_1X = wrapper.clientWidth * 0.9;
     BOOK_HEIGHT_AT_1X = wrapper.clientHeight * 0.9;
@@ -181,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize StPageFlip
     // We use size: 'stretch' so it adapts to the container size (which we resize for zoom)
     pageFlip = new St.PageFlip(flipbookEl, {
-        width: isDoubleSpread ? BOOK_WIDTH_AT_1X : BOOK_WIDTH_AT_1X / 2,
+        width: BOOK_WIDTH_AT_1X / 2, // Always 2 pages, so width is half of container
         height: BOOK_HEIGHT_AT_1X,
         size: 'stretch',
         // "You must set threshold values ​​with size: 'stretch'"
@@ -191,17 +196,14 @@ document.addEventListener('DOMContentLoaded', () => {
         maxHeight: 10000,
         autoSize: false, // We control the container size
         showCover: false,
-        usePortrait: isDoubleSpread, // If doubleSpread (spreads in PDF), show 1 page. If single pages, show 2 pages (landscape).
+        usePortrait: false, // Always 2 pages (Book View)
         startPage: 0, // 0-based index
         drawShadow: true,
-        flippingTime: 1000,
+        flippingTime: 500,
         useMouseEvents: true,
         swipeDistance: 30,
         mobileScrollSupport: false // We handle panning
     });
-
-    // Store factor globally
-    window.RESOLUTION_FACTOR = RESOLUTION_FACTOR;
 
     // Load pages
     pageFlip.loadFromHTML(document.querySelectorAll('.page-container'));
@@ -212,6 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let updateImageTimeout = null; // Declare debounce timeout variable
 
     // Events
+    pageFlip.on('init', () => {
+        console.log('StPageFlip initialized event');
+        updateImageSizes();
+    });
+
     pageFlip.on('flip', (e) => {
         const pageInput = document.getElementById('page-input');
         if (pageInput) {
@@ -219,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // We want to display 1-based page number.
             pageInput.value = e.data + 1;
         }
-        // We do NOT update image sizes on flip anymore.
         // Images are updated only when zooming.
     });
 
@@ -239,6 +245,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Debounce image update for zoom
         if (updateImageTimeout) clearTimeout(updateImageTimeout);
         updateImageTimeout = setTimeout(updateImageSizes, 200);
+    });
+
+    // Prevent arrow keys from changing the slider value
+    // This ensures that arrow keys always turn pages (handled by document listener),
+    // even if the slider has focus.
+    zoomSlider?.addEventListener('keydown', e => {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            e.preventDefault();
+        }
     });
 
     // Page input handler
@@ -300,7 +315,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initial setup
-    updateImageSizes();
     // Force initial transform to scale down the high-res book
     updateTransform();
 
