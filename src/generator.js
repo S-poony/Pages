@@ -200,6 +200,18 @@ export async function generateFlipbookHtml(pageImages, options = {},
 
     const actualPageCount = pageImages.length;
 
+    // Calculate aspect ratio from the first page's first variant
+    let aspectRatio = 0.707; // Default fallback (A4-ish)
+    if (pageImages.length > 0) {
+        const firstPage = pageImages[0];
+        if (Array.isArray(firstPage) && firstPage.length > 0) {
+            const firstVariant = firstPage[0];
+            if (firstVariant.width && firstVariant.height) {
+                aspectRatio = firstVariant.width / firstVariant.height;
+            }
+        }
+    }
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -254,6 +266,7 @@ ENRICHMENT GUIDE:
     <script>
         window.__PAGE_COUNT__ = ${actualPageCount};
         window.__DOUBLE_SPREAD__ = ${doubleSpread};
+        window.__PAGE_ASPECT_RATIO__ = ${aspectRatio};
     </script>
     <script>${pageFlipJs}</script>
     <script>${js}</script>

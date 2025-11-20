@@ -171,11 +171,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const wrapper = document.getElementById('flipbook-wrapper');
     const flipbookEl = document.getElementById('flipbook');
 
-    // Calculate dimensions
-    // User requested "container follows the book" and "no big margins".
-    // We set the base size to the full wrapper size.
-    BOOK_WIDTH_AT_1X = wrapper.clientWidth;
-    BOOK_HEIGHT_AT_1X = wrapper.clientHeight;
+    // Calculate dimensions based on aspect ratio to fit wrapper
+    // This eliminates margins/letterboxing by making the container match the content shape
+    function calculateDimensions() {
+        const wrapperWidth = wrapper.clientWidth;
+        const wrapperHeight = wrapper.clientHeight;
+        // Use injected aspect ratio or fallback to A4-ish (0.707)
+        const pageAspectRatio = window.__PAGE_ASPECT_RATIO__ || 0.707;
+
+        // Determine layout mode based on width threshold
+        // <= 768px: Mobile/Portrait (Single Page)
+        // > 768px: Desktop/Landscape (Double Spread)
+        const isNarrowWindow = wrapperWidth <= 768;
+
+        let targetAspectRatio;
+        if (isNarrowWindow) {
+            // Single page view: Container matches single page aspect ratio
+            targetAspectRatio = pageAspectRatio;
+        } else {
+            // Double spread view: Container matches two pages side-by-side
+            targetAspectRatio = pageAspectRatio * 2;
+        }
+
+        // Calculate dimensions to fit within wrapper while maintaining targetAspectRatio
+        // 1. Try fitting by width
+        let width = wrapperWidth;
+        let height = width / targetAspectRatio;
+
+        // 2. If height exceeds wrapper height, fit by height
+        if (height > wrapperHeight) {
+            height = wrapperHeight;
+            width = height * targetAspectRatio;
+        }
+
+        return {
+            width: Math.floor(width),
+            height: Math.floor(height)
+        };
+    }
+
+    // Initial calculation
+    const dims = calculateDimensions();
+    BOOK_WIDTH_AT_1X = dims.width;
+    BOOK_HEIGHT_AT_1X = dims.height;
 
     // Container size matches book size (at 1x)
     const container = document.getElementById('flipbook-container');
@@ -335,8 +373,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.isProgrammaticResize) return;
 
         // Recalculate base dimensions on resize
-        BOOK_WIDTH_AT_1X = wrapper.clientWidth;
-        BOOK_HEIGHT_AT_1X = wrapper.clientHeight;
+        // Recalculate dimensions on resize using aspect ratio
+        const dims = calculateDimensions();
+        BOOK_WIDTH_AT_1X = dims.width;
+        BOOK_HEIGHT_AT_1X = dims.height;
+
+        // Update container size explicitly
+        const container = document.getElementById('flipbook-container');
+        if (container) {
+            container.style.width = `${BOOK_WIDTH_AT_1X}px`;
+            container.style.height = `${BOOK_HEIGHT_AT_1X}px`;
+        }
 
         updateTransform();
     });
