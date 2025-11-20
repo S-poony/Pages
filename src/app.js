@@ -52,7 +52,7 @@ class FlipbookApp {
     }
     this.handleDoubleSpreadToggle();
 
-    this.handleDoubleSpreadToggle();
+
   }
 
   setupEventListeners() {

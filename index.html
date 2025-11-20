@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Page Maker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="styles/main.css">
 </head>
+
 <body>
     <div class="app-container">
         <header class="header">
@@ -37,10 +41,10 @@
                     <span class="slider"></span>
                     <span class="label-text">Double-spread (single image spans two pages)</span>
                 </label>
-                
+
                 <!-- checkbox - hidden by default, appears when double-spread is checked -->
                 <label class="toggle-switch extra-option" id="blank-page-option">
-                    <input type="checkbox" id="blank-page-toggle" checked>
+                    <input type="checkbox" id="blank-page-toggle">
                     <span class="slider"></span>
                     <span class="label-text">Add blank page at start</span>
                 </label>
@@ -58,9 +62,13 @@
                     <h2 class="result-title">Your flipbook is ready</h2>
                     <div class="result-actions">
                         <!-- PUBLISH BUTTON -->
-                        <button id="publish-btn" class="btn btn-primary" style="background-color: #2563eb; border-color: #2563eb; color: white;">
-                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21.2 15c.7 0 1.2.5 1.2 1.2v3.6c0 .7-.5 1.2-1.2 1.2H2.8c-.7 0-1.2-.5-1.2-1.2v-3.6c0-.7.5-1.2 1.2-1.2"></path>
+                        <button id="publish-btn" class="btn btn-primary"
+                            style="background-color: #2563eb; border-color: #2563eb; color: white;">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M21.2 15c.7 0 1.2.5 1.2 1.2v3.6c0 .7-.5 1.2-1.2 1.2H2.8c-.7 0-1.2-.5-1.2-1.2v-3.6c0-.7.5-1.2 1.2-1.2">
+                                </path>
                                 <path d="M12 3v13"></path>
                                 <path d="M16 7l-4-4-4 4"></path>
                             </svg>
@@ -68,7 +76,8 @@
                         </button>
 
                         <button id="download-btn" class="btn btn-secondary">
-                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -76,7 +85,8 @@
                             Download HTML
                         </button>
                         <button id="open-tab-btn" class="btn btn-secondary">
-                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                                 <polyline points="15 3 21 3 21 9"></polyline>
                                 <line x1="10" y1="14" x2="21" y2="3"></line>
@@ -84,7 +94,8 @@
                             Open in New Tab
                         </button>
                         <button id="reset-btn" class="btn btn-ghost">
-                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
                                 <path d="M21 3v5h-5"></path>
                                 <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
@@ -109,4 +120,5 @@
 
     <script type="module" src="src/app.js"></script>
 </body>
+
 </html>
