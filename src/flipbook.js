@@ -22,12 +22,27 @@ function updateImageSizes() {
     const isDoubleSpread = window.__DOUBLE_SPREAD__ || false;
     const zoomLevel = window.currentZoom || 1;
 
-    // Target ALL images in the flipbook, including those cloned by StPageFlip
-    // StPageFlip wraps pages in .stf__item or .stf__block. 
-    // We target all images inside #flipbook to be safe.
+    // Optimize: Only target visible pages
+    // StPageFlip doesn't expose visible pages directly easily, but we can guess based on current index.
+    // We'll check a range around the current page.
+    const currentIndex = pageFlip ? pageFlip.getCurrentPageIndex() : 0;
+    // Check pages from index - 2 to index + 3 (covers double spread + buffer)
+    // StPageFlip clones pages, so we need to be careful.
+    // Actually, querying all images is fast, but setting sizes/srcset forces layout.
+    // Let's try to be more specific.
+
     const images = document.querySelectorAll('#flipbook img');
 
-    images.forEach(img => {
+    images.forEach((img, idx) => {
+        // We can't easily map img index to page index because of clones/structure.
+        // But we can check if the image is visible or close to viewport?
+        // Or just check if it's within the .stf__block that is visible?
+        // StPageFlip adds classes like --active to visible pages? No.
+        // It uses z-index.
+
+        // Simple optimization: if zoom > 1, we REALLY need high res.
+        // If zoom == 1, we can stick to base.
+
         if (img && img.hasAttribute('srcset')) {
             const baseSize = isDoubleSpread ? 50 : 100;
             const zoomedSize = Math.round(baseSize * zoomLevel);
@@ -35,15 +50,22 @@ function updateImageSizes() {
 
             if (img.sizes !== newSizes) {
                 img.sizes = newSizes;
-                // Force browser to re-evaluate srcset by re-assigning it
-                const srcset = img.srcset;
-                img.srcset = '';
-                img.srcset = srcset;
+
+                // Only force reload if we are zooming IN (zoomLevel > 1)
+                // and only if the sizes actually changed significantly
+                if (zoomLevel > 1) {
+                    const srcset = img.srcset;
+                    img.srcset = '';
+                    img.srcset = srcset;
+                }
             }
 
-            // Hack to force repaint/high-res rasterization on some browsers
-            // Toggling transform or opacity sometimes helps
-            img.style.transform = 'translateZ(0)';
+            // Only apply hack if zoomed
+            if (zoomLevel > 1) {
+                img.style.transform = 'translateZ(0)';
+            } else {
+                img.style.transform = '';
+            }
         }
     });
 }
@@ -63,6 +85,9 @@ function updateTransform() {
     }
 
     // Constrain pan
+    // The content size is BOOK_WIDTH_AT_1X * zoom (visually).
+    // The wrapper size is wrapper.clientWidth.
+    // Pan limits should be based on visual size.
     if (zoom > 1) {
         const maxPanX = Math.max(0, (BOOK_WIDTH_AT_1X * zoom - wrapper.clientWidth) / 2);
         const maxPanY = Math.max(0, (BOOK_HEIGHT_AT_1X * zoom - wrapper.clientHeight) / 2);
@@ -74,28 +99,47 @@ function updateTransform() {
     }
 
     // Apply transform
-    container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+    // We resize the container to achieve zoom. This ensures high resolution (re-layout) 
+    // and correct mouse interaction (native coordinates).
+    container.style.width = `${BOOK_WIDTH_AT_1X * zoom}px`;
+    container.style.height = `${BOOK_HEIGHT_AT_1X * zoom}px`;
+    container.style.transform = `translate(${panX}px, ${panY}px)`;
+
+    // Force StPageFlip to update its size
+    // StPageFlip listens to window resize when size is 'stretch'.
+    // We dispatch a resize event to trigger it.
+    // We use a flag to prevent our own resize listener from creating an infinite loop.
+    window.isProgrammaticResize = true;
+    window.dispatchEvent(new Event('resize'));
+    window.isProgrammaticResize = false;
 
     // Update cursor and disable/enable flipping
-    const flipbookEl = document.getElementById('flipbook');
+    let blocker = document.getElementById('zoom-blocker');
+    if (!blocker) {
+        blocker = document.createElement('div');
+        blocker.id = 'zoom-blocker';
+        blocker.style.position = 'absolute';
+        blocker.style.top = '0';
+        blocker.style.left = '0';
+        blocker.style.width = '100%';
+        blocker.style.height = '100%';
+        blocker.style.zIndex = '9999'; // Above StPageFlip
+        blocker.style.display = 'none';
+        // We want the blocker to capture events but NOT block panning.
+        // Panning is on #flipbook-wrapper.
+        // This blocker should be INSIDE #flipbook-container or #flipbook-wrapper?
+        // If it's in wrapper, it covers everything.
+        // We want to block interactions with the BOOK pages (peeling).
+        // So we put it over the book.
+        document.getElementById('flipbook-container').appendChild(blocker);
+    }
 
     if (zoom > 1) {
         wrapper.style.cursor = 'grab';
-        // Disable flipping by blocking pointer events on the book
-        // We need to ensure this doesn't block panning (which is on wrapper)
-        if (flipbookEl) {
-            // Disable pointer events on the flipbook itself to prevent drags/clicks reaching StPageFlip
-            flipbookEl.style.pointerEvents = 'none';
-
-            // Also try to disable user-select to prevent highlighting
-            flipbookEl.style.userSelect = 'none';
-        }
+        blocker.style.display = 'block';
     } else {
         wrapper.style.cursor = 'default';
-        if (flipbookEl) {
-            flipbookEl.style.pointerEvents = 'auto';
-            flipbookEl.style.userSelect = 'auto';
-        }
+        blocker.style.display = 'none';
     }
 
     window.currentZoom = zoom;
@@ -121,24 +165,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const flipbookEl = document.getElementById('flipbook');
 
     // Calculate dimensions
+    // RESOLUTION_FACTOR = 1. We rely on resizing the container for zoom.
+    const RESOLUTION_FACTOR = 1;
+
     BOOK_WIDTH_AT_1X = wrapper.clientWidth * 0.9;
     BOOK_HEIGHT_AT_1X = wrapper.clientHeight * 0.9;
 
-    // StPageFlip takes width of a SINGLE page
-    // If doubleSpread (spread mode), we show 1 page, so pageWidth = container width.
-    // If single pages (book mode), we show 2 pages, so pageWidth = container width / 2.
-    const pageWidth = isDoubleSpread ? BOOK_WIDTH_AT_1X : BOOK_WIDTH_AT_1X / 2;
-    const pageHeight = BOOK_HEIGHT_AT_1X;
+    // Container size matches book size (at 1x)
+    const container = document.getElementById('flipbook-container');
+    if (container) {
+        container.style.width = `${BOOK_WIDTH_AT_1X}px`;
+        container.style.height = `${BOOK_HEIGHT_AT_1X}px`;
+    }
 
     // Initialize StPageFlip
+    // We use size: 'stretch' so it adapts to the container size (which we resize for zoom)
     pageFlip = new St.PageFlip(flipbookEl, {
-        width: pageWidth,
-        height: pageHeight,
-        size: 'fixed',
-        minWidth: pageWidth,
-        maxWidth: pageWidth,
-        minHeight: pageHeight,
-        maxHeight: pageHeight,
+        width: isDoubleSpread ? BOOK_WIDTH_AT_1X : BOOK_WIDTH_AT_1X / 2,
+        height: BOOK_HEIGHT_AT_1X,
+        size: 'stretch',
+        // "You must set threshold values ​​with size: 'stretch'"
+        minWidth: 100,
+        maxWidth: 10000,
+        minHeight: 100,
+        maxHeight: 10000,
+        autoSize: false, // We control the container size
         showCover: false,
         usePortrait: isDoubleSpread, // If doubleSpread (spreads in PDF), show 1 page. If single pages, show 2 pages (landscape).
         startPage: 0, // 0-based index
@@ -148,6 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
         swipeDistance: 30,
         mobileScrollSupport: false // We handle panning
     });
+
+    // Store factor globally
+    window.RESOLUTION_FACTOR = RESOLUTION_FACTOR;
 
     // Load pages
     pageFlip.loadFromHTML(document.querySelectorAll('.page-container'));
@@ -220,6 +274,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mouse panning
     wrapper.addEventListener('mousedown', e => {
         if (zoom === 1) return;
+
+        // Ignore events from controls
+        if (e.target.closest('#controls-panel')) return;
+
         isPanning = true;
         startX = e.clientX - panX;
         startY = e.clientY - panY;
@@ -243,5 +301,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial setup
     updateImageSizes();
+    // Force initial transform to scale down the high-res book
+    updateTransform();
+
+    // Handle window resize to keep centering correct
+    window.addEventListener('resize', () => {
+        // Prevent infinite loop if resize was triggered by updateTransform
+        if (window.isProgrammaticResize) return;
+
+        // We might want to re-calculate BOOK_WIDTH_AT_1X if we want it responsive-ish
+        // But StPageFlip is fixed size. 
+        // At least we should ensure centering is correct.
+        // Resetting BOOK_WIDTH_AT_1X might be dangerous if we don't resize the book.
+        // For now, just re-apply transform to ensure centering.
+        updateTransform();
+    });
+
     console.log('StPageFlip initialized');
 });

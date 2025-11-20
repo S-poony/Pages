@@ -117,8 +117,8 @@ class FlipbookApp {
       const addBlankPage = doubleSpread && !!this.blankPageToggle?.checked;
 
       const opts = this.enableResponsive
-        ? { scales: [1, 2, 4, 6], format: 'image/jpeg', quality: 0.92, doubleSpread }
-        : { scale: 2, format: 'image/jpeg', quality: 0.92, doubleSpread };
+        ? { scales: null, format: 'image/jpeg', quality: 0.92, doubleSpread }
+        : { scale: 3, format: 'image/jpeg', quality: 0.92, doubleSpread };
 
       const { pageCount, renderPage, renderPageVariants } = await processPdf(file, opts);
 

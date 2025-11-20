@@ -22,6 +22,8 @@ body {
     position: relative;
     transition: transform 0.15s ease-out;
     transform-origin: center center;
+    flex-shrink: 0;
+    /* Allow growing beyond wrapper size */
 }
 
 
@@ -50,9 +52,9 @@ body {
     max-width: 100px;
     margin: 0 auto;
 
-    opacity: 0.08; 
-    transition: opacity 0.3s ease-in-out; 
- 
+    opacity: 0.08;
+    transition: opacity 0.3s ease-in-out;
+
     z-index: 1000;
     background: rgba(255, 255, 255, 0.9);
     padding: 12px 16px;
