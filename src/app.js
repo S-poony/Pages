@@ -5,9 +5,7 @@
 
 import { processPdf } from './processor.js';
 import { generateFlipbookHtml, wrapFlipbookJs } from './generator.js';
-import turnCss from './turn.css?raw';
-import turnJs from './lib/turn.min.js?raw';
-import jqueryJs from './lib/jquery.min.js?raw';
+import pageFlipJs from 'page-flip/dist/js/page-flip.browser.js?raw';
 import flipbookCss from './flipbook.css?raw';
 import flipbookJs from './flipbook.js?raw';
 
@@ -119,7 +117,7 @@ class FlipbookApp {
       const addBlankPage = doubleSpread && !!this.blankPageToggle?.checked;
 
       const opts = this.enableResponsive
-        ? { scales: [1.5, 3, 5], format: 'image/jpeg', quality: 0.92, doubleSpread }
+        ? { scales: [1, 2, 4, 6], format: 'image/jpeg', quality: 0.92, doubleSpread }
         : { scale: 2, format: 'image/jpeg', quality: 0.92, doubleSpread };
 
       const { pageCount, renderPage, renderPageVariants } = await processPdf(file, opts);
@@ -159,10 +157,8 @@ class FlipbookApp {
         addBlankPage
       }, {
         loadCss: async () => flipbookCss,
-        loadTurnCss: async () => turnCss,
         loadJs: async () => wrapFlipbookJs(flipbookJs),
-        loadTurnJs: async () => turnJs,
-        loadJqueryJs: async () => jqueryJs
+        loadPageFlipJs: async () => pageFlipJs
       });
 
       this.currentHtml = html;

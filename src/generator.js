@@ -37,19 +37,14 @@ export const defaultAssetLoader = {
             return '';
         }
     },
-    
-    async loadTurnJs() {
+
+    async loadPageFlipJs() {
         try {
-            const response = await fetch('./src/lib/turn.min.js');
-            return await response.text();
-        } catch {
+            // In dev mode, we might not be able to fetch from node_modules easily via fetch in the browser context
+            // if it's not served. But the default loader is mostly for standalone or dev.
+            // For the app, we pass the content directly.
+            // If we need a fallback for the default loader:
             return '';
-        }
-    },
-    async loadJqueryJs() {
-        try {
-            const response = await fetch('./src/lib/jquery.min.js');
-            return await response.text();
         } catch {
             return '';
         }
@@ -92,7 +87,7 @@ export function wrapFlipbookJs(jsContent) {
  */
 function generateSrcset(variants) {
     if (!variants || variants.length === 0) return '';
-    
+
     return variants
         .map(v => `${v.dataUrl} ${v.width}w`)
         .join(', ');
@@ -122,9 +117,9 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
     const pagesHtml = Array.from({ length: pageImages.length }, (_, i) => {
         const pageNum = i + 1;
         const pageData = pageImages[i];
-        
+
         const isLegacyFormat = typeof pageData === 'string';
-        
+
         let imgTag;
         if (isLegacyFormat) {
             const imgSrc = pageData.replace(/"/g, '&quot;') || '';
@@ -134,15 +129,15 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
             if (!Array.isArray(variants) || variants.length === 0) {
                 throw new Error(`Page ${pageNum} has no image variants`);
             }
-            
+
             const src = variants[0].dataUrl.replace(/"/g, '&quot;');
             const srcset = generateSrcset(variants);
             const sizes = generateSizes(doubleSpread);
             const objectPosition = doubleSpread ? (pageNum % 2 === 0 ? 'left' : 'right') : 'center';
-            
+
             imgTag = `<img src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page ${pageNum}" loading="lazy" style="object-position: ${objectPosition} center;" />`;
         }
-        
+
         return `
 <!-- =================================================================== -->
 <!-- PAGE ${pageNum} - ENRICHMENT ZONE -->
@@ -157,7 +152,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
 <!-- PAGE ${pageNum} END -->
 <!-- =================================================================== -->`;
     }).join('');
-    
+
     return pagesHtml;
 }
 
@@ -169,7 +164,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
  * @returns {Promise<string>} Complete HTML document
  */
 export async function generateFlipbookHtml(pageImages, options = {},
-     assetLoader = defaultAssetLoader) {
+    assetLoader = defaultAssetLoader) {
     if (!Array.isArray(pageImages)) {
         throw new Error('pageImages must be an array');
     }
@@ -179,17 +174,15 @@ export async function generateFlipbookHtml(pageImages, options = {},
     }
 
     const { title = 'Flipbook', doubleSpread = false, addBlankPage = false } = options;
-    const [baseCss, turnCss, js, turnJs, jqueryJs] = await Promise.all([
+    const [baseCss, js, pageFlipJs] = await Promise.all([
         assetLoader.loadCss().catch(() => ''),
-        assetLoader.loadTurnCss().catch(() => ''),
         assetLoader.loadJs().catch(() => ''),
-        assetLoader.loadTurnJs().catch(() => ''),
-        assetLoader.loadJqueryJs().catch(() => '')
+        assetLoader.loadPageFlipJs().catch(() => '')
     ]);
 
     // Construct the array of pages conditionally
     const pagesArray = [];
-    
+
     // Add blank cover (single page, right side) only if both doubleSpread AND addBlankPage are true
     if (doubleSpread && addBlankPage) {
         pagesArray.push(
@@ -201,13 +194,13 @@ export async function generateFlipbookHtml(pageImages, options = {},
     pagesArray.push(
         generatePagesHtml(pageImages, doubleSpread)
     );
-    
+
     // Join all page HTML
     const pagesHtml = pagesArray.join('');
-    
+
     const actualPageCount = pageImages.length;
-    
-       return `<!DOCTYPE html>
+
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -235,7 +228,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
         }
         /* --- END UTILITIES --- */
 
-        ${turnCss}${baseCss}
+        ${baseCss}
         </style>
 </head>
 <body>
@@ -262,8 +255,7 @@ ENRICHMENT GUIDE:
         window.__PAGE_COUNT__ = ${actualPageCount};
         window.__DOUBLE_SPREAD__ = ${doubleSpread};
     </script>
-    <script>${jqueryJs}</script>
-    <script>${turnJs}</script>
+    <script>${pageFlipJs}</script>
     <script>${js}</script>
 </body>
 </html>`;
