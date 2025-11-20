@@ -87,8 +87,8 @@ function updateTransform() {
     if (!wrapper || !container) return;
 
     if (BOOK_WIDTH_AT_1X === 0) {
-        BOOK_WIDTH_AT_1X = wrapper.clientWidth * 0.9;
-        BOOK_HEIGHT_AT_1X = wrapper.clientHeight * 0.9;
+        BOOK_WIDTH_AT_1X = wrapper.clientWidth;
+        BOOK_HEIGHT_AT_1X = wrapper.clientHeight;
     }
 
     // Constrain pan
@@ -172,9 +172,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const flipbookEl = document.getElementById('flipbook');
 
     // Calculate dimensions
-
-    BOOK_WIDTH_AT_1X = wrapper.clientWidth * 0.9;
-    BOOK_HEIGHT_AT_1X = wrapper.clientHeight * 0.9;
+    // User requested "container follows the book" and "no big margins".
+    // We set the base size to the full wrapper size.
+    BOOK_WIDTH_AT_1X = wrapper.clientWidth;
+    BOOK_HEIGHT_AT_1X = wrapper.clientHeight;
 
     // Container size matches book size (at 1x)
     const container = document.getElementById('flipbook-container');
@@ -182,6 +183,24 @@ document.addEventListener('DOMContentLoaded', () => {
         container.style.width = `${BOOK_WIDTH_AT_1X}px`;
         container.style.height = `${BOOK_HEIGHT_AT_1X}px`;
     }
+
+    // Store original pages for re-initialization
+    // CRITICAL: Must be done BEFORE clearing flipbookEl
+    const originalPages = Array.from(document.querySelectorAll('.page-container')).map(node => node.cloneNode(true));
+
+    // Ensure flipbook element exists and is clean
+    if (!flipbookEl) {
+        const newFlipbookEl = document.createElement('div');
+        newFlipbookEl.id = 'flipbook';
+        document.getElementById('flipbook-container').appendChild(newFlipbookEl);
+        flipbookEl = newFlipbookEl;
+    }
+    flipbookEl.innerHTML = ''; // Clear previous content
+
+    // Re-append pages
+    originalPages.forEach(page => {
+        flipbookEl.appendChild(page.cloneNode(true));
+    });
 
     // Initialize StPageFlip
     // We use size: 'stretch' so it adapts to the container size (which we resize for zoom)
@@ -212,8 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Store globally for debugging
     window.pageFlip = pageFlip;
 
-    let updateImageTimeout = null; // Declare debounce timeout variable
-
     // Events
     pageFlip.on('init', () => {
         console.log('StPageFlip initialized event');
@@ -223,11 +240,8 @@ document.addEventListener('DOMContentLoaded', () => {
     pageFlip.on('flip', (e) => {
         const pageInput = document.getElementById('page-input');
         if (pageInput) {
-            // e.data is the page index (0-based)
-            // We want to display 1-based page number.
             pageInput.value = e.data + 1;
         }
-        // Images are updated only when zooming.
     });
 
     // Cache control elements
@@ -236,26 +250,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageInput = document.getElementById('page-input');
 
     // Zoom slider
-    zoomSlider?.addEventListener('input', e => {
-        let newZoom = parseFloat(e.target.value);
-        if (Math.abs(newZoom - 1) < ZOOM_RESET_TOLERANCE) newZoom = 1;
-        zoom = newZoom;
-        if (zoomText) zoomText.textContent = `${Math.round(zoom * 100)}%`;
-        updateTransform();
+    if (zoomSlider) {
+        zoomSlider.addEventListener('input', e => {
+            let newZoom = parseFloat(e.target.value);
+            if (Math.abs(newZoom - 1) < ZOOM_RESET_TOLERANCE) newZoom = 1;
+            zoom = newZoom;
+            if (zoomText) zoomText.textContent = `${Math.round(zoom * 100)}%`;
+            updateTransform();
 
-        // Debounce image update for zoom
-        if (updateImageTimeout) clearTimeout(updateImageTimeout);
-        updateImageTimeout = setTimeout(updateImageSizes, 200);
-    });
+            // Debounce image update for zoom
+            if (updateImageTimeout) clearTimeout(updateImageTimeout);
+            updateImageTimeout = setTimeout(updateImageSizes, 200);
+        });
 
-    // Prevent arrow keys from changing the slider value
-    // This ensures that arrow keys always turn pages (handled by document listener),
-    // even if the slider has focus.
-    zoomSlider?.addEventListener('keydown', e => {
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-            e.preventDefault();
-        }
-    });
+        // Prevent arrow keys from changing the slider value
+        zoomSlider.addEventListener('keydown', e => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+    }
 
     // Page input handler
     if (pageInput) {
@@ -263,8 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (zoom > 1) return; // Disable when zoomed
             const targetPage = parseInt(e.target.value);
             if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= pageCount) {
-                // StPageFlip uses 0-based index
-                // Also, flip() takes the page index.
                 pageFlip.flip(targetPage - 1);
             }
         });
@@ -273,32 +285,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // Keyboard navigation
     document.addEventListener('keydown', e => {
         if (zoom > 1) {
-            // Prevent default to avoid scrolling or other side effects
             if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) {
                 e.preventDefault();
             }
             return;
         }
 
-        if (e.key === 'ArrowRight') {
-            pageFlip.flipNext();
-        } else if (e.key === 'ArrowLeft') {
-            pageFlip.flipPrev();
+        if (pageFlip) {
+            if (e.key === 'ArrowRight') {
+                pageFlip.flipNext();
+            } else if (e.key === 'ArrowLeft') {
+                pageFlip.flipPrev();
+            }
         }
     });
 
     // Mouse panning
     wrapper.addEventListener('mousedown', e => {
         if (zoom === 1) return;
-
-        // Ignore events from controls
         if (e.target.closest('#controls-panel')) return;
 
         isPanning = true;
         startX = e.clientX - panX;
         startY = e.clientY - panY;
         wrapper.style.cursor = 'grabbing';
-        e.preventDefault(); // Prevent text selection or other defaults
+        e.preventDefault();
     });
 
     window.addEventListener('mousemove', e => {
@@ -319,37 +330,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Force initial transform to scale down the high-res book
     updateTransform();
 
-    // Handle window resize to keep centering correct
+    // Handle window resize
     window.addEventListener('resize', () => {
-        // Prevent infinite loop if resize was triggered by updateTransform
         if (window.isProgrammaticResize) return;
 
-        // We might want to re-calculate BOOK_WIDTH_AT_1X if we want it responsive-ish
-        // But StPageFlip is fixed size. 
-        // At least we should ensure centering is correct.
-        // Resetting BOOK_WIDTH_AT_1X might be dangerous if we don't resize the book.
-        // For now, just re-apply transform to ensure centering.
+        // Recalculate base dimensions on resize
+        BOOK_WIDTH_AT_1X = wrapper.clientWidth;
+        BOOK_HEIGHT_AT_1X = wrapper.clientHeight;
+
         updateTransform();
     });
 
-    console.log('StPageFlip initialized');
-
-    // Hack: Disable automatic corner peeling (hover effect)
-    // We block mouse/pointer move events unless the mouse is down.
-    // This prevents StPageFlip from seeing the mouse hover over corners.
-    let isMouseDownOnBook = false;
-    flipbookEl.addEventListener('mousedown', () => { isMouseDownOnBook = true; });
-    flipbookEl.addEventListener('touchstart', () => { isMouseDownOnBook = true; }); // For mobile
-    window.addEventListener('mouseup', () => { isMouseDownOnBook = false; });
-    window.addEventListener('touchend', () => { isMouseDownOnBook = false; });
-
-    const blockHover = (e) => {
-        if (!isMouseDownOnBook) {
-            e.stopPropagation();
-        }
-    };
-
-    ['mousemove', 'pointermove'].forEach(evt => {
-        flipbookEl.addEventListener(evt, blockHover, { capture: true });
-    });
+    console.log('StPageFlip setup complete');
 });
