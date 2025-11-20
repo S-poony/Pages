@@ -292,9 +292,7 @@ class FlipbookApp {
     this.fileInput.value = '';
     this.currentHtml = null;
     this.blankPageOption.classList.remove('visible');
-    // We do NOT clear localStorage token here, because users might want to create a new PDF 
-    // but still update the SAME site identity. 
-    // If you want "Reset" to mean "New Site Identity", add: localStorage.removeItem(STORAGE_KEY);
+
   }
   showError(msg) { this.errorMessage.textContent = msg; this.errorMessage.classList.remove('hidden'); }
   hideError() { this.errorMessage.classList.add('hidden'); }
