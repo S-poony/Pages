@@ -458,6 +458,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('StPageFlip setup complete');
 
+    // Prevent pinch-zoom and trackpad zoom
+    document.addEventListener('wheel', function (e) {
+        if (e.ctrlKey) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function (e) {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    document.addEventListener('gesturestart', function (e) {
+        e.preventDefault();
+    });
+
     // Hack: Disable automatic corner peeling (hover effect)
     // We block mouse/pointer move events unless the mouse is down.
     // This prevents StPageFlip from seeing the mouse hover over corners.
