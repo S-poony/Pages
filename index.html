@@ -127,6 +127,31 @@
         </footer>
     </div>
 
+    <!-- Success Modal -->
+    <div id="success-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title">Flipbook Published</h3>
+                <button id="modal-close-btn" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-message">Your flipbook is now live! Anyone with the link can view it.</p>
+
+                <div class="url-container">
+                    <input type="text" id="published-url" readonly>
+                    <button id="copy-url-btn" class="btn btn-secondary btn-sm">Copy</button>
+                </div>
+
+                <div class="modal-warning">
+                    <strong>Important:</strong> Save this URL now. You won't be able to find it later if you lose it.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-done-btn" class="btn btn-primary">Done</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="src/app.js"></script>
 </body>
 

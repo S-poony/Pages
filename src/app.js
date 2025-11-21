@@ -56,6 +56,12 @@ class FlipbookApp {
     this.handleDoubleSpreadToggle();
 
 
+    // Modal Elements
+    this.modal = document.getElementById('success-modal');
+    this.modalCloseBtn = document.getElementById('modal-close-btn');
+    this.modalDoneBtn = document.getElementById('modal-done-btn');
+    this.copyUrlBtn = document.getElementById('copy-url-btn');
+    this.publishedUrlInput = document.getElementById('published-url');
   }
 
   setupEventListeners() {
@@ -72,6 +78,11 @@ class FlipbookApp {
     if (this.downloadZipBtn) this.downloadZipBtn.addEventListener('click', () => this.downloadFlipbookZip());
     if (this.openTabBtn) this.openTabBtn.addEventListener('click', () => this.openInNewTab());
     this.resetBtn.addEventListener('click', () => this.reset());
+
+    // Modal Listeners
+    if (this.modalCloseBtn) this.modalCloseBtn.addEventListener('click', () => this.closeModal());
+    if (this.modalDoneBtn) this.modalDoneBtn.addEventListener('click', () => this.closeModal());
+    if (this.copyUrlBtn) this.copyUrlBtn.addEventListener('click', () => this.copyUrl());
   }
 
 
@@ -224,7 +235,8 @@ class FlipbookApp {
         const blob = new Blob([byteArray], { type: contentType });
 
         // Upload
-        const response = await fetch(`${WORKER_URL}/upload`, {
+        // We append the filename so the worker can save it with the correct extension
+        const response = await fetch(`${WORKER_URL}/upload/${asset.filename}`, {
           method: 'PUT',
           headers: { 'Content-Type': contentType },
           body: blob
@@ -258,16 +270,56 @@ class FlipbookApp {
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const data = await response.json();
 
-      // Show success
-      alert(`🚀 Site Published Successfully!\n\nPublic URL: ${data.url}`);
-      window.open(data.url, '_blank');
+      // Show success modal
+      this.showSuccessModal(data.url);
 
     } catch (err) {
       console.error(err);
       alert(`Failed to publish: ${err.message}`);
-    } finally {
+      // Re-enable button on error
       this.publishBtn.disabled = false;
       this.publishBtn.innerHTML = originalText;
+    }
+  }
+
+  showSuccessModal(url) {
+    // Disable button and change text
+    this.publishBtn.disabled = true;
+    this.publishBtn.innerHTML = `
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 6L9 17l-5-5"></path>
+      </svg>
+      Published
+    `;
+    this.publishBtn.classList.add('btn-success'); // Optional: add a success class if you want to style it green
+
+    // Populate Modal
+    this.publishedUrlInput.value = url;
+    this.modal.classList.remove('hidden');
+
+    // Auto-copy
+    this.copyUrl();
+  }
+
+  closeModal() {
+    this.modal.classList.add('hidden');
+  }
+
+  async copyUrl() {
+    try {
+      await navigator.clipboard.writeText(this.publishedUrlInput.value);
+      const originalText = this.copyUrlBtn.innerText;
+      this.copyUrlBtn.innerText = 'Copied!';
+      this.copyUrlBtn.classList.add('btn-primary');
+      this.copyUrlBtn.classList.remove('btn-secondary');
+
+      setTimeout(() => {
+        this.copyUrlBtn.innerText = originalText;
+        this.copyUrlBtn.classList.remove('btn-primary');
+        this.copyUrlBtn.classList.add('btn-secondary');
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
     }
   }
 

@@ -277,23 +277,23 @@ body {
     body {
         padding: var(--spacing-sm);
     }
-    
+
     .title {
         font-size: 2.5rem;
     }
-    
+
     .main-content {
         padding: var(--spacing-md);
     }
-    
+
     .upload-area {
         padding: var(--spacing-md);
     }
-    
+
     .result-actions {
         flex-direction: column;
     }
-    
+
     .btn {
         width: 100%;
         justify-content: center;
@@ -310,7 +310,9 @@ body {
 }
 
 @keyframes fadeIn {
-    to { opacity: 1; }
+    to {
+        opacity: 1;
+    }
 }
 
 /* Custom toggle switch */
@@ -342,7 +344,8 @@ body {
     position: relative;
     width: 48px;
     height: 24px;
-    background-color: #d1d5db; /* gray-300 */
+    background-color: #d1d5db;
+    /* gray-300 */
     border-radius: 24px;
     transition: 0.3s;
 }
@@ -362,11 +365,12 @@ body {
 }
 
 /* Checked state */
-.toggle-switch input[type="checkbox"]:checked + .slider {
-    background-color: #10b981; /* emerald-500 */
+.toggle-switch input[type="checkbox"]:checked+.slider {
+    background-color: #10b981;
+    /* emerald-500 */
 }
 
-.toggle-switch input[type="checkbox"]:checked + .slider::before {
+.toggle-switch input[type="checkbox"]:checked+.slider::before {
     transform: translateX(24px);
 }
 
@@ -374,7 +378,8 @@ body {
 .toggle-switch .label-text {
     font-family: 'Inter', sans-serif;
     font-size: 14px;
-    color: #374151; /* gray-700 */
+    color: #374151;
+    /* gray-700 */
     font-weight: 400;
 }
 
@@ -388,7 +393,9 @@ body {
 }
 
 @keyframes fadeIn {
-    to { opacity: 1; }
+    to {
+        opacity: 1;
+    }
 }
 
 /* Toggle switch styles */
@@ -436,11 +443,11 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.toggle-switch input:checked + .slider {
+.toggle-switch input:checked+.slider {
     background-color: #10b981;
 }
 
-.toggle-switch input:checked + .slider::before {
+.toggle-switch input:checked+.slider::before {
     transform: translateX(24px);
 }
 
@@ -464,4 +471,116 @@ body {
     opacity: 1;
     max-height: 60px;
     margin-top: 16px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-box {
+    background: white;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+    overflow: hidden;
+}
+
+.modal-overlay:not(.hidden) .modal-box {
+    transform: translateY(0);
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-family: 'Crimson Text', serif;
+    font-size: 1.5rem;
+    color: var(--color-charcoal);
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--color-charcoal);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-message {
+    margin-bottom: 20px;
+    color: #555;
+}
+
+.url-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.url-container input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    background: #f9f9f9;
+    color: #333;
+}
+
+.url-container input:focus {
+    outline: none;
+    border-color: var(--color-terracotta);
+}
+
+.modal-warning {
+    background: #fff8e6;
+    border: 1px solid #ffe0b2;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #b45309;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    background: #f9f9f9;
+    border-top: 1px solid #eee;
+    text-align: right;
 }
