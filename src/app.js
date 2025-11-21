@@ -72,6 +72,15 @@ class FlipbookApp {
   setupEventListeners() {
     this.uploadArea.addEventListener('click', () => this.fileInput.click());
     this.fileInput.addEventListener('change', e => this.handleFileSelect(e));
+
+    // Zoom Slider Listener
+    if (this.zoomInput) {
+      this.zoomInput.addEventListener('input', (e) => {
+        const zoom = parseFloat(e.target.value);
+        this.updateZoom(zoom);
+      });
+    }
+
     ['dragover', 'dragleave', 'drop'].forEach(evt =>
       this.uploadArea.addEventListener(evt, e => this[`handle${evt.charAt(0).toUpperCase() + evt.slice(1)}`](e))
     );

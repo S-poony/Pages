@@ -96,8 +96,10 @@ function updateTransform() {
     // The wrapper size is wrapper.clientWidth.
     // Pan limits should be based on visual size.
     if (zoom > 1) {
-        const maxPanX = Math.max(0, (BOOK_WIDTH_AT_1X * zoom - wrapper.clientWidth) / 2);
-        const maxPanY = Math.max(0, (BOOK_HEIGHT_AT_1X * zoom - wrapper.clientHeight) / 2);
+        // Add a small buffer (e.g. 50px) to allow reaching the edges easily
+        const buffer = 50;
+        const maxPanX = Math.max(0, (BOOK_WIDTH_AT_1X * zoom - wrapper.clientWidth) / 2) + buffer;
+        const maxPanY = Math.max(0, (BOOK_HEIGHT_AT_1X * zoom - wrapper.clientHeight) / 2) + buffer;
         panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
         panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
     } else {
@@ -179,19 +181,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Use injected aspect ratio or fallback to A4-ish (0.707)
         const pageAspectRatio = window.__PAGE_ASPECT_RATIO__ || 0.707;
 
-        // Determine layout mode based on width threshold
-        // <= 768px: Mobile/Portrait (Single Page)
-        // > 768px: Desktop/Landscape (Double Spread)
-        const isNarrowWindow = wrapperWidth <= 768;
-
-        let targetAspectRatio;
-        if (isNarrowWindow) {
-            // Single page view: Container matches single page aspect ratio
-            targetAspectRatio = pageAspectRatio;
-        } else {
-            // Double spread view: Container matches two pages side-by-side
-            targetAspectRatio = pageAspectRatio * 2;
-        }
+        // Since we force usePortrait: false (always 2 pages), 
+        // the target aspect ratio is ALWAYS double spread.
+        // This prevents large vertical margins on mobile.
+        const targetAspectRatio = pageAspectRatio * 2;
 
         // Calculate dimensions to fit within wrapper while maintaining targetAspectRatio
         // 1. Try fitting by width
@@ -406,42 +399,69 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Mouse panning
-    wrapper.addEventListener('mousedown', e => {
-        if (zoom === 1) return;
+    // Mouse/Touch Events for Panning
+    const onStart = (clientX, clientY) => {
+        if (zoom > 1) {
+            isPanning = true;
+            startX = clientX - panX;
+            startY = clientY - panY;
+            wrapper.style.cursor = 'grabbing';
+        }
+    };
+
+    const onMove = (clientX, clientY) => {
+        if (isPanning && zoom > 1) {
+            panX = clientX - startX;
+            panY = clientY - startY;
+            updateTransform();
+        }
+    };
+
+    const onEnd = () => {
+        isPanning = false;
+        if (zoom > 1) wrapper.style.cursor = 'grab';
+    };
+
+    // Mouse Listeners
+    wrapper.addEventListener('mousedown', (e) => {
         if (e.target.closest('#controls-panel')) return;
-
-        isPanning = true;
-        startX = e.clientX - panX;
-        startY = e.clientY - panY;
-        wrapper.style.cursor = 'grabbing';
-        e.preventDefault();
+        onStart(e.clientX, e.clientY);
     });
-
-    window.addEventListener('mousemove', e => {
-        if (!isPanning) return;
-        panX = e.clientX - startX;
-        panY = e.clientY - startY;
-        updateTransform();
-    });
-
-    window.addEventListener('mouseup', () => {
+    window.addEventListener('mousemove', (e) => {
         if (isPanning) {
-            isPanning = false;
-            wrapper.style.cursor = zoom > 1 ? 'grab' : 'default';
+            e.preventDefault();
+            onMove(e.clientX, e.clientY);
         }
     });
+    window.addEventListener('mouseup', onEnd);
+
+    // Touch Listeners
+    wrapper.addEventListener('touchstart', (e) => {
+        if (e.target.closest('#controls-panel')) return;
+        if (e.touches.length === 1) {
+            onStart(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+        if (isPanning && e.touches.length === 1) {
+            // e.preventDefault() is already called in the global listener for >1 touches
+            // But we need it here too to prevent scrolling if touch-action fails
+            if (e.cancelable) e.preventDefault();
+            onMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', onEnd);
 
     // Initial setup
-    // Force initial transform to scale down the high-res book
     updateTransform();
 
     // Handle window resize
     window.addEventListener('resize', () => {
         if (window.isProgrammaticResize) return;
 
-        // Recalculate base dimensions on resize
-        // Recalculate dimensions on resize using aspect ratio
+        // Recalculate dimensions on resize
         const dims = calculateDimensions();
         BOOK_WIDTH_AT_1X = dims.width;
         BOOK_HEIGHT_AT_1X = dims.height;
@@ -453,6 +473,9 @@ document.addEventListener('DOMContentLoaded', () => {
             container.style.height = `${BOOK_HEIGHT_AT_1X}px`;
         }
 
+        // Re-center
+        panX = 0;
+        panY = 0;
         updateTransform();
     });
 
