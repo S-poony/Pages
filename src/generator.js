@@ -7,6 +7,7 @@
  * @property {string} title - Title of the flipbook
  * @property {boolean} doubleSpread - Whether to enable double spread mode
  * @property {boolean} addBlankPage - Whether to add a blank page at start (only applies when doubleSpread is true)
+ * @property {'single'|'folder'} mode - Generation mode: 'single' (embedded base64) or 'folder' (external images)
  */
 
 /**
@@ -83,13 +84,18 @@ export function wrapFlipbookJs(jsContent) {
 /**
  * Generates srcset string from image variants
  * @param {Array<RenderVariant>} variants - Array of image variants
+ * @param {string} [basePath] - Optional base path for external images (e.g. 'images/')
+ * @param {number} [pageIndex] - Page index for naming
  * @returns {string} srcset attribute value
  */
-function generateSrcset(variants) {
+function generateSrcset(variants, basePath = '', pageIndex = 0) {
     if (!variants || variants.length === 0) return '';
 
     return variants
-        .map(v => `${v.dataUrl} ${v.width}w`)
+        .map((v, i) => {
+            const src = basePath ? `${basePath}page-${pageIndex + 1}-${v.width}w.jpg` : v.dataUrl;
+            return `${src} ${v.width}w`;
+        })
         .join(', ');
 }
 
@@ -107,9 +113,10 @@ function generateSizes(doubleSpread) {
  * Generates HTML for individual pages
  * @param {Array<string|Array<RenderVariant>>} pageImages - Array of either data URLs or variant arrays
  * @param {boolean} doubleSpread - Whether in double spread mode
+ * @param {'single'|'folder'} mode - Generation mode
  * @returns {string} HTML string for all pages
  */
-export function generatePagesHtml(pageImages, doubleSpread = false) {
+export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'single') {
     if (!Array.isArray(pageImages)) {
         throw new Error('pageImages must be an array');
     }
@@ -122,16 +129,29 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
 
         let imgTag;
         if (isLegacyFormat) {
-            const imgSrc = pageData.replace(/"/g, '&quot;') || '';
-            imgTag = `<img src="${imgSrc}" alt="Page ${pageNum}" loading="lazy" />`;
+            // Legacy format only supports single mode (embedded) effectively
+            // or we'd need to save the string as file.
+            // For folder mode, we assume we'll save this dataUrl as a file.
+            const src = mode === 'folder' ? `images/page-${pageNum}.jpg` : pageData.replace(/"/g, '&quot;');
+            imgTag = `<img src="${src}" alt="Page ${pageNum}" loading="lazy" />`;
         } else {
             const variants = pageData;
             if (!Array.isArray(variants) || variants.length === 0) {
                 throw new Error(`Page ${pageNum} has no image variants`);
             }
 
-            const src = variants[0].dataUrl.replace(/"/g, '&quot;');
-            const srcset = generateSrcset(variants);
+            let src, srcset;
+            if (mode === 'folder') {
+                // Use external files
+                // We assume the largest variant is the main src, or the first one
+                src = `images/page-${pageNum}-${variants[0].width}w.jpg`;
+                srcset = generateSrcset(variants, 'images/', i);
+            } else {
+                // Use embedded data URLs
+                src = variants[0].dataUrl.replace(/"/g, '&quot;');
+                srcset = generateSrcset(variants);
+            }
+
             const sizes = generateSizes(doubleSpread);
             const objectPosition = doubleSpread ? (pageNum % 2 === 0 ? 'left' : 'right') : 'center';
 
@@ -161,7 +181,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false) {
  * @param {Array<string|Array<RenderVariant>>} pageImages - Array of either data URLs or variant arrays
  * @param {GeneratorOptions} options - Generator options
  * @param {AssetLoader} assetLoader - Asset loader (optional, defaults to file loader)
- * @returns {Promise<string>} Complete HTML document
+ * @returns {Promise<string|{html: string, assets: Array}>} Complete HTML document or object with assets
  */
 export async function generateFlipbookHtml(pageImages, options = {},
     assetLoader = defaultAssetLoader) {
@@ -173,7 +193,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
         throw new Error('pageImages must contain at least one image');
     }
 
-    const { title = 'Flipbook', doubleSpread = false, addBlankPage = false } = options;
+    const { title = 'Flipbook', doubleSpread = false, addBlankPage = false, mode = 'single' } = options;
     const [baseCss, js, pageFlipJs] = await Promise.all([
         assetLoader.loadCss().catch(() => ''),
         assetLoader.loadJs().catch(() => ''),
@@ -192,7 +212,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
 
     // Add content pages
     pagesArray.push(
-        generatePagesHtml(pageImages, doubleSpread)
+        generatePagesHtml(pageImages, doubleSpread, mode)
     );
 
     // Join all page HTML
@@ -212,7 +232,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
         }
     }
 
-    return `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -272,4 +292,33 @@ ENRICHMENT GUIDE:
     <script>${js}</script>
 </body>
 </html>`;
+
+    if (mode === 'single') {
+        return html;
+    } else {
+        // Folder mode: Return HTML + Assets
+        const assets = [];
+
+        // Extract assets from pageImages
+        pageImages.forEach((pageData, i) => {
+            const pageNum = i + 1;
+            if (typeof pageData === 'string') {
+                // Legacy data URL
+                assets.push({
+                    filename: `images/page-${pageNum}.jpg`,
+                    data: pageData // Base64 string
+                });
+            } else {
+                // Variants
+                pageData.forEach(v => {
+                    assets.push({
+                        filename: `images/page-${pageNum}-${v.width}w.jpg`,
+                        data: v.dataUrl
+                    });
+                });
+            }
+        });
+
+        return { html, assets };
+    }
 }
