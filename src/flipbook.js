@@ -203,14 +203,20 @@ document.addEventListener('DOMContentLoaded', () => {
         maxHeight: 10000,
         autoSize: false, // We control the container size
         showCover: false,
-        usePortrait: false, // Always 2 pages (Book View)
+        usePortrait: false, // no margins on the sides
         startPage: 0, // 0-based index
         drawShadow: true,
         maxShadowOpacity: 0.5, // Shadow intensity (0-1)
         flippingTime: 500,
         useMouseEvents: true,
         swipeDistance: 30,
-        mobileScrollSupport: false // We handle panning
+        mobileScrollSupport: false, // We handle panning
+
+        // CUSTOM SHADOW SETTINGS
+        flippingShadow: true, // Enable/disable the flipping shadow
+        flippingShadowStartAlpha: 0.0, // Opacity at the start of the gradient (static corner)
+        flippingShadowEndAlpha: .1, // Opacity at the end of the gradient (flipping corner)
+        otherShadowOpacityScale: .4, // Scale factor for other shadows (0.7 = 30% reduction)
     });
 
     // Load pages
