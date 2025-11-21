@@ -16,6 +16,9 @@
 <body>
     <div class="app-container">
         <header class="header">
+            <button id="info-btn" class="info-btn" aria-label="More Information">
+                More info
+            </button>
             <h1 class="title">Pages</h1>
             <p class="subtitle">Craft beautiful digital books from your PDFs</p>
         </header>
@@ -98,28 +101,27 @@
                                 stroke-width="2">
                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                                 <polyline points="15 3 21 3 21 9"></polyline>
-                                <line x1="10" y1="14" x2="21" y2="3"></line>
                             </svg>
                             Open in New Tab
-                        </button>
-                        <button id="reset-btn" class="btn btn-ghost">
-                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
-                                <path d="M21 3v5h-5"></path>
-                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
-                                <path d="M3 21v-5h5"></path>
-                            </svg>
-                            Start Over
                         </button>
                     </div>
                 </div>
                 <div class="preview-wrapper">
                     <iframe id="preview-iframe" class="preview-iframe" frameborder="0"></iframe>
                 </div>
+                <div id="error-message" class="error-message hidden"></div>
+                <div class="footer">
+                    <button id="reset-btn" class="btn btn-ghost">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                            <path d="M21 3v5h-5"></path>
+                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                            <path d="M3 21v-5h5"></path>
+                        </svg>
+                        Start Over
+                    </button>
+                </div>
             </div>
-
-            <div id="error-message" class="error-message hidden"></div>
         </main>
 
         <footer class="footer">
@@ -148,6 +150,61 @@
             </div>
             <div class="modal-footer">
                 <button id="modal-done-btn" class="btn btn-primary">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal-overlay hidden">
+        <div class="modal-box modal-wide">
+            <div class="modal-header">
+                <h3 class="modal-title">About Pages</h3>
+                <button id="info-close-btn" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-intro">
+                    <strong>Pages</strong> allows you to create beautiful digital flipbooks that you <em>fully own</em>.
+                    Unlike other services, you get the code, meaning you can host it anywhere, customize it, or keep it
+                    private.
+                </p>
+
+                <div class="info-section">
+                    <h4>Download Options</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <h5>Download HTML (Single File)</h5>
+                            <p>Best for sharing via email, chat, or offline use. All images are embedded in one big file.
+                                <br>
+                            </p>
+                        </div>
+                        <div class="info-item">
+                            <h5>Download ZIP (Folder)</h5>
+                            <p>Best for publishing on the web. Images are separate files, allowing for faster loading
+                                and better performance.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-links">
+                    <a href="https://lojkine.art" target="_blank" class="info-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                            height="16">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                        lojkine.art
+                    </a>
+                    <a href="https://github.com/S-poony/Pages" target="_blank" class="info-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                            height="16">
+                            <path
+                                d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+                            </path>
+                        </svg>
+                        GitHub Repo
+                    </a>
+                </div>
             </div>
         </div>
     </div>

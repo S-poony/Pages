@@ -62,6 +62,11 @@ class FlipbookApp {
     this.modalDoneBtn = document.getElementById('modal-done-btn');
     this.copyUrlBtn = document.getElementById('copy-url-btn');
     this.publishedUrlInput = document.getElementById('published-url');
+
+    // Info Modal Elements
+    this.infoBtn = document.getElementById('info-btn');
+    this.infoModal = document.getElementById('info-modal');
+    this.infoCloseBtn = document.getElementById('info-close-btn');
   }
 
   setupEventListeners() {
@@ -83,6 +88,10 @@ class FlipbookApp {
     if (this.modalCloseBtn) this.modalCloseBtn.addEventListener('click', () => this.closeModal());
     if (this.modalDoneBtn) this.modalDoneBtn.addEventListener('click', () => this.closeModal());
     if (this.copyUrlBtn) this.copyUrlBtn.addEventListener('click', () => this.copyUrl());
+
+    // Info Modal Listeners
+    if (this.infoBtn) this.infoBtn.addEventListener('click', () => this.openInfoModal());
+    if (this.infoCloseBtn) this.infoCloseBtn.addEventListener('click', () => this.closeInfoModal());
   }
 
 
@@ -303,6 +312,14 @@ class FlipbookApp {
 
   closeModal() {
     this.modal.classList.add('hidden');
+  }
+
+  openInfoModal() {
+    this.infoModal.classList.remove('hidden');
+  }
+
+  closeInfoModal() {
+    this.infoModal.classList.add('hidden');
   }
 
   async copyUrl() {
