@@ -269,18 +269,86 @@ document.addEventListener('DOMContentLoaded', () => {
     // Store globally for debugging
     window.pageFlip = pageFlip;
 
-    // Events
+    // Event Listeners
+    pageFlip.on('flip', (e) => {
+        // Update controls
+        const pageNum = e.data + 1; // 0-based index to 1-based page number
+        if (pageInput) pageInput.value = pageNum;
+
+        // Update image sizes for responsiveness
+        updateImageSizes();
+
+        // PRELOAD NEXT SPREAD
+        preloadNextSpread(e.data);
+    });
+
     pageFlip.on('init', () => {
         console.log('StPageFlip initialized event');
         updateImageSizes();
+        // Preload initial next spread
+        preloadNextSpread(0);
     });
 
-    pageFlip.on('flip', (e) => {
-        const pageInput = document.getElementById('page-input');
-        if (pageInput) {
-            pageInput.value = e.data + 1;
+    /**
+     * Preload images for the next spread to ensure smooth flipping
+     * @param {number} currentIndex - Current page index (0-based)
+     */
+    function preloadNextSpread(currentIndex) {
+        const isDoubleSpread = window.__DOUBLE_SPREAD__;
+        const pageCount = window.__PAGE_COUNT__;
+
+        // Calculate next pages to preload
+        // If double spread, we usually see 2 pages. We want the NEXT 2 pages.
+        // If single spread, we see 1 page. We want the NEXT 1 page.
+
+        let pagesToPreload = [];
+
+        if (isDoubleSpread) {
+            // Current: [currentIndex, currentIndex + 1] (roughly)
+            // Next spread starts after these.
+            // StPageFlip index usually points to the top-left page or the single page.
+            // Let's just preload the next 4 pages to be safe and aggressive.
+            pagesToPreload = [
+                currentIndex + 1,
+                currentIndex + 2,
+                currentIndex + 3,
+                currentIndex + 4
+            ];
+        } else {
+            pagesToPreload = [currentIndex + 1, currentIndex + 2];
         }
-    });
+
+        pagesToPreload.forEach(idx => {
+            if (idx < pageCount) {
+                // Find the image in the DOM
+                // Note: StPageFlip creates clones, so we might have multiple images for the same page?
+                // Or we can just look for the source image in the hidden container if StPageFlip moves them?
+                // Actually, StPageFlip keeps the DOM structure inside .stf__block.
+
+                // We can query by the image source or just iterate all images and check their index?
+                // Easier: The images are usually in order in the DOM before StPageFlip messes with them, 
+                // but after init, they are inside .page-container.
+
+                // Let's try to find the Nth .page-image
+                const allImages = document.querySelectorAll('.page-image');
+                if (allImages[idx]) {
+                    const img = allImages[idx];
+
+                    // 1. Force eager loading
+                    img.loading = 'eager';
+
+                    // 2. Force browser to download by creating a detached image
+                    // This ensures it downloads even if the original img is hidden/off-screen
+                    if (img.src) {
+                        const preloader = new Image();
+                        preloader.src = img.src;
+                        if (img.srcset) preloader.srcset = img.srcset;
+                        preloader.sizes = img.sizes || '100vw';
+                    }
+                }
+            }
+        });
+    }
 
     // Cache control elements
     const zoomSlider = document.getElementById('zoom-slider');
