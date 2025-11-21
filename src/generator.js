@@ -163,7 +163,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
 <!-- PAGE ${pageNum} - ENRICHMENT ZONE -->
 <!-- Keep the <img> tag. Add interactive elements INSIDE enrichment-layer -->
 <!-- =================================================================== -->
-<div class="page-container">
+<div class="page-container" data-density="soft">
   ${imgTag}
   <div class="enrichment-layer">
     <!-- PASTE YOUR CODE HERE -->
@@ -214,6 +214,19 @@ export async function generateFlipbookHtml(pageImages, options = {},
     pagesArray.push(
         generatePagesHtml(pageImages, doubleSpread, mode)
     );
+
+    // Add blank page at end if odd number of pages
+    // This prevents the last page from appearing alone and being treated as a hardcover
+    let totalPageCount = pageImages.length;
+    if (doubleSpread && addBlankPage) {
+        totalPageCount += 1; // Account for the blank cover we added
+    }
+
+    if (totalPageCount % 2 !== 0) {
+        pagesArray.push(
+            '<div class="page-container" data-density="soft" style="background-color: white;"></div>'
+        );
+    }
 
     // Join all page HTML
     const pagesHtml = pagesArray.join('');
