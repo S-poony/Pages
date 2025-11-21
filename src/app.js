@@ -319,7 +319,11 @@ class FlipbookApp {
         this.copyUrlBtn.classList.add('btn-secondary');
       }, 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      // Auto-copy often fails due to browser security (lack of user interaction after await)
+      // We ignore this error for the auto-copy attempt, as the user can still click the button.
+      if (err.name !== 'NotAllowedError' && err.name !== 'SecurityError') {
+        console.warn('Clipboard write failed:', err);
+      }
     }
   }
 
