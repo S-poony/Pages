@@ -76,4 +76,85 @@ After modifying and patching:
 ```bash
 npm run dev
 # Test your flipbook to verify the changes
+\`\`\`
+
+### 4. Custom Flipping Shadow (Canvas Mode)
+
+To implement the custom flipping shadow in Canvas mode, replace the \`drawFlippingShadow\` method in \`node_modules/page-flip/src/Render/CanvasRender.ts\` with the following code. This uses the custom settings defined in \`src/flipbook.js\`.
+
+\`\`\`typescript
+    private drawFlippingShadow(): void {
+        // ... (CanvasRender implementation) ...
+        if (shadow.direction === FlipDirection.FORWARD) {
+            this.ctx.translate(-shadow.width, -100);
+            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + endAlpha + ')');
+            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + startAlpha + ')');
+        } else {
+            this.ctx.translate(0, -100);
+            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + startAlpha + ')');
+            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + endAlpha + ')');
+        }
+        // ...
+    }
 ```
+
+### 5. Update HTMLRender.ts
+
+You must also apply similar changes to `node_modules/page-flip/src/Render/HTMLRender.ts` if you are using HTML mode.
+
+```typescript
+    private drawFlippingShadow(): void {
+        // ...
+        let shadowDirection = 'to left'; // Default
+        let shadowTranslate = 0;
+
+        if (shadow.direction === FlipDirection.FORWARD) {
+            shadowDirection = 'to left';
+            shadowTranslate = shadow.width; 
+        } else {
+            shadowDirection = 'to right';
+            shadowTranslate = 0;
+        }
+        // ...
+    }
+```
+
+    private drawOuterShadow(): void {
+        // ... existing code ...
+        // Update opacity to use otherShadowOpacityScale
+        if (this.shadow.direction === FlipDirection.FORWARD) {
+            this.ctx.translate(0, -100);
+            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
+            outerGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        } else {
+            this.ctx.translate(-this.shadow.width, -100);
+            outerGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
+        }
+        // ... existing code ...
+    }
+
+    private drawInnerShadow(): void {
+        // ... existing code ...
+        // Update opacity to use otherShadowOpacityScale
+        if (this.shadow.direction === FlipDirection.FORWARD) {
+            this.ctx.translate(-isw, -100);
+            innerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
+            innerGradient.addColorStop(0.9, 'rgba(0, 0, 0, 0.05)');
+            innerGradient.addColorStop(0.7, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
+            innerGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        } else {
+            this.ctx.translate(0, -100);
+            innerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
+            innerGradient.addColorStop(0.1, 'rgba(0, 0, 0, 0.05)');
+            innerGradient.addColorStop(0.3, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
+            innerGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        }
+        // ... existing code ...
+    }
+```
+\`\`\`
+
+> [!NOTE]
+> Ensure your \`node_modules/page-flip/src/Settings.ts\` includes the custom settings (\`flippingShadow\`, \`flippingShadowStartAlpha\`, etc.) in the \`FlipSetting\` interface and default values.
+

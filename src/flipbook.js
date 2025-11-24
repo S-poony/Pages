@@ -214,9 +214,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // CUSTOM SHADOW SETTINGS
         flippingShadow: true, // Enable/disable the flipping shadow
-        flippingShadowStartAlpha: 0.0, // Opacity at the start of the gradient (static corner)
-        flippingShadowEndAlpha: .3, // Opacity at the end of the gradient (flipping corner)
-        otherShadowOpacityScale: .4, // Scale factor for other shadows (0.7 = 30% reduction)
+        flippingShadowStartAlpha: 1, // Opacity at the start of the gradient (static corner)
+        flippingShadowEndAlpha: 0, // Opacity at the end of the gradient (flipping corner)
+        otherShadowOpacityScale: .5, // Scale factor for other shadows (0.7 = 30% reduction)
     });
 
     // Load pages
