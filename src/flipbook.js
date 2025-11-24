@@ -215,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // CUSTOM SHADOW SETTINGS
         flippingShadow: true, // Enable/disable the flipping shadow
         flippingShadowOpacity: 0.5, // Base opacity (0-1), independent of flip progress
+        flippingShadowWidthOffset: 30, // Base width in pixels (minimum shadow width)
         flippingShadowWidthScale: 2.0, // Width scale factor (multiplier of base shadow width)
         flippingShadowStartAlpha: 1.0, // Gradient start opacity (0-1)
         flippingShadowEndAlpha: 0, // Gradient end opacity (0-1)
