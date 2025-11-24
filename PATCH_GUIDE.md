@@ -98,7 +98,29 @@ To implement the custom flipping shadow in Canvas mode, replace the \`drawFlippi
     }
 ```
 
-### 5. Update HTMLRender.ts
+## Custom Shadow Settings
+
+This patch adds precise control over the flipping shadow (the shadow cast by the turning page onto the underlying spread):
+
+### New Settings in `Settings.ts`:
+
+```typescript
+{
+    flippingShadow: boolean;              // Enable/disable the flipping shadow
+    flippingShadowOpacity: number;        // Base opacity (0-1), independent of flip progress
+    flippingShadowWidth: number;          // Shadow width in pixels
+    flippingShadowStartAlpha: number;     // Gradient start opacity (0-1)
+    flippingShadowEndAlpha: number;       // Gradient end opacity (0-1)
+    otherShadowOpacityScale: number;      // Scale factor for other shadows (0-1)
+}
+```
+
+**Key Changes:**
+- `flippingShadowOpacity`: Constant opacity that doesn't fade with flip progress (replaces `shadow.opacity * maxShadowOpacity`)
+- `flippingShadowWidth`: Fixed shadow width in pixels (replaces `shadow.width`)
+- The shadow now remains consistent throughout the flip animation
+
+### 4. Update CanvasRender.ts
 
 You must also apply similar changes to `node_modules/page-flip/src/Render/HTMLRender.ts` if you are using HTML mode.
 
