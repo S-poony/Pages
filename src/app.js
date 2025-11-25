@@ -136,7 +136,7 @@ class FlipbookApp {
   handleDoubleSpreadToggle() {
     const isChecked = this.doubleSpreadToggle.checked;
     localStorage.setItem('doubleSpread', isChecked);
-    this.blankPageOption.classList.toggle('visible', isChecked);
+    // Blank page option is now always visible (removed visibility toggle)
   }
 
   /* ----------  PDF processing  ---------- */
@@ -146,7 +146,7 @@ class FlipbookApp {
 
     try {
       const doubleSpread = !!this.doubleSpreadToggle?.checked;
-      const addBlankPage = doubleSpread && !!this.blankPageToggle?.checked;
+      const addBlankPage = !!this.blankPageToggle?.checked;
 
       const opts = { scales: [1, 2, 3], format: 'image/jpeg', quality: 0.92, doubleSpread };
 
@@ -415,7 +415,7 @@ class FlipbookApp {
     this.fileInput.value = '';
     this.currentHtml = null;
     this.currentFolderData = null;
-    this.blankPageOption.classList.remove('visible');
+    // Blank page option is now always visible (removed visibility management)
 
   }
   showError(msg) { this.errorMessage.textContent = msg; this.errorMessage.classList.remove('hidden'); }

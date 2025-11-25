@@ -6,7 +6,7 @@
  * @typedef {Object} GeneratorOptions
  * @property {string} title - Title of the flipbook
  * @property {boolean} doubleSpread - Whether to enable double spread mode
- * @property {boolean} addBlankPage - Whether to add a blank page at start (only applies when doubleSpread is true)
+ * @property {boolean} addBlankPage - Whether to add a blank page at start
  * @property {'single'|'folder'} mode - Generation mode: 'single' (embedded base64) or 'folder' (external images)
  */
 
@@ -203,8 +203,8 @@ export async function generateFlipbookHtml(pageImages, options = {},
     // Construct the array of pages conditionally
     const pagesArray = [];
 
-    // Add blank cover (single page, right side) only if both doubleSpread AND addBlankPage are true
-    if (doubleSpread && addBlankPage) {
+    // Add blank cover (single page, right side) if addBlankPage is true
+    if (addBlankPage) {
         pagesArray.push(
             '<div class="page-container" style="background-color: white;"></div>'
         );
@@ -218,7 +218,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
     // Add blank page at end if odd number of pages
     // This prevents the last page from appearing alone and being treated as a hardcover
     let totalPageCount = pageImages.length;
-    if (doubleSpread && addBlankPage) {
+    if (addBlankPage) {
         totalPageCount += 1; // Account for the blank cover we added
     }
 
