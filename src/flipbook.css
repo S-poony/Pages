@@ -74,7 +74,8 @@ body {
     backdrop-filter: blur(8px);
 }
 
-#controls-panel:hover {
+#controls-panel:hover,
+#controls-panel.active {
     opacity: 1;
     transform: translateX(-50%) translateY(-2px);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);

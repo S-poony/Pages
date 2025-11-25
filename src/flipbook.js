@@ -313,6 +313,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomSlider = document.getElementById('zoom-slider');
     const zoomText = document.getElementById('zoom-level');
     const pageInput = document.getElementById('page-input');
+    const controlsPanel = document.getElementById('controls-panel');
+
+    // Mobile-friendly control panel activation
+    let controlsPanelTimeout = null;
+    let isUsingSlider = false;
+
+    const activateControlPanel = () => {
+        controlsPanel.classList.add('active');
+
+        // Clear any existing timeout
+        if (controlsPanelTimeout) {
+            clearTimeout(controlsPanelTimeout);
+            controlsPanelTimeout = null;
+        }
+    };
+
+    const deactivateControlPanel = () => {
+        // Don't deactivate if slider is being used
+        if (isUsingSlider) return;
+
+        // Remove active class after 1 second
+        controlsPanelTimeout = setTimeout(() => {
+            controlsPanel.classList.remove('active');
+        }, 1000);
+    };
+
+    if (controlsPanel) {
+        controlsPanel.addEventListener('click', () => {
+            activateControlPanel();
+            deactivateControlPanel();
+        });
+    }
 
     // Create Zoom Blocker
     let blocker = document.getElementById('zoom-blocker');
@@ -331,6 +363,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Zoom Slider
     if (zoomSlider) {
+        // Track slider interaction to keep panel active
+        zoomSlider.addEventListener('mousedown', () => {
+            isUsingSlider = true;
+            activateControlPanel();
+        });
+
+        zoomSlider.addEventListener('touchstart', () => {
+            isUsingSlider = true;
+            activateControlPanel();
+        });
+
+        zoomSlider.addEventListener('mouseup', () => {
+            isUsingSlider = false;
+            deactivateControlPanel();
+        });
+
+        zoomSlider.addEventListener('touchend', () => {
+            isUsingSlider = false;
+            deactivateControlPanel();
+        });
+
         zoomSlider.addEventListener('input', e => {
             const newZoom = parseFloat(e.target.value);
             zoom = newZoom;
