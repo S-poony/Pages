@@ -294,11 +294,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const allImages = document.querySelectorAll('.page-image');
                 if (allImages[idx]) {
                     const img = allImages[idx];
+                    // img.loading = 'eager'; // Handled in HTML generator now
 
-                    // 1. Force eager loading
-                    img.loading = 'eager';
-
-                    // 2. Force browser to download by creating a detached image
+                    // Force browser to download by creating a detached image
                     // This ensures it downloads even if the original img is hidden/off-screen
                     if (img.src) {
                         const preloader = new Image();

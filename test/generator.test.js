@@ -21,7 +21,7 @@ describe('Flipbook HTML Generator', () => {
             assert(result.includes('class="enrichment-layer"'));
             assert(result.includes('PAGE 1 - ENRICHMENT ZONE'));
             assert(result.includes('src="data:image/jpeg;base64,test"'));
-            assert(result.includes('loading="lazy"'));
+            assert(result.includes('loading="eager"'));
         });
 
         it('should generate correct HTML for multiple pages', () => {
@@ -226,7 +226,7 @@ describe('Flipbook HTML Generator', () => {
             assert(result.includes('<div id="flipbook"'));
             assert(result.includes('class="page-container"'));
             assert(result.includes('<img src="data:image/jpeg;base64,test"'));
-            assert(result.includes('loading="lazy"'));
+            assert(result.includes('loading="eager"'));
         });
 
         it('should escape special characters in title', async () => {

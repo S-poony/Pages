@@ -152,7 +152,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
             // or we'd need to save the string as file.
             // For folder mode, we assume we'll save this dataUrl as a file.
             const src = mode === 'folder' ? `images/page-${pageNum}.jpg` : escapeAttr(pageData);
-            imgTag = `<img src="${src}" alt="Page ${pageNum}" loading="lazy" />`;
+            imgTag = `<img src="${src}" alt="Page ${pageNum}" loading="eager" />`;
         } else {
             const variants = pageData;
             if (!Array.isArray(variants) || variants.length === 0) {
@@ -174,7 +174,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
             const sizes = generateSizes(doubleSpread);
             const objectPosition = doubleSpread ? (pageNum % 2 === 0 ? 'left' : 'right') : 'center';
 
-            imgTag = `<img src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page ${pageNum}" loading="lazy" style="object-position: ${objectPosition} center;" />`;
+            imgTag = `<img src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page ${pageNum}" loading="eager" style="object-position: ${objectPosition} center;" />`;
         }
 
         return `
