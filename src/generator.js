@@ -51,8 +51,7 @@ export const defaultAssetLoader = {
     async loadJs() {
         try {
             const response = await fetch('./src/flipbook.js');
-            const jsContent = await response.text();
-            return wrapFlipbookJs(jsContent);
+            return await response.text();
         } catch (error) {
             console.warn('Could not load JS file, using fallback');
             return '';
@@ -98,19 +97,7 @@ function escapeAttr(str) {
     return str.replace(/[&<>"'\n\r\t]/g, char => attrEscapeMap[char]);
 }
 
-/**
- * Wraps the flipbook JavaScript
- * Note: No string replacement needed since page data is injected via window globals
- * @param {string} jsContent - Original JavaScript content
- * @returns {string} JavaScript content
- */
-export function wrapFlipbookJs(jsContent) {
-    if (typeof jsContent !== 'string') {
-        throw new Error('jsContent must be a string');
-    }
-    //- variables are injected via window.__PAGE_COUNT__, etc.
-    return jsContent;
-}
+
 
 /**
  * Generates srcset string from image variants
@@ -329,9 +316,14 @@ ENRICHMENT GUIDE:
         </div>
     </div>
     <script>
-        window.__PAGE_COUNT__ = ${actualPageCount};
-        window.__DOUBLE_SPREAD__ = ${doubleSpread};
-        window.__PAGE_ASPECT_RATIO__ = ${aspectRatio};
+        // Flipbook Configuration
+        // This object is injected before the application scripts run
+        // and provides all necessary configuration to the flipbook
+        window.FLIPBOOK_CONFIG = {
+            pageCount: ${actualPageCount},
+            doubleSpread: ${doubleSpread},
+            pageAspectRatio: ${aspectRatio}
+        };
     </script>
     <script>${pageFlipJs}</script>
     <script>${js}</script>

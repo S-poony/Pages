@@ -114,8 +114,9 @@ function updateTransform() {
 
 // Initialize StPageFlip and all controls
 document.addEventListener('DOMContentLoaded', () => {
-    const pageCount = window.__PAGE_COUNT__ || 0;
-    const isDoubleSpread = window.__DOUBLE_SPREAD__ || false;
+    const config = window.FLIPBOOK_CONFIG || {};
+    const pageCount = config.pageCount || 0;
+    const isDoubleSpread = config.doubleSpread || false;
 
     if (!pageCount) {
         console.error('No page count found');
@@ -136,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const wrapperWidth = wrapper.clientWidth;
         const wrapperHeight = wrapper.clientHeight;
         // Use injected aspect ratio or fallback to A4-ish (0.707)
-        const pageAspectRatio = window.__PAGE_ASPECT_RATIO__ || 0.707;
+        const pageAspectRatio = config.pageAspectRatio || 0.707;
 
         // Since we force usePortrait: false (always 2 pages), 
         // the target aspect ratio is ALWAYS double spread.
@@ -253,8 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {number} currentIndex - Current page index (0-based)
      */
     function preloadNextSpread(currentIndex) {
-        const isDoubleSpread = window.__DOUBLE_SPREAD__;
-        const pageCount = window.__PAGE_COUNT__;
+        const config = window.FLIPBOOK_CONFIG || {};
+        const isDoubleSpread = config.doubleSpread;
+        const pageCount = config.pageCount;
 
         // Calculate next pages to preload
         // If double spread, we usually see 2 pages. We want the NEXT 2 pages.

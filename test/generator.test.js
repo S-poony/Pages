@@ -1,57 +1,18 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { wrapFlipbookJs, generatePagesHtml, generateFlipbookHtml } from '../src/generator.js';
+import { generatePagesHtml, generateFlipbookHtml } from '../src/generator.js';
 
 /**
  * Mock asset loader for testing
  */
 const mockAssetLoader = {
     loadCss: async () => '.test-css { color: red; }',
-    loadJs: async () => 'console.log("test js");'
+    loadJs: async () => 'console.log("test js");',
+    loadPageFlipJs: async () => 'console.log("page-flip");'
 };
 
 describe('Flipbook HTML Generator', () => {
-    describe('wrapFlipbookJs', () => {
-        it('should wrap JavaScript content and replace initialization code', () => {
-            const inputJs = `
-const totalPages = parseInt(document.getElementById('book-container').dataset.pageCount);
-const pageImages = JSON.parse(document.getElementById('book-container').dataset.pageImages);
-function init() { /* ... */ }
-`;
 
-            const expected = `
-const totalPages = window.__PAGE_COUNT__;
-const pageImages = JSON.parse(document.getElementById('book-container').dataset.pageImages);
-function init() { /* ... */ }
-`;
-
-            const result = wrapFlipbookJs(inputJs);
-            assert.strictEqual(result, expected);
-        });
-
-        it('should handle empty string input', () => {
-            const result = wrapFlipbookJs('');
-            assert.strictEqual(result, '');
-        });
-
-        it('should throw error for non-string input', () => {
-            assert.throws(() => wrapFlipbookJs(null), {
-                message: 'jsContent must be a string'
-            });
-            assert.throws(() => wrapFlipbookJs(123), {
-                message: 'jsContent must be a string'
-            });
-            assert.throws(() => wrapFlipbookJs({}), {
-                message: 'jsContent must be a string'
-            });
-        });
-
-        it('should handle JavaScript without the target patterns', () => {
-            const inputJs = 'console.log("no patterns here");';
-            const result = wrapFlipbookJs(inputJs);
-            assert.strictEqual(result, inputJs);
-        });
-    });
 
     describe('generatePagesHtml', () => {
         it('should generate page elements with side classes', () => {
@@ -94,7 +55,8 @@ function init() { /* ... */ }
             assert(result.includes('<title>Flipbook</title>'));
             assert(result.includes('.test-css { color: red; }'));
             assert(result.includes('console.log("test js");'));
-            assert(result.includes('window.__PAGE_COUNT__ = 2'));
+            assert(result.includes('window.FLIPBOOK_CONFIG'));
+            assert(result.includes('pageCount: 2'));
             assert(result.includes('id="page-1"'));
             assert(result.includes('id="page-2"'));
             assert(result.includes('<img src="data:image/jpeg;base64,test1"'));

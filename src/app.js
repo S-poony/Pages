@@ -4,7 +4,7 @@
  */
 
 import { processPdf } from './processor.js';
-import { generateFlipbookHtml, wrapFlipbookJs } from './generator.js';
+import { generateFlipbookHtml } from './generator.js';
 import pageFlipJs from 'page-flip/dist/js/page-flip.browser.js?raw';
 import flipbookCss from './flipbook.css?raw';
 import flipbookJs from './flipbook.js?raw';
@@ -191,7 +191,7 @@ class FlipbookApp {
         mode: 'single'
       }, {
         loadCss: async () => flipbookCss,
-        loadJs: async () => wrapFlipbookJs(flipbookJs),
+        loadJs: async () => flipbookJs,
         loadPageFlipJs: async () => pageFlipJs
       });
 
@@ -203,7 +203,7 @@ class FlipbookApp {
         mode: 'folder'
       }, {
         loadCss: async () => flipbookCss,
-        loadJs: async () => wrapFlipbookJs(flipbookJs),
+        loadJs: async () => flipbookJs,
         loadPageFlipJs: async () => pageFlipJs
       });
 
