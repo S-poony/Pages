@@ -41,10 +41,7 @@ export const defaultAssetLoader = {
 
     async loadPageFlipJs() {
         try {
-            // In dev mode, we might not be able to fetch from node_modules easily via fetch in the browser context
-            // if it's not served. But the default loader is mostly for standalone or dev.
-            // For the app, we pass the content directly.
-            // If we need a fallback for the default loader:
+            //The lib is already included in ${js}
             return '';
         } catch {
             return '';
@@ -64,21 +61,34 @@ export const defaultAssetLoader = {
 };
 
 /**
- * Wraps the flipbook JavaScript to inject page data
+ * Escapes HTML special characters to prevent XSS attacks
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string
+ */
+function escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    const htmlEscapeMap = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    };
+    return str.replace(/[&<>"']/g, char => htmlEscapeMap[char]);
+}
+
+/**
+ * Wraps the flipbook JavaScript
+ * Note: No string replacement needed since page data is injected via window globals
  * @param {string} jsContent - Original JavaScript content
- * @returns {string} Wrapped JavaScript
+ * @returns {string} JavaScript content
  */
 export function wrapFlipbookJs(jsContent) {
     if (typeof jsContent !== 'string') {
         throw new Error('jsContent must be a string');
     }
-
-    let modifiedJs = jsContent.replace(
-        'const totalPages = parseInt(document.getElementById(\'book-container\').dataset.pageCount);',
-        'const totalPages = window.__PAGE_COUNT__;'
-    );
-
-    return modifiedJs;
+    //- variables are injected via window.__PAGE_COUNT__, etc.
+    return jsContent;
 }
 
 /**
@@ -250,7 +260,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title}</title>
+    <title>${escapeHtml(title)}</title>
         <style>
         /* --- ENRICHMENT UTILITIES --- */
         .page-container {
