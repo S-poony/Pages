@@ -78,6 +78,27 @@ function escapeHtml(str) {
 }
 
 /**
+ * Escapes characters for safe use in HTML attributes
+ * Handles quotes, ampersands, and other special characters that could break attribute boundaries
+ * @param {string} str - String to escape for HTML attribute
+ * @returns {string} Escaped string safe for HTML attributes
+ */
+function escapeAttr(str) {
+    if (typeof str !== 'string') return '';
+    const attrEscapeMap = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '\n': '&#10;',
+        '\r': '&#13;',
+        '\t': '&#9;'
+    };
+    return str.replace(/[&<>"'\n\r\t]/g, char => attrEscapeMap[char]);
+}
+
+/**
  * Wraps the flipbook JavaScript
  * Note: No string replacement needed since page data is injected via window globals
  * @param {string} jsContent - Original JavaScript content
@@ -103,7 +124,8 @@ function generateSrcset(variants, basePath = '', pageIndex = 0) {
 
     return variants
         .map((v, i) => {
-            const src = basePath ? `${basePath}page-${pageIndex + 1}-${v.width}w.jpg` : v.dataUrl;
+            // Escape data URLs for safe use in srcset attribute
+            const src = basePath ? `${basePath}page-${pageIndex + 1}-${v.width}w.jpg` : escapeAttr(v.dataUrl);
             return `${src} ${v.width}w`;
         })
         .join(', ');
@@ -142,7 +164,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
             // Legacy format only supports single mode (embedded) effectively
             // or we'd need to save the string as file.
             // For folder mode, we assume we'll save this dataUrl as a file.
-            const src = mode === 'folder' ? `images/page-${pageNum}.jpg` : pageData.replace(/"/g, '&quot;');
+            const src = mode === 'folder' ? `images/page-${pageNum}.jpg` : escapeAttr(pageData);
             imgTag = `<img src="${src}" alt="Page ${pageNum}" loading="lazy" />`;
         } else {
             const variants = pageData;
@@ -157,8 +179,8 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
                 src = `images/page-${pageNum}-${variants[0].width}w.jpg`;
                 srcset = generateSrcset(variants, 'images/', i);
             } else {
-                // Use embedded data URLs
-                src = variants[0].dataUrl.replace(/"/g, '&quot;');
+                // Use embedded data URLs - properly escape for HTML attributes
+                src = escapeAttr(variants[0].dataUrl);
                 srcset = generateSrcset(variants);
             }
 
