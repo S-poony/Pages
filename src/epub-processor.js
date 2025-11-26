@@ -10,6 +10,7 @@
  */
 
 import ePub from 'epubjs';
+import JSZip from 'jszip';
 import { sanitizeEpubHtml } from './sanitizer.js';
 
 /**
@@ -61,16 +62,16 @@ export async function loadEpubDocument(arrayBuffer) {
 /**
  * Creates enriched HTML pages from EPUB content with proper pagination
  * @param {Object} book - EPUB book object
+ * @param {JSZip} zip - JSZip instance containing the EPUB files
  * @param {EpubProcessorOptions} options - Processing options
  * @returns {Promise<Array<{backgroundImage: string, enrichmentHtml: string}>>}
  */
-async function createEnrichedPages(book, options) {
+async function createEnrichedPages(book, zip, options) {
     const { pageWidth, pageHeight, backgroundColor } = options;
     const pages = [];
     const spineItems = book.spine.spineItems;
 
     // Determine the Base Path (directory containing the OPF file)
-    // This is crucial because manifest hrefs are relative to this, but the zip root might be higher up.
     const opfPath = book.packageUrl || ''; // e.g. "OEBPS/content.opf"
     const basePath = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
 
@@ -99,17 +100,39 @@ async function createEnrichedPages(book, options) {
     measureContainer.style.visibility = 'hidden';
     document.body.appendChild(measureContainer);
 
-    // Helper to try loading a resource from multiple possible paths
-    const loadResourceSafe = async (pathsToTry) => {
-        for (const path of pathsToTry) {
-            try {
-                // book.load handles retrieving the file from the archive
-                const data = await book.load(path);
-                if (data) return { data, path };
-            } catch (e) {
-                // Ignore and try next path
+    // Helper to find a file in the zip case-insensitively or with URL decoding
+    const findFileInZip = (path) => {
+        const files = Object.keys(zip.files);
+
+        // 1. Try exact match
+        if (zip.file(path)) return zip.file(path);
+
+        // 2. Try URL decoded path
+        const decoded = decodeURIComponent(path);
+        if (zip.file(decoded)) return zip.file(decoded);
+
+        // 3. Try case-insensitive search (slower but robust)
+        const lowerPath = path.toLowerCase();
+        for (const file of files) {
+            if (file.toLowerCase() === lowerPath) return zip.file(file);
+        }
+
+        // 4. Try URL decoded case-insensitive
+        const lowerDecoded = decoded.toLowerCase();
+        for (const file of files) {
+            if (file.toLowerCase() === lowerDecoded) return zip.file(file);
+        }
+
+        // 5. Try finding by basename (ignoring directory) - Fallback for messy paths
+        const targetBasename = path.split('/').pop().toLowerCase();
+        for (const file of files) {
+            const fileBasename = file.split('/').pop().toLowerCase();
+            if (fileBasename === targetBasename) {
+                console.log(`Found file by basename match: ${file} (requested: ${path})`);
+                return zip.file(file);
             }
         }
+
         return null;
     };
 
@@ -118,93 +141,89 @@ async function createEnrichedPages(book, options) {
             const item = spineItems[i];
             try {
                 // console.log(`Processing Chapter ${i + 1}/${spineItems.length}: ${item.href}`);
-                
+
                 const doc = await item.load(book.load.bind(book));
                 let bodyContent = doc.body ? doc.body.innerHTML : doc.innerHTML || '';
 
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = bodyContent;
 
-                // 1. Resolve Images
+                // 1. Resolve Images using JSZip directly
                 const images = tempDiv.querySelectorAll('img');
                 for (const img of images) {
                     const src = img.getAttribute('src');
-                    
                     if (src && !src.startsWith('data:') && !src.startsWith('http')) {
                         try {
-                            // Calculate Path 1: Relative to the current chapter (Standard HTML behavior)
-                            // We use a dummy URL to let the browser handle "../" resolution
-                            const dummyOrigin = 'http://epub-internal/';
-                            // item.href is relative to the OPF (e.g. "Text/chap1.html")
-                            // We construct the full "virtual" URL: http://epub-internal/Text/chap1.html
-                            const chapterBaseUrl = new URL(item.href, dummyOrigin);
-                            // We resolve src against it: http://epub-internal/Images/img.jpg
+                            // Calculate absolute path within the zip
+                            // item.href is relative to the OPF file location (basePath)
+                            // src is relative to item.href
+
+                            // Get the directory of the current chapter file
+                            // item.href e.g. "Text/chapter1.xhtml" -> "Text/"
+                            // If item.href is just "chapter1.xhtml", dir is ""
+                            const chapterUrl = item.href;
+                            const chapterDir = chapterUrl.includes('/') ? chapterUrl.substring(0, chapterUrl.lastIndexOf('/') + 1) : '';
+
+                            // Combine base path (OPF loc), chapter dir, and src
+                            // But wait, item.href is usually relative to the package root (OPF location)?
+                            // Actually, in epub.js:
+                            // book.packageUrl is the OPF path (e.g. OEBPS/content.opf)
+                            // item.href is relative to the OPF folder.
+
+                            // So full path in zip = basePath + (resolve src relative to item.href)
+
+                            // Let's use URL object for robust relative path resolution
+                            // We construct a fake base URL to handle the resolution
+                            const fakeBase = 'http://fake.root/';
+                            const chapterBaseUrl = new URL(basePath + item.href, fakeBase);
                             const resolvedUrl = new URL(src, chapterBaseUrl);
-                            // We extract the pathname: "/Images/img.jpg" -> "Images/img.jpg"
-                            const relativePath = decodeURIComponent(resolvedUrl.pathname.substring(1));
 
-                            // Calculate Path 2: Absolute in the Zip (prefixed with OPF directory)
-                            // If relativePath is "Images/img.jpg" and OPF is in "OEBPS/", full path is "OEBPS/Images/img.jpg"
-                            const absolutePath = basePath + relativePath;
+                            // Extract the path relative to the fake root (remove leading /)
+                            let zipPath = resolvedUrl.pathname.substring(1);
 
-                            // Calculate Path 3: Direct src (Just in case it was already absolute)
-                            const rawPath = decodeURIComponent(src);
+                            // console.log(`Resolving image: ${src}`);
+                            // console.log(`  Chapter href: ${item.href}`);
+                            // console.log(`  Base path: ${basePath}`);
+                            // console.log(`  Calculated Zip Path: ${zipPath}`);
 
-                            // Try loading in order of likelihood
-                            const pathsToTry = [
-                                absolutePath, // Most likely correct for zipped EPUBs
-                                relativePath, // Likely if OPF is at root
-                                rawPath       // Fallback
-                            ];
+                            const file = findFileInZip(zipPath);
 
-                            const result = await loadResourceSafe(pathsToTry);
+                            if (file) {
+                                const base64 = await file.async('base64');
 
-                            if (result) {
-                                // console.log(`Loaded image: ${src} -> found at: ${result.path}`);
-                                const data = result.data;
-                                let blob;
-                                
-                                // Handle different return types from book.load
-                                if (data instanceof Blob) {
-                                    blob = data;
-                                } else if (data instanceof ArrayBuffer) {
-                                    const ext = result.path.split('.').pop().toLowerCase();
-                                    const mimeTypes = {
-                                        'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
-                                        'gif': 'image/gif', 'svg': 'image/svg+xml', 'webp': 'image/webp'
-                                    };
-                                    blob = new Blob([data], { type: mimeTypes[ext] || 'application/octet-stream' });
-                                } else if (typeof data === 'string') {
-                                    blob = new Blob([data], { type: 'image/svg+xml' });
-                                }
+                                // Determine MIME type
+                                const ext = zipPath.split('.').pop().toLowerCase();
+                                const mimeTypes = {
+                                    'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+                                    'gif': 'image/gif', 'webp': 'image/webp', 'svg': 'image/svg+xml'
+                                };
+                                const mimeType = mimeTypes[ext] || 'application/octet-stream';
 
-                                if (blob) {
-                                    const base64 = await new Promise((resolve) => {
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => resolve(reader.result);
-                                        reader.readAsDataURL(blob);
-                                    });
-                                    img.setAttribute('src', base64);
-                                }
+                                const dataUrl = `data:${mimeType};base64,${base64}`;
+                                img.setAttribute('src', dataUrl);
                             } else {
-                                console.warn(`IMAGE FAIL: Could not find "${src}" tried:`, pathsToTry);
-                                img.setAttribute('alt', `[Image failed: ${src}]`);
+                                console.warn(`Image file not found in zip: ${zipPath}`);
+                                console.warn('Available files in zip:', Object.keys(zip.files));
+                                img.setAttribute('alt', `[Missing Image: ${src}]`);
                             }
 
                         } catch (imgError) {
-                            console.warn(`Error processing image ${src}:`, imgError);
-                            img.setAttribute('alt', `[Error: ${src}]`);
+                            console.warn(`Failed to load image ${src}:`, imgError);
+                            img.removeAttribute('src');
+                            img.setAttribute('alt', `[Broken Image: ${src}]`);
                         }
                     }
-                    
-                    // Force display block to prevent inline layout weirdness
+
+                    // Always apply styles
                     img.style.maxWidth = '100%';
                     img.style.height = 'auto';
                     img.style.display = 'block';
-                    img.style.margin = '10px auto';
+                    img.style.margin = '1em auto';
                 }
 
-                // 2. Resolve CSS (Same logic)
+                // 2. Resolve CSS (Simplified - mostly works with epub.js default, but we can enhance if needed)
+                // For now, we'll leave CSS loading as is or rely on inline styles which are common in EPUBs
+                // If external CSS fails, we might need a similar zip-based approach, but images are the priority.
                 const links = tempDiv.querySelectorAll('link[rel="stylesheet"]');
                 for (const link of links) {
                     const href = link.getAttribute('href');
@@ -214,13 +233,19 @@ async function createEnrichedPages(book, options) {
                         const relativePath = decodeURIComponent(resolvedUrl.pathname.substring(1));
                         const absolutePath = basePath + relativePath;
 
-                        const result = await loadResourceSafe([absolutePath, relativePath, href]);
-                        
-                        if (result && (typeof result.data === 'string')) {
-                            const style = document.createElement('style');
-                            style.textContent = result.data;
-                            link.parentNode.replaceChild(style, link);
-                        } else {
+                        // Attempt to load CSS using epub.js's book.load (which uses the internal zip reader)
+                        // This is kept for now as it generally works for CSS.
+                        try {
+                            const cssData = await book.load(absolutePath);
+                            if (typeof cssData === 'string') {
+                                const style = document.createElement('style');
+                                style.textContent = cssData;
+                                link.parentNode.replaceChild(style, link);
+                            } else {
+                                link.remove();
+                            }
+                        } catch (cssError) {
+                            console.warn(`Failed to load CSS ${href} from ${absolutePath}:`, cssError);
                             link.remove();
                         }
                     }
@@ -236,39 +261,44 @@ async function createEnrichedPages(book, options) {
                     }
                 }
 
-                // 4. Pre-render for measurements
+                // 4. Pre-render to calculate image dimensions
                 const stagingContainer = document.createElement('div');
-                Object.assign(stagingContainer.style, {
-                    position: 'absolute',
-                    left: '-9999px',
-                    top: '-9999px',
-                    width: `${pageWidth}px`,
-                    visibility: 'hidden'
-                });
+                stagingContainer.style.position = 'absolute';
+                stagingContainer.style.left = '-9999px';
+                stagingContainer.style.top = '-9999px';
+                stagingContainer.style.width = `${pageWidth}px`;
+                stagingContainer.style.opacity = '0'; // Visible to browser, invisible to user
+                stagingContainer.style.pointerEvents = 'none';
                 Object.assign(stagingContainer.style, PAGE_STYLES);
 
                 stagingContainer.appendChild(tempDiv);
                 document.body.appendChild(stagingContainer);
 
-                // Wait for images to render (they are now base64)
-                const stagingImages = Array.from(tempDiv.querySelectorAll('img'));
-                if (stagingImages.length > 0) {
-                    await Promise.all(stagingImages.map(img => {
-                        if (img.complete) return Promise.resolve();
-                        return new Promise(resolve => {
-                            img.onload = resolve;
-                            img.onerror = resolve;
-                            setTimeout(resolve, 500); 
-                        });
-                    }));
-                }
+                // Force layout/reflow
+                stagingContainer.offsetHeight;
 
-                // Lock dimensions
+                // Wait for all images to decode
+                const stagingImages = Array.from(tempDiv.querySelectorAll('img'));
+                await Promise.all(stagingImages.map(img => {
+                    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                    return new Promise(resolve => {
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                        setTimeout(resolve, 5000);
+                    });
+                }));
+
+                // Force another layout pass
+                stagingContainer.offsetHeight;
+
+                // Lock dimensions using natural dimensions (most reliable)
                 stagingImages.forEach(img => {
-                    const rect = img.getBoundingClientRect();
-                    if (rect.width > 0 && rect.height > 0) {
-                        img.style.width = `${rect.width}px`;
-                        img.style.height = `${rect.height}px`;
+                    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                        // Use natural dimensions for final HTML
+                        img.setAttribute('width', img.naturalWidth);
+                        img.setAttribute('height', img.naturalHeight);
+                        img.style.width = `${img.naturalWidth}px`;
+                        img.style.height = `${img.naturalHeight}px`;
                         img.style.maxWidth = 'none';
                     }
                 });
@@ -276,7 +306,6 @@ async function createEnrichedPages(book, options) {
                 // 5. Sanitize and Paginate
                 const sanitizedHtml = sanitizeEpubHtml(tempDiv.innerHTML);
                 document.body.removeChild(stagingContainer);
-
                 const contentPages = await paginateContent(sanitizedHtml, measureContainer, pageHeight);
 
                 // 6. Create Page Objects
@@ -449,7 +478,11 @@ export async function processEpub(input, options = {}) {
     }
 
     const book = await loadEpubDocument(arrayBuffer);
-    const enrichedPages = await createEnrichedPages(book, normalizedOptions);
+
+    // Load zip directly for asset extraction
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    const enrichedPages = await createEnrichedPages(book, zip, normalizedOptions);
 
     return {
         pageCount: enrichedPages.length,
