@@ -1,0 +1,102 @@
+/**
+ * HTML Sanitization Module
+ * Uses DOMPurify to sanitize HTML content from EPUB files
+ * Prevents XSS attacks by removing scripts and unsafe attributes
+ */
+
+import DOMPurify from 'dompurify';
+
+/**
+ * Sanitizes HTML content from EPUB files
+ * Removes JavaScript, unsafe attributes, and event handlers
+ * @param {string} html - Raw HTML content to sanitize
+ * @returns {string} Sanitized HTML safe for rendering
+ */
+export function sanitizeEpubHtml(html) {
+    if (typeof html !== 'string') {
+        return '';
+    }
+
+    return DOMPurify.sanitize(html, {
+        // Allow common HTML tags for text formatting and structure
+        ALLOWED_TAGS: [
+            'p', 'div', 'span', 'a', 'img', 'br', 'hr',
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+            'table', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'caption',
+            'strong', 'em', 'b', 'i', 'u', 's', 'mark',
+            'sup', 'sub', 'small', 'del', 'ins',
+            'blockquote', 'pre', 'code', 'cite', 'q',
+            'abbr', 'time', 'address',
+            'figure', 'figcaption',
+            'section', 'article', 'aside', 'nav', 'header', 'footer', 'main'
+        ],
+
+        // Allow specific attributes needed for styling and linking
+        ALLOWED_ATTR: [
+            'href', 'src', 'alt', 'title', 'class', 'id', 'style',
+            'width', 'height', 'align', 'colspan', 'rowspan',
+            'datetime', 'cite'
+        ],
+
+        // Allow only safe URI schemes
+        ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+
+        // Explicitly forbid dangerous tags
+        FORBID_TAGS: [
+            'script', 'object', 'embed', 'iframe', 'frame', 'frameset',
+            'form', 'input', 'button', 'textarea', 'select', 'option',
+            'applet', 'base', 'link', 'meta', 'noscript'
+        ],
+
+        // Forbid event handlers and other dangerous attributes
+        FORBID_ATTR: [
+            'onerror', 'onload', 'onclick', 'onmouseover', 'onmouseout',
+            'onmouseenter', 'onmouseleave', 'onmousemove', 'onmousedown', 'onmouseup',
+            'onfocus', 'onblur', 'onchange', 'onsubmit', 'onreset',
+            'onkeydown', 'onkeyup', 'onkeypress',
+            'ontouchstart', 'ontouchend', 'ontouchmove',
+            'onscroll', 'onwheel', 'ondrag', 'ondrop',
+            'onanimationstart', 'onanimationend', 'onanimationiteration',
+            'ontransitionend'
+        ],
+
+        // Keep text content when removing forbidden tags
+        KEEP_CONTENT: true,
+
+        // Return as string, not DOM
+        RETURN_DOM: false,
+
+        // Return as HTML string
+        RETURN_DOM_FRAGMENT: false,
+
+        // Allow data URIs for images (used for embedded images in EPUBs)
+        ALLOW_DATA_ATTR: false
+    });
+}
+
+/**
+ * Sanitizes CSS styles
+ * Removes potentially dangerous CSS properties
+ * @param {string} css - Raw CSS content to sanitize
+ * @returns {string} Sanitized CSS
+ */
+export function sanitizeEpubCss(css) {
+    if (typeof css !== 'string') {
+        return '';
+    }
+
+    // Remove @import rules that could load external resources
+    css = css.replace(/@import\s+[^;]+;/gi, '');
+
+    // Remove javascript: URLs in CSS
+    css = css.replace(/javascript:[^;\}]*/gi, '');
+
+    // Remove expression() which can execute code in old IE
+    css = css.replace(/expression\s*\([^)]*\)/gi, '');
+
+    // Remove behavior property (IE-specific) that can execute code
+    css = css.replace(/behavior\s*:[^;}]*/gi, '');
+
+    return css;
+}

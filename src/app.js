@@ -4,6 +4,7 @@
  */
 
 import { processPdf } from './processor.js';
+import { processEpub } from './epub-processor.js';
 import { generateFlipbookHtml } from './generator.js';
 import pageFlipJs from 'page-flip/dist/js/page-flip.browser.js?raw';
 import flipbookCss from './flipbook.css?raw';
@@ -120,14 +121,16 @@ class FlipbookApp {
     this.routeFileProcessing(file);
   }
 
-  // Routes to PDF processor or HTML loader
+  // Routes to PDF or EPUB processor
   routeFileProcessing(file) {
     if (!file) return;
 
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
       this.processFile(file);
+    } else if (file.type === 'application/epub+zip' || file.name.toLowerCase().endsWith('.epub')) {
+      this.processEpubFile(file);
     } else {
-      this.showError('Please drop a valid PDF file.');
+      this.showError('Please drop a valid PDF or EPUB file.');
     }
   }
 
@@ -216,6 +219,88 @@ class FlipbookApp {
     } catch (err) {
       console.error('Error processing PDF:', err);
       this.showError(`Failed to process PDF: ${err.message}`);
+      this.reset();
+    }
+  }
+
+  /* ----------  EPUB processing  ---------- */
+  async processEpubFile(file) {
+    this.hideError();
+    this.showProgress(0, 'Loading EPUB…');
+
+    try {
+      const doubleSpread = !!this.doubleSpreadToggle?.checked;
+      const addBlankPage = !!this.blankPageToggle?.checked;
+
+      const opts = { scales: [1, 2, 3], format: 'image/jpeg', quality: 0.92, pageWidth: 800 };
+
+      this.showProgress(5, 'Parsing EPUB structure…');
+      const { pageCount, renderPage, renderPageVariants } = await processEpub(file, opts);
+
+      this.showProgress(10, `Processing ${pageCount} pages…`);
+
+      const pageImages = [];
+      const slowThreshold = 2000;
+      const slowPages = [];
+
+      for (let i = 1; i <= pageCount; i++) {
+        const progress = 10 + (i / pageCount * 80);
+        this.showProgress(progress, `Rendering page ${i} of ${pageCount}…`);
+
+        const start = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+        // Always use variants since we are using multi-scale
+        if (renderPageVariants) {
+          const variants = await renderPageVariants(i);
+          pageImages.push(variants);
+        } else {
+          // Fallback if something goes wrong, though it shouldn't with scales set
+          const url = await renderPage(i);
+          pageImages.push(url);
+        }
+
+        const dur = ((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start);
+        if (dur > slowThreshold) {
+          slowPages.push({ index: i, ms: Math.round(dur) });
+          console.warn(`Slow render: page ${i} took ${Math.round(dur)}ms`);
+        }
+      }
+
+      this.showProgress(95, 'Generating flipbook…');
+
+      // Generate Single File Version (for preview and simple download)
+      const htmlSingle = await generateFlipbookHtml(pageImages, {
+        title: file.name.replace(/\.epub$/i, ''),
+        doubleSpread,
+        addBlankPage,
+        mode: 'single'
+      }, {
+        loadCss: async () => flipbookCss,
+        loadJs: async () => flipbookJs,
+        loadPageFlipJs: async () => pageFlipJs
+      });
+
+      // Generate Folder Version (for ZIP download and publishing)
+      const folderData = await generateFlipbookHtml(pageImages, {
+        title: file.name.replace(/\.epub$/i, ''),
+        doubleSpread,
+        addBlankPage,
+        mode: 'folder'
+      }, {
+        loadCss: async () => flipbookCss,
+        loadJs: async () => flipbookJs,
+        loadPageFlipJs: async () => pageFlipJs
+      });
+
+      this.currentHtml = htmlSingle;
+      this.currentFolderData = folderData;
+
+      this.showProgress(100, 'Complete!');
+      setTimeout(() => this.showResult(htmlSingle), 500);
+
+    } catch (err) {
+      console.error('Error processing EPUB:', err);
+      this.showError(`Failed to process EPUB: ${err.message}`);
       this.reset();
     }
   }
