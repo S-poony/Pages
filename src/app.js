@@ -229,80 +229,154 @@ class FlipbookApp {
     this.showProgress(0, 'Loading EPUB…');
 
     try {
-      const doubleSpread = !!this.doubleSpreadToggle?.checked;
+      const doubleSpread = !!this.doubleSpreadsToggle?.checked;
       const addBlankPage = !!this.blankPageToggle?.checked;
 
-      const opts = { scales: [1, 2, 3], format: 'image/jpeg', quality: 0.92, pageWidth: 800 };
+      const opts = { pageWidth: 800, backgroundColor: '#ffffff' };
 
       this.showProgress(5, 'Parsing EPUB structure…');
-      const { pageCount, renderPage, renderPageVariants } = await processEpub(file, opts);
+      const { pageCount, pages } = await processEpub(file, opts);
 
-      this.showProgress(10, `Processing ${pageCount} pages…`);
+      this.showProgress(50, 'Generating flipbook…');
 
-      const pageImages = [];
-      const slowThreshold = 2000;
-      const slowPages = [];
-
-      for (let i = 1; i <= pageCount; i++) {
-        const progress = 10 + (i / pageCount * 80);
-        this.showProgress(progress, `Rendering page ${i} of ${pageCount}…`);
-
-        const start = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-
-        // Always use variants since we are using multi-scale
-        if (renderPageVariants) {
-          const variants = await renderPageVariants(i);
-          pageImages.push(variants);
-        } else {
-          // Fallback if something goes wrong, though it shouldn't with scales set
-          const url = await renderPage(i);
-          pageImages.push(url);
-        }
-
-        const dur = ((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start);
-        if (dur > slowThreshold) {
-          slowPages.push({ index: i, ms: Math.round(dur) });
-          console.warn(`Slow render: page ${i} took ${Math.round(dur)}ms`);
-        }
-      }
-
-      this.showProgress(95, 'Generating flipbook…');
-
-      // Generate Single File Version (for preview and simple download)
-      const htmlSingle = await generateFlipbookHtml(pageImages, {
+      // Generate enriched HTML by injecting EPUB content into page templates
+      const enrichedHtml = await this.generateEnrichedFlipbook(pages, {
         title: file.name.replace(/\.epub$/i, ''),
         doubleSpread,
-        addBlankPage,
-        mode: 'single'
-      }, {
-        loadCss: async () => flipbookCss,
-        loadJs: async () => flipbookJs,
-        loadPageFlipJs: async () => pageFlipJs
+        addBlankPage
       });
 
-      // Generate Folder Version (for ZIP download and publishing)
-      const folderData = await generateFlipbookHtml(pageImages, {
-        title: file.name.replace(/\.epub$/i, ''),
-        doubleSpread,
-        addBlankPage,
-        mode: 'folder'
-      }, {
-        loadCss: async () => flipbookCss,
-        loadJs: async () => flipbookJs,
-        loadPageFlipJs: async () => pageFlipJs
-      });
-
-      this.currentHtml = htmlSingle;
-      this.currentFolderData = folderData;
+      this.currentHtml = enrichedHtml;
+      // For EPUBs, we only support single-file mode (enrichment layers don't split well)
+      this.currentFolderData = null;
 
       this.showProgress(100, 'Complete!');
-      setTimeout(() => this.showResult(htmlSingle), 500);
+      setTimeout(() => this.showResult(enrichedHtml), 500);
 
     } catch (err) {
       console.error('Error processing EPUB:', err);
       this.showError(`Failed to process EPUB: ${err.message}`);
       this.reset();
     }
+  }
+
+  /* ----------  Generate enriched flipbook HTML  ---------- */
+  async generateEnrichedFlipbook(pages, options = {}) {
+    const { title = 'Flipbook', doubleSpread = false, addBlankPage = false } = options;
+
+    // Build pages HTML with enrichment layers
+    const pagesArray = [];
+
+    // Add blank cover if requested
+    if (addBlankPage) {
+      pagesArray.push('<div class="page-container" style="background-color: white;"></div>');
+    }
+
+    // Add EPUB pages with enrichment
+    pages.forEach(page => {
+      const pageHtml = `
+<div class="page-container" data-density="soft">
+  <img src="${page.backgroundImage}" alt="Page background" loading="eager" />
+  <div class="enrichment-layer">
+    ${page.enrichmentHtml}
+  </div>
+</div>`;
+      pagesArray.push(pageHtml);
+    });
+
+    // Add blank page at end if odd count
+    let totalPageCount = pages.length;
+    if (addBlankPage) totalPageCount += 1;
+    if (totalPageCount % 2 !== 0) {
+      pagesArray.push('<div class="page-container" data-density="soft" style="background-color: white;"></div>');
+    }
+
+    const pagesHtml = pagesArray.join('');
+    const actualPageCount = pages.length;
+
+    // Use 16:9 aspect ratio for EPUB pages
+    const aspectRatio = 16 / 9;
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${this.escapeHtml(title)}</title>
+        <style>
+        /* --- ENRICHMENT UTILITIES --- */
+        .page-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        }
+
+        .page-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        }
+
+        .enrichment-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: auto;
+        z-index: 10;
+        }
+        
+        /* EPUB specific styles */
+        .epub-content a {
+          color: #0066cc;
+          text-decoration: underline;
+          cursor: pointer;
+        }
+        
+        .epub-content a:hover {
+          color: #0052a3;
+        }
+        /* --- END UTILITIES --- */
+
+        ${flipbookCss}
+        </style>
+</head>
+<body>
+
+    <div id="flipbook-wrapper">
+        <div id="flipbook-container">
+            <div id="flipbook" data-double-spread="${doubleSpread}">${pagesHtml}</div>
+        </div>
+        <div id="controls-panel">
+            <input type="number" id="page-input" min="2" max="${actualPageCount}" value="2">
+            <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1">
+            <div id="zoom-level">100%</div>
+        </div>
+    </div>
+    <script>
+        // Flipbook Configuration
+        window.FLIPBOOK_CONFIG = {
+            pageCount: ${actualPageCount},
+            doubleSpread: ${doubleSpread},
+            pageAspectRatio: ${aspectRatio}
+        };
+    </script>
+    <script>${pageFlipJs}</script>
+    <script>${flipbookJs}</script>
+</body>
+</html>`;
+
+    return html;
+  }
+
+  escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    };
+    return str.replace(/[&<>"']/g, m => map[m]);
   }
 
   /* ----------  Cloudflare Publishing  ---------- */
