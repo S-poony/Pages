@@ -223,159 +223,56 @@ class FlipbookApp {
     }
   }
 
-  /* ----------  EPUB processing  ---------- */
-  async processEpubFile(file) {
-    this.hideError();
-    this.showProgress(0, 'Loading EPUB…');
+async processEpubFile(file) {
+  this.hideError();
+  this.showProgress(0, 'Loading EPUB…');
 
-    try {
-      const doubleSpread = !!this.doubleSpreadsToggle?.checked;
-      const addBlankPage = !!this.blankPageToggle?.checked;
+  try {
+    const doubleSpread = !!this.doubleSpreadToggle?.checked;
+    const addBlankPage = !!this.blankPageToggle?.checked;
 
-      // Define page dimensions explicitly (landscape 16:9)
-      // For vertical/portrait book, swap these values or use: pageWidth: 450, pageHeight: 800
-      const opts = { backgroundColor: '#ffffff' };
+    // Use processEpub, then pass results to generateFlipbookHtml
+    const epubResult = await processEpub(file, {
+      pageWidth: 800,
+      backgroundColor: '#ffffff'
+    });
+    
+    this.showProgress(50, 'Generating flipbook…');
 
-      this.showProgress(5, 'Parsing EPUB structure…');
-      const { pageCount, pages, pageWidth, pageHeight } = await processEpub(file, opts);
+    // Extract background images and enrichment HTML
+    const pageImages = epubResult.pages.map(p => p.backgroundImage);
+    const enrichmentHtmlList = epubResult.pages.map(p => p.enrichmentHtml);
 
-      this.showProgress(50, 'Generating flipbook…');
-
-      // Generate enriched HTML by injecting EPUB content into page templates
-      const enrichedHtml = await this.generateEnrichedFlipbook(pages, {
+    // Use generateFlipbookHtml like PDFs do
+    const html = await generateFlipbookHtml(
+      pageImages,
+      {
         title: file.name.replace(/\.epub$/i, ''),
         doubleSpread,
         addBlankPage,
-        pageWidth,
-        pageHeight
-      });
+        mode: 'single'
+      },
+      {
+        loadCss: async () => flipbookCss,
+        loadJs: async () => flipbookJs,
+        loadPageFlipJs: async () => pageFlipJs
+      },
+      enrichmentHtmlList 
+    );
 
-      this.currentHtml = enrichedHtml;
-      // For EPUBs, we only support single-file mode (enrichment layers don't split well)
-      this.currentFolderData = null;
+    // For EPUBs, we only support single-file mode (enrichment doesn't split well)
+    this.currentHtml = html;
+    this.currentFolderData = null;
 
-      this.showProgress(100, 'Complete!');
-      setTimeout(() => this.showResult(enrichedHtml), 500);
+    this.showProgress(100, 'Complete!');
+    setTimeout(() => this.showResult(html), 500);
 
-    } catch (err) {
-      console.error('Error processing EPUB:', err);
-      this.showError(`Failed to process EPUB: ${err.message}`);
-      this.reset();
-    }
+  } catch (err) {
+    console.error('Error processing EPUB:', err);
+    this.showError(`Failed to process EPUB: ${err.message}`);
+    this.reset();
   }
-
-  /* ----------  Generate enriched flipbook HTML  ---------- */
-  async generateEnrichedFlipbook(pages, options = {}) {
-    const {
-      title = 'Flipbook',
-      doubleSpread = false,
-      addBlankPage = false,
-      pageWidth = 800,
-      pageHeight = 450
-    } = options;
-
-    // Build pages HTML with enrichment layers
-    const pagesArray = [];
-
-    // Add blank cover if requested
-    if (addBlankPage) {
-      pagesArray.push('<div class="page-container" style="background-color: white;"></div>');
-    }
-
-    // Add EPUB pages with enrichment
-    pages.forEach(page => {
-      const pageHtml = `
-<div class="page-container" data-density="soft">
-  <img src="${page.backgroundImage}" alt="Page background" loading="eager" />
-  <div class="enrichment-layer">
-    ${page.enrichmentHtml}
-  </div>
-</div>`;
-      pagesArray.push(pageHtml);
-    });
-
-    // Add blank page at end if odd count
-    let totalPageCount = pages.length;
-    if (addBlankPage) totalPageCount += 1;
-    if (totalPageCount % 2 !== 0) {
-      pagesArray.push('<div class="page-container" data-density="soft" style="background-color: white;"></div>');
-    }
-
-    const pagesHtml = pagesArray.join('');
-    const actualPageCount = pages.length;
-
-    // Calculate aspect ratio from actual page dimensions
-    const aspectRatio = pageWidth / pageHeight;
-
-    const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${this.escapeHtml(title)}</title>
-        <style>
-        /* --- ENRICHMENT UTILITIES --- */
-        .page-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        }
-
-        .page-image {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        }
-
-        .enrichment-layer {
-        position: absolute;
-        inset: 0;
-        pointer-events: auto;
-        z-index: 10;
-        }
-        
-        /* EPUB specific styles */
-        .epub-content a {
-          color: #0066cc;
-          text-decoration: underline;
-          cursor: pointer;
-        }
-        
-        .epub-content a:hover {
-          color: #0052a3;
-        }
-        /* --- END UTILITIES --- */
-
-        ${flipbookCss}
-        </style>
-</head>
-<body>
-
-    <div id="flipbook-wrapper">
-        <div id="flipbook-container">
-            <div id="flipbook" data-double-spread="${doubleSpread}">${pagesHtml}</div>
-        </div>
-        <div id="controls-panel">
-            <input type="number" id="page-input" min="2" max="${actualPageCount}" value="2">
-            <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1">
-            <div id="zoom-level">100%</div>
-        </div>
-    </div>
-    <script>
-        // Flipbook Configuration
-        window.FLIPBOOK_CONFIG = {
-            pageCount: ${actualPageCount},
-            doubleSpread: ${doubleSpread},
-            pageAspectRatio: ${aspectRatio}
-        };
-    </script>
-    <script>${pageFlipJs}</script>
-    <script>${flipbookJs}</script>
-</body>
-</html>`;
-
-    return html;
-  }
+}
 
   escapeHtml(str) {
     if (typeof str !== 'string') return '';

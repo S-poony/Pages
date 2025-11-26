@@ -69,9 +69,15 @@ async function createEnrichedPages(book, options) {
     const pages = [];
     const spineItems = book.spine.spineItems;
 
-    // Define common styles to ensure consistency between measurement and rendering
-    // NOTE: width and height are NOT included here because they differ between
-    // measurement (explicit pixels) and final rendering (100% to fill container)
+    // Determine the Base Path (directory containing the OPF file)
+    // This is crucial because manifest hrefs are relative to this, but the zip root might be higher up.
+    const opfPath = book.packageUrl || ''; // e.g. "OEBPS/content.opf"
+    const basePath = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+
+    console.log('=== EPUB PATH DEBUG ===');
+    console.log('Package URL:', opfPath);
+    console.log('Calculated Base Path:', basePath);
+
     const PAGE_STYLES = {
         padding: '40px',
         boxSizing: 'border-box',
@@ -83,87 +89,139 @@ async function createEnrichedPages(book, options) {
         textAlign: 'justify'
     };
 
-    // Create a temporary container for measuring content
-    // CRITICAL: This must EXACTLY match the final page rendering
     const measureContainer = document.createElement('div');
     measureContainer.style.position = 'absolute';
     measureContainer.style.left = '-9999px';
     measureContainer.style.top = '-9999px';
     measureContainer.style.width = `${pageWidth}px`;
     measureContainer.style.height = `${pageHeight}px`;
-
-    // Apply common styles
     Object.assign(measureContainer.style, PAGE_STYLES);
-
     measureContainer.style.visibility = 'hidden';
-
     document.body.appendChild(measureContainer);
+
+    // Helper to try loading a resource from multiple possible paths
+    const loadResourceSafe = async (pathsToTry) => {
+        for (const path of pathsToTry) {
+            try {
+                // book.load handles retrieving the file from the archive
+                const data = await book.load(path);
+                if (data) return { data, path };
+            } catch (e) {
+                // Ignore and try next path
+            }
+        }
+        return null;
+    };
 
     try {
         for (let i = 0; i < spineItems.length; i++) {
             const item = spineItems[i];
             try {
+                // console.log(`Processing Chapter ${i + 1}/${spineItems.length}: ${item.href}`);
+                
                 const doc = await item.load(book.load.bind(book));
                 let bodyContent = doc.body ? doc.body.innerHTML : doc.innerHTML || '';
 
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = bodyContent;
 
-                // 1. Resolve and Inline CSS
-                // We need to find all link tags and replace them with style tags
-                // This fixes the "stylesheet not loaded" errors and ensures correct layout
+                // 1. Resolve Images
+                const images = tempDiv.querySelectorAll('img');
+                for (const img of images) {
+                    const src = img.getAttribute('src');
+                    
+                    if (src && !src.startsWith('data:') && !src.startsWith('http')) {
+                        try {
+                            // Calculate Path 1: Relative to the current chapter (Standard HTML behavior)
+                            // We use a dummy URL to let the browser handle "../" resolution
+                            const dummyOrigin = 'http://epub-internal/';
+                            // item.href is relative to the OPF (e.g. "Text/chap1.html")
+                            // We construct the full "virtual" URL: http://epub-internal/Text/chap1.html
+                            const chapterBaseUrl = new URL(item.href, dummyOrigin);
+                            // We resolve src against it: http://epub-internal/Images/img.jpg
+                            const resolvedUrl = new URL(src, chapterBaseUrl);
+                            // We extract the pathname: "/Images/img.jpg" -> "Images/img.jpg"
+                            const relativePath = decodeURIComponent(resolvedUrl.pathname.substring(1));
+
+                            // Calculate Path 2: Absolute in the Zip (prefixed with OPF directory)
+                            // If relativePath is "Images/img.jpg" and OPF is in "OEBPS/", full path is "OEBPS/Images/img.jpg"
+                            const absolutePath = basePath + relativePath;
+
+                            // Calculate Path 3: Direct src (Just in case it was already absolute)
+                            const rawPath = decodeURIComponent(src);
+
+                            // Try loading in order of likelihood
+                            const pathsToTry = [
+                                absolutePath, // Most likely correct for zipped EPUBs
+                                relativePath, // Likely if OPF is at root
+                                rawPath       // Fallback
+                            ];
+
+                            const result = await loadResourceSafe(pathsToTry);
+
+                            if (result) {
+                                // console.log(`Loaded image: ${src} -> found at: ${result.path}`);
+                                const data = result.data;
+                                let blob;
+                                
+                                // Handle different return types from book.load
+                                if (data instanceof Blob) {
+                                    blob = data;
+                                } else if (data instanceof ArrayBuffer) {
+                                    const ext = result.path.split('.').pop().toLowerCase();
+                                    const mimeTypes = {
+                                        'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+                                        'gif': 'image/gif', 'svg': 'image/svg+xml', 'webp': 'image/webp'
+                                    };
+                                    blob = new Blob([data], { type: mimeTypes[ext] || 'application/octet-stream' });
+                                } else if (typeof data === 'string') {
+                                    blob = new Blob([data], { type: 'image/svg+xml' });
+                                }
+
+                                if (blob) {
+                                    const base64 = await new Promise((resolve) => {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => resolve(reader.result);
+                                        reader.readAsDataURL(blob);
+                                    });
+                                    img.setAttribute('src', base64);
+                                }
+                            } else {
+                                console.warn(`IMAGE FAIL: Could not find "${src}" tried:`, pathsToTry);
+                                img.setAttribute('alt', `[Image failed: ${src}]`);
+                            }
+
+                        } catch (imgError) {
+                            console.warn(`Error processing image ${src}:`, imgError);
+                            img.setAttribute('alt', `[Error: ${src}]`);
+                        }
+                    }
+                    
+                    // Force display block to prevent inline layout weirdness
+                    img.style.maxWidth = '100%';
+                    img.style.height = 'auto';
+                    img.style.display = 'block';
+                    img.style.margin = '10px auto';
+                }
+
+                // 2. Resolve CSS (Same logic)
                 const links = tempDiv.querySelectorAll('link[rel="stylesheet"]');
                 for (const link of links) {
                     const href = link.getAttribute('href');
                     if (href) {
-                        try {
-                            // Resolve relative path
-                            const cssUrl = item.href ?
-                                new URL(href, new URL(item.href, 'http://localhost')).pathname.substring(1) :
-                                href;
+                        const chapterBaseUrl = new URL(item.href, 'http://epub-internal/');
+                        const resolvedUrl = new URL(href, chapterBaseUrl);
+                        const relativePath = decodeURIComponent(resolvedUrl.pathname.substring(1));
+                        const absolutePath = basePath + relativePath;
 
-                            const cssContent = await book.archive.getText(cssUrl);
-                            if (cssContent) {
-                                const style = document.createElement('style');
-                                style.textContent = cssContent;
-                                link.parentNode.replaceChild(style, link);
-                            } else {
-                                link.parentNode.removeChild(link); // Remove if empty/not found to avoid errors
-                            }
-                        } catch (cssError) {
-                            console.warn(`Failed to inline CSS ${href}:`, cssError);
-                            link.parentNode.removeChild(link); // Remove failed links
-                        }
-                    }
-                }
-
-                // 2. Resolve Images
-                const images = tempDiv.querySelectorAll('img');
-                for (const img of images) {
-                    const src = img.getAttribute('src');
-                    if (src && !src.startsWith('data:') && !src.startsWith('http')) {
-                        try {
-                            const imgUrl = item.href ?
-                                new URL(src, new URL(item.href, 'http://localhost')).pathname.substring(1) :
-                                src;
-
-                            const imgData = await book.archive.getBase64(imgUrl);
-                            if (imgData) {
-                                const ext = imgUrl.split('.').pop().toLowerCase();
-                                const mimeTypes = {
-                                    'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
-                                    'gif': 'image/gif', 'svg': 'image/svg+xml', 'webp': 'image/webp'
-                                };
-                                const mimeType = mimeTypes[ext] || 'image/jpeg';
-                                img.setAttribute('src', `data:${mimeType};base64,${imgData}`);
-                            }
-
-                            img.style.maxWidth = '100%';
-                            img.style.height = 'auto';
-                            img.style.display = 'block';
-                            img.style.margin = '1em auto';
-                        } catch (imgError) {
-                            console.warn(`Failed to load image ${src}:`, imgError);
+                        const result = await loadResourceSafe([absolutePath, relativePath, href]);
+                        
+                        if (result && (typeof result.data === 'string')) {
+                            const style = document.createElement('style');
+                            style.textContent = result.data;
+                            link.parentNode.replaceChild(style, link);
+                        } else {
+                            link.remove();
                         }
                     }
                 }
@@ -178,7 +236,7 @@ async function createEnrichedPages(book, options) {
                     }
                 }
 
-                // 4. Pre-render to calculate image dimensions
+                // 4. Pre-render for measurements
                 const stagingContainer = document.createElement('div');
                 Object.assign(stagingContainer.style, {
                     position: 'absolute',
@@ -187,13 +245,12 @@ async function createEnrichedPages(book, options) {
                     width: `${pageWidth}px`,
                     visibility: 'hidden'
                 });
-                // Apply same page styles to staging to ensure correct flow
                 Object.assign(stagingContainer.style, PAGE_STYLES);
 
                 stagingContainer.appendChild(tempDiv);
                 document.body.appendChild(stagingContainer);
 
-                // Wait for images to load
+                // Wait for images to render (they are now base64)
                 const stagingImages = Array.from(tempDiv.querySelectorAll('img'));
                 if (stagingImages.length > 0) {
                     await Promise.all(stagingImages.map(img => {
@@ -201,7 +258,7 @@ async function createEnrichedPages(book, options) {
                         return new Promise(resolve => {
                             img.onload = resolve;
                             img.onerror = resolve;
-                            setTimeout(resolve, 2000);
+                            setTimeout(resolve, 500); 
                         });
                     }));
                 }
@@ -224,7 +281,6 @@ async function createEnrichedPages(book, options) {
 
                 // 6. Create Page Objects
                 for (const pageContent of contentPages) {
-                    // Convert PAGE_STYLES object to CSS string
                     const commonStyles = Object.entries(PAGE_STYLES)
                         .map(([k, v]) => `${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}: ${v}`)
                         .join('; ');

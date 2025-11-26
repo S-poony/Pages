@@ -129,13 +129,14 @@ function generateSizes(doubleSpread) {
 }
 
 /**
- * Generates HTML for individual pages
+ * Generates HTML for individual pages with enrichment support
  * @param {Array<string|Array<RenderVariant>>} pageImages - Array of either data URLs or variant arrays
  * @param {boolean} doubleSpread - Whether in double spread mode
  * @param {'single'|'folder'} mode - Generation mode
+ * @param {Array<string>} [enrichmentHtmlList] - Array of raw HTML strings for each page's enrichment layer
  * @returns {string} HTML string for all pages
  */
-export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'single') {
+export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'single', enrichmentHtmlList = []) {
     if (!Array.isArray(pageImages)) {
         throw new Error('pageImages must be an array');
     }
@@ -143,16 +144,14 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
     const pagesHtml = Array.from({ length: pageImages.length }, (_, i) => {
         const pageNum = i + 1;
         const pageData = pageImages[i];
+        const pageEnrichmentHtml = enrichmentHtmlList?.[i] || '';
 
         const isLegacyFormat = typeof pageData === 'string';
 
         let imgTag;
         if (isLegacyFormat) {
-            // Legacy format only supports single mode (embedded) effectively
-            // or we'd need to save the string as file.
-            // For folder mode, we assume we'll save this dataUrl as a file.
             const src = mode === 'folder' ? `images/page-${pageNum}.jpg` : escapeAttr(pageData);
-            imgTag = `<img src="${src}" alt="Page ${pageNum}" loading="eager" />`;
+            imgTag = `<img class="page-image" src="${src}" alt="Page ${pageNum}" loading="eager" />`;
         } else {
             const variants = pageData;
             if (!Array.isArray(variants) || variants.length === 0) {
@@ -161,12 +160,9 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
 
             let src, srcset;
             if (mode === 'folder') {
-                // Use external files
-                // We assume the largest variant is the main src, or the first one
                 src = `images/page-${pageNum}-${variants[0].width}w.jpg`;
                 srcset = generateSrcset(variants, 'images/', i);
             } else {
-                // Use embedded data URLs - properly escape for HTML attributes
                 src = escapeAttr(variants[0].dataUrl);
                 srcset = generateSrcset(variants);
             }
@@ -174,7 +170,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
             const sizes = generateSizes(doubleSpread);
             const objectPosition = doubleSpread ? (pageNum % 2 === 0 ? 'left' : 'right') : 'center';
 
-            imgTag = `<img src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page ${pageNum}" loading="eager" style="object-position: ${objectPosition} center;" />`;
+            imgTag = `<img class="page-image" src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page ${pageNum}" loading="eager" style="object-position: ${objectPosition} center;" />`;
         }
 
         return `
@@ -185,7 +181,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
 <div class="page-container" data-density="soft">
   ${imgTag}
   <div class="enrichment-layer">
-    <!-- PASTE YOUR CODE HERE -->
+    ${pageEnrichmentHtml}
   </div>
 </div>
 <!-- PAGE ${pageNum} END -->
@@ -196,14 +192,15 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
 }
 
 /**
- * Generates the complete HTML structure for the flipbook
+ * Generates the complete HTML structure for the flipbook with EPUB support
  * @param {Array<string|Array<RenderVariant>>} pageImages - Array of either data URLs or variant arrays
  * @param {GeneratorOptions} options - Generator options
  * @param {AssetLoader} assetLoader - Asset loader (optional, defaults to file loader)
+ * @param {Array<string>} [enrichmentHtmlList] - Optional array of HTML strings for enrichment layers
  * @returns {Promise<string|{html: string, assets: Array}>} Complete HTML document or object with assets
  */
 export async function generateFlipbookHtml(pageImages, options = {},
-    assetLoader = defaultAssetLoader) {
+    assetLoader = defaultAssetLoader, enrichmentHtmlList = []) {
     if (!Array.isArray(pageImages)) {
         throw new Error('pageImages must be an array');
     }
@@ -229,13 +226,12 @@ export async function generateFlipbookHtml(pageImages, options = {},
         );
     }
 
-    // Add content pages
+    // Add content pages - FIXED: Pass enrichmentHtmlList
     pagesArray.push(
-        generatePagesHtml(pageImages, doubleSpread, mode)
+        generatePagesHtml(pageImages, doubleSpread, mode, enrichmentHtmlList)
     );
 
     // Add blank page at end if odd number of pages
-    // This prevents the last page from appearing alone and being treated as a hardcover
     let totalPageCount = pageImages.length;
     if (addBlankPage) {
         totalPageCount += 1; // Account for the blank cover we added
@@ -289,6 +285,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
         inset: 0;
         pointer-events: auto;
         z-index: 10;
+        overflow: hidden;
         }
         /* --- END UTILITIES --- */
 
