@@ -328,7 +328,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         const preloader = new Image();
                         preloader.src = img.src;
                         if (img.srcset) preloader.srcset = img.srcset;
-                        preloader.sizes = img.sizes || '100vw';
+
+                        // Calculate correct sizes matching updateImageSizes logic
+                        const zoomLevel = window.currentZoom || 1;
+                        const baseSize = 50;
+                        const zoomedSize = Math.round(baseSize * zoomLevel);
+                        preloader.sizes = `${zoomedSize}vw`;
                     }
                 }
             }
