@@ -281,21 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         pagesToPreload.forEach(idx => {
             if (idx < pageCount) {
-                // Find the image in the DOM
-                // Note: StPageFlip creates clones, so we might have multiple images for the same page?
-                // Or we can just look for the source image in the hidden container if StPageFlip moves them?
-                // Actually, StPageFlip keeps the DOM structure inside .stf__block.
-
-                // We can query by the image source or just iterate all images and check their index?
-                // Easier: The images are usually in order in the DOM before StPageFlip messes with them, 
-                // but after init, they are inside .page-container.
-
-                // Let's try to find the Nth .page-image
                 const allImages = document.querySelectorAll('.page-image');
                 if (allImages[idx]) {
                     const img = allImages[idx];
                     // img.loading = 'eager'; // Handled in HTML generator now
-
                     // Force browser to download by creating a detached image
                     // This ensures it downloads even if the original img is hidden/off-screen
                     if (img.src) {
