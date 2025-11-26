@@ -19,16 +19,20 @@ import { sanitizeEpubHtml } from './sanitizer.js';
  */
 export function normalizeEpubProcessorOptions(options = {}) {
     const {
-        pageWidth = 200,
-        pageHeight = 200,
+        pageWidth = 600,
         backgroundColor = '#ffffff'
     } = options;
+
+    let { pageHeight } = options;
 
     if (!Number.isFinite(pageWidth) || pageWidth <= 0) {
         throw new Error('pageWidth must be a positive number');
     }
 
-    if (!Number.isFinite(pageHeight) || pageHeight <= 0) {
+    if (pageHeight === undefined) {
+        // Default aspect ratio 2:3 (portrait)
+        pageHeight = Math.round(pageWidth * 1.5);
+    } else if (!Number.isFinite(pageHeight) || pageHeight <= 0) {
         throw new Error('pageHeight must be a positive number');
     }
 
@@ -66,9 +70,9 @@ async function createEnrichedPages(book, options) {
     const spineItems = book.spine.spineItems;
 
     // Define common styles to ensure consistency between measurement and rendering
+    // NOTE: width and height are NOT included here because they differ between
+    // measurement (explicit pixels) and final rendering (100% to fill container)
     const PAGE_STYLES = {
-        width: '100%',
-        height: '100%',
         padding: '40px',
         boxSizing: 'border-box',
         overflow: 'hidden',
@@ -80,16 +84,18 @@ async function createEnrichedPages(book, options) {
     };
 
     // Create a temporary container for measuring content
+    // CRITICAL: This must EXACTLY match the final page rendering
     const measureContainer = document.createElement('div');
     measureContainer.style.position = 'absolute';
     measureContainer.style.left = '-9999px';
     measureContainer.style.top = '-9999px';
     measureContainer.style.width = `${pageWidth}px`;
     measureContainer.style.height = `${pageHeight}px`;
-    measureContainer.style.visibility = 'hidden';
 
-    // Apply common styles to measure container
+    // Apply common styles
     Object.assign(measureContainer.style, PAGE_STYLES);
+
+    measureContainer.style.visibility = 'hidden';
 
     document.body.appendChild(measureContainer);
 
@@ -219,12 +225,16 @@ async function createEnrichedPages(book, options) {
                 // 6. Create Page Objects
                 for (const pageContent of contentPages) {
                     // Convert PAGE_STYLES object to CSS string
-                    const styleString = Object.entries(PAGE_STYLES)
+                    const commonStyles = Object.entries(PAGE_STYLES)
                         .map(([k, v]) => `${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}: ${v}`)
                         .join('; ');
 
                     const enrichmentHtml = `
-                        <div class="epub-content" style="${styleString}">
+                        <div class="epub-content" style="
+                            width: ${pageWidth}px;
+                            height: ${pageHeight}px;
+                            ${commonStyles};
+                        ">
                             ${pageContent}
                         </div>
                     `;

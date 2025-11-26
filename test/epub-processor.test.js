@@ -10,16 +10,16 @@ describe('EPUB Processor', () => {
     describe('normalizeEpubProcessorOptions', () => {
         it('should return default options when none provided', () => {
             const result = normalizeEpubProcessorOptions();
-            assert.strictEqual(result.pageWidth, 450);
+            assert.strictEqual(result.pageWidth, 600);
             assert.strictEqual(result.backgroundColor, '#ffffff');
-            // Default height should be portrait 9:16 ratio (450x800)
-            assert.strictEqual(result.pageHeight, 800);
+            // Default height should be 900 (1.5 ratio)
+            assert.strictEqual(result.pageHeight, 900);
         });
 
         it('should accept custom pageWidth', () => {
             const result = normalizeEpubProcessorOptions({ pageWidth: 1000 });
             assert.strictEqual(result.pageWidth, 1000);
-            assert.strictEqual(result.pageHeight, 800); // Uses default pageHeight
+            assert.strictEqual(result.pageHeight, 1500); // 1.5 ratio
         });
 
         it('should accept custom pageHeight', () => {

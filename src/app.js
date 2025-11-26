@@ -234,7 +234,7 @@ class FlipbookApp {
 
       // Define page dimensions explicitly (landscape 16:9)
       // For vertical/portrait book, swap these values or use: pageWidth: 450, pageHeight: 800
-      const opts = { pageWidth: 800, backgroundColor: '#ffffff' };
+      const opts = { backgroundColor: '#ffffff' };
 
       this.showProgress(5, 'Parsing EPUB structure…');
       const { pageCount, pages, pageWidth, pageHeight } = await processEpub(file, opts);

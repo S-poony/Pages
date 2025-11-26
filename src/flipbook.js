@@ -62,6 +62,38 @@ function updateImageSizes() {
 const debouncedUpdateImageSizes = debounce(updateImageSizes, 200);
 
 /**
+ * Scale EPUB content to fit the page container
+ * This ensures fixed-dimension content (from pagination) fits the responsive page
+ */
+function updateEpubContentScale() {
+    const epubContents = document.querySelectorAll('.epub-content');
+    epubContents.forEach(content => {
+        const parent = content.closest('.page-container');
+        if (!parent) return;
+
+        // Get fixed dimensions from inline styles
+        const fixedWidth = parseFloat(content.style.width);
+        const fixedHeight = parseFloat(content.style.height);
+
+        if (!fixedWidth || !fixedHeight) return;
+
+        const parentWidth = parent.clientWidth;
+        const parentHeight = parent.clientHeight;
+
+        if (parentWidth === 0 || parentHeight === 0) return;
+
+        const scaleX = parentWidth / fixedWidth;
+        const scaleY = parentHeight / fixedHeight;
+
+        // Use the smaller scale to ensure it fits
+        const scale = Math.min(scaleX, scaleY);
+
+        content.style.transform = `scale(${scale})`;
+        content.style.transformOrigin = 'top left';
+    });
+}
+
+/**
  * Apply zoom and pan transforms to the container
  */
 function updateTransform() {
@@ -110,6 +142,9 @@ function updateTransform() {
 
     window.currentZoom = zoom;
     // updateImageSizes() is now called with debounce in zoom handler
+
+    // Update EPUB content scale immediately to prevent visual glitches
+    updateEpubContentScale();
 }
 
 // Initialize StPageFlip and all controls
@@ -237,6 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update image sizes for responsiveness
         updateImageSizes();
+        updateEpubContentScale();
 
         // PRELOAD NEXT SPREAD
         preloadNextSpread(e.data);
@@ -245,6 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pageFlip.on('init', () => {
         console.log('StPageFlip initialized event');
         updateImageSizes();
+        updateEpubContentScale();
         // Preload initial next spread
         preloadNextSpread(0);
     });
