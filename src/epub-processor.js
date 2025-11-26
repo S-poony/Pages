@@ -128,7 +128,6 @@ async function createEnrichedPages(book, zip, options) {
         for (const file of files) {
             const fileBasename = file.split('/').pop().toLowerCase();
             if (fileBasename === targetBasename) {
-                console.log(`Found file by basename match: ${file} (requested: ${path})`);
                 return zip.file(file);
             }
         }
@@ -140,7 +139,6 @@ async function createEnrichedPages(book, zip, options) {
         for (let i = 0; i < spineItems.length; i++) {
             const item = spineItems[i];
             try {
-                // console.log(`Processing Chapter ${i + 1}/${spineItems.length}: ${item.href}`);
 
                 const doc = await item.load(book.load.bind(book));
                 let bodyContent = doc.body ? doc.body.innerHTML : doc.innerHTML || '';
@@ -181,10 +179,6 @@ async function createEnrichedPages(book, zip, options) {
                             // Extract the path relative to the fake root (remove leading /)
                             let zipPath = resolvedUrl.pathname.substring(1);
 
-                            // console.log(`Resolving image: ${src}`);
-                            // console.log(`  Chapter href: ${item.href}`);
-                            // console.log(`  Base path: ${basePath}`);
-                            // console.log(`  Calculated Zip Path: ${zipPath}`);
 
                             const file = findFileInZip(zipPath);
 
@@ -203,7 +197,6 @@ async function createEnrichedPages(book, zip, options) {
                                 img.setAttribute('src', dataUrl);
                             } else {
                                 console.warn(`Image file not found in zip: ${zipPath}`);
-                                console.warn('Available files in zip:', Object.keys(zip.files));
                                 img.setAttribute('alt', `[Missing Image: ${src}]`);
                             }
 
