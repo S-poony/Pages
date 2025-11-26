@@ -232,10 +232,12 @@ class FlipbookApp {
       const doubleSpread = !!this.doubleSpreadsToggle?.checked;
       const addBlankPage = !!this.blankPageToggle?.checked;
 
+      // Define page dimensions explicitly (landscape 16:9)
+      // For vertical/portrait book, swap these values or use: pageWidth: 450, pageHeight: 800
       const opts = { pageWidth: 800, backgroundColor: '#ffffff' };
 
       this.showProgress(5, 'Parsing EPUB structure…');
-      const { pageCount, pages } = await processEpub(file, opts);
+      const { pageCount, pages, pageWidth, pageHeight } = await processEpub(file, opts);
 
       this.showProgress(50, 'Generating flipbook…');
 
@@ -243,7 +245,9 @@ class FlipbookApp {
       const enrichedHtml = await this.generateEnrichedFlipbook(pages, {
         title: file.name.replace(/\.epub$/i, ''),
         doubleSpread,
-        addBlankPage
+        addBlankPage,
+        pageWidth,
+        pageHeight
       });
 
       this.currentHtml = enrichedHtml;
@@ -262,7 +266,13 @@ class FlipbookApp {
 
   /* ----------  Generate enriched flipbook HTML  ---------- */
   async generateEnrichedFlipbook(pages, options = {}) {
-    const { title = 'Flipbook', doubleSpread = false, addBlankPage = false } = options;
+    const {
+      title = 'Flipbook',
+      doubleSpread = false,
+      addBlankPage = false,
+      pageWidth = 800,
+      pageHeight = 450
+    } = options;
 
     // Build pages HTML with enrichment layers
     const pagesArray = [];
@@ -294,8 +304,8 @@ class FlipbookApp {
     const pagesHtml = pagesArray.join('');
     const actualPageCount = pages.length;
 
-    // Use 16:9 aspect ratio for EPUB pages
-    const aspectRatio = 16 / 9;
+    // Calculate aspect ratio from actual page dimensions
+    const aspectRatio = pageWidth / pageHeight;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
