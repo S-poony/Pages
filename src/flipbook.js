@@ -223,68 +223,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Re-append pages
     originalPages.forEach(page => {
+
+        // We strictly enforce pixel dimensions on the elements before StPageFlip sees them.
+        // This prevents pages preview in animation to look different from the final result.
+        page.style.width = (BOOK_WIDTH_AT_1X / 2) + 'px';
+        page.style.height = BOOK_HEIGHT_AT_1X + 'px';
+        // Ensure overflow is hidden so content doesn't leak during measurement
+        page.style.overflow = 'hidden'; 
+        
         flipbookEl.appendChild(page.cloneNode(true));
     });
 
-    // Initialize StPageFlip
-    // We use size: 'stretch' so it adapts to the container size (which we resize for zoom)
-    pageFlip = new St.PageFlip(flipbookEl, {
-        width: BOOK_WIDTH_AT_1X / 2, // Always 2 pages, so width is half of container
-        height: BOOK_HEIGHT_AT_1X,
-        size: 'stretch',
-        // "You must set threshold values ​​with size: 'stretch'"
-        minWidth: 100,
-        maxWidth: 10000,
-        minHeight: 100,
-        maxHeight: 10000,
-        autoSize: false, // We control the container size
-        showCover: false,
-        usePortrait: false, // no margins on the sides
-        startPage: 0, // 0-based index
-        drawShadow: true,
-        maxShadowOpacity: 0.5, // Shadow intensity (0-1)
-        flippingTime: 500,
-        useMouseEvents: true,
-        swipeDistance: 30,
-        mobileScrollSupport: false, // We handle panning
-
-        // CUSTOM SHADOW SETTINGS
-        flippingShadow: true, // Enable/disable the flipping shadow
-        flippingShadowOpacity: 0.5, // Base opacity (0-1), independent of flip progress
-        flippingShadowWidthOffset: 50, // Base width in pixels (minimum shadow width)
-        flippingShadowWidthScale: 1.5, // Width scale factor (multiplier of base shadow width)
-        flippingShadowStartAlpha: .7, // Gradient start opacity (0-1)
-        flippingShadowEndAlpha: 0, // Gradient end opacity (0-1)
-        otherShadowOpacityScale: .5, // Scale factor for other shadows (0-1)
+    // We delay initialization by two animation frames.
+    // Frame 1: Browser applies the style.width/height we just set above.
+    // Frame 2: Browser performs layout/paint.
+    // Callback: StPageFlip initializes using the now-rendered correct dimensions.
+    
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            initStPageFlip();
+        });
     });
 
-    // Load pages
-    pageFlip.loadFromHTML(document.querySelectorAll('.page-container'));
+    function initStPageFlip() {
+        // Initialize StPageFlip
+        // We use size: 'stretch' so it adapts to the container size (which we resize for zoom)
+        pageFlip = new St.PageFlip(flipbookEl, {
+            width: BOOK_WIDTH_AT_1X / 2, // Always 2 pages, so width is half of container
+            height: BOOK_HEIGHT_AT_1X,
+            size: 'stretch',
+            // "You must set threshold values ​​with size: 'stretch'"
+            minWidth: 100,
+            maxWidth: 10000,
+            minHeight: 100,
+            maxHeight: 10000,
+            autoSize: false, // We control the container size
+            showCover: false,
+            usePortrait: false, // no margins on the sides
+            startPage: 0, // 0-based index
+            drawShadow: true,
+            maxShadowOpacity: 0.5, // Shadow intensity (0-1)
+            flippingTime: 500,
+            useMouseEvents: true,
+            swipeDistance: 30,
+            mobileScrollSupport: false, // We handle panning
 
-    // Store globally for debugging
-    window.pageFlip = pageFlip;
+            // CUSTOM SHADOW SETTINGS
+            flippingShadow: true, // Enable/disable the flipping shadow
+            flippingShadowOpacity: 0.5, // Base opacity (0-1), independent of flip progress
+            flippingShadowWidthOffset: 50, // Base width in pixels (minimum shadow width)
+            flippingShadowWidthScale: 1.5, // Width scale factor (multiplier of base shadow width)
+            flippingShadowStartAlpha: .7, // Gradient start opacity (0-1)
+            flippingShadowEndAlpha: 0, // Gradient end opacity (0-1)
+            otherShadowOpacityScale: .5, // Scale factor for other shadows (0-1)
+        });
 
-    // Event Listeners
-    pageFlip.on('flip', (e) => {
-        // Update controls
-        const pageNum = e.data + 1; // 0-based index to 1-based page number
-        if (pageInput) pageInput.value = pageNum;
+        // Load pages
+        pageFlip.loadFromHTML(document.querySelectorAll('.page-container'));
 
-        // Update image sizes for responsiveness
-        updateImageSizes();
-        updateEpubContentScale();
+        // Store globally for debugging
+        window.pageFlip = pageFlip;
 
-        // PRELOAD NEXT SPREAD
-        preloadNextSpread(e.data);
-    });
+        // Event Listeners
+        pageFlip.on('flip', (e) => {
+            // Update controls
+            const pageNum = e.data + 1; // 0-based index to 1-based page number
+            if (pageInput) pageInput.value = pageNum;
 
-    pageFlip.on('init', () => {
-        console.log('StPageFlip initialized event');
-        updateImageSizes();
-        updateEpubContentScale();
-        // Preload initial next spread
-        preloadNextSpread(0);
-    });
+            // Update image sizes for responsiveness
+            updateImageSizes();
+            updateEpubContentScale();
+
+            // PRELOAD NEXT SPREAD
+            preloadNextSpread(e.data);
+        });
+
+        pageFlip.on('init', () => {
+            console.log('StPageFlip initialized event');
+            updateImageSizes();
+            updateEpubContentScale();
+            // Preload initial next spread
+            preloadNextSpread(0);
+        });
+    }
 
     /**
      * Preload images for the next spread to ensure smooth flipping
