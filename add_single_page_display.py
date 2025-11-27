@@ -178,6 +178,111 @@ def patch_page_collection():
 
     content = safe_replace(content, old_show_spread_logic, new_show_spread_logic, PAGE_COLLECTION_FILE)
     
+    # FIX: Update getFlippingPage for single mode
+    # In single mode, we want to flip the CURRENT page, not the next one
+    old_get_flipping = '''    public getFlippingPage(direction: FlipDirection): Page {
+        const current = this.currentSpreadIndex;
+
+        if (this.render.getOrientation() === Orientation.PORTRAIT) {
+            return direction === FlipDirection.FORWARD
+                ? this.pages[current].newTemporaryCopy()
+                : this.pages[current - 1];
+        } else {
+            const spread =
+                direction === FlipDirection.FORWARD
+                    ? this.getSpread()[current + 1]
+                    : this.getSpread()[current - 1];
+
+            if (spread.length === 1) return this.pages[spread[0]];
+
+            return direction === FlipDirection.FORWARD
+                ? this.pages[spread[0]]
+                : this.pages[spread[1]];
+        }
+    }'''
+    
+    new_get_flipping = '''    public getFlippingPage(direction: FlipDirection): Page {
+        const current = this.currentSpreadIndex;
+
+        if (this.render.getOrientation() === Orientation.PORTRAIT) {
+            return direction === FlipDirection.FORWARD
+                ? this.pages[current].newTemporaryCopy()
+                : this.pages[current - 1];
+        } else {
+            // SINGLE MODE: flip the current page, not the next one
+            if (this.render.getSettings().display === DisplayType.SINGLE) {
+                const spread = this.getSpread()[current];
+                return this.pages[spread[0]];
+            }
+            
+            const spread =
+                direction === FlipDirection.FORWARD
+                    ? this.getSpread()[current + 1]
+                    : this.getSpread()[current - 1];
+
+            if (spread.length === 1) return this.pages[spread[0]];
+
+            return direction === FlipDirection.FORWARD
+                ? this.pages[spread[0]]
+                : this.pages[spread[1]];
+        }
+    }'''
+    
+    content = safe_replace(content, old_get_flipping, new_get_flipping, PAGE_COLLECTION_FILE)
+    
+    # FIX: Update getBottomPage for single mode
+    # In single mode, we want to reveal the NEXT page, not the current one
+    old_get_bottom = '''    public getBottomPage(direction: FlipDirection): Page {
+        const current = this.currentSpreadIndex;
+
+        if (this.render.getOrientation() === Orientation.PORTRAIT) {
+            return direction === FlipDirection.FORWARD
+                ? this.pages[current + 1]
+                : this.pages[current - 1];
+        } else {
+            const spread =
+                direction === FlipDirection.FORWARD
+                    ? this.getSpread()[current + 1]
+                    : this.getSpread()[current - 1];
+
+            if (spread.length === 1) return this.pages[spread[0]];
+
+            return direction === FlipDirection.FORWARD
+                ? this.pages[spread[1]]
+                : this.pages[spread[0]];
+        }
+    }'''
+    
+    new_get_bottom = '''    public getBottomPage(direction: FlipDirection): Page {
+        const current = this.currentSpreadIndex;
+
+        if (this.render.getOrientation() === Orientation.PORTRAIT) {
+            return direction === FlipDirection.FORWARD
+                ? this.pages[current + 1]
+                : this.pages[current - 1];
+        } else {
+            // SINGLE MODE: reveal the next page
+            if (this.render.getSettings().display === DisplayType.SINGLE) {
+                const nextSpreadIndex = direction === FlipDirection.FORWARD ? current + 1 : current - 1;
+                const spread = this.getSpread()[nextSpreadIndex];
+                return spread ? this.pages[spread[0]] : null;
+            }
+            
+            const spread =
+                direction === FlipDirection.FORWARD
+                    ? this.getSpread()[current + 1]
+                    : this.getSpread()[current - 1];
+
+            if (spread.length === 1) return this.pages[spread[0]];
+
+            return direction === FlipDirection.FORWARD
+                ? this.pages[spread[1]]
+                : this.pages[spread[0]];
+        }
+    }'''
+    
+    content = safe_replace(content, old_get_bottom, new_get_bottom, PAGE_COLLECTION_FILE)
+    
     with open(PAGE_COLLECTION_FILE, 'w') as f:
         f.write(content)
     
@@ -270,6 +375,46 @@ def patch_render():
         };'''
         
     content = safe_replace(content, target_bounds, replacement_bounds, RENDER_FILE)
+    
+    # 4. Patch convertToGlobal for dynamic spine positioning
+    # In single mode, the spine should shift based on flip direction:
+    # - FORWARD: spine on left (offset = 0)
+    # - BACK: spine on right (offset = rect.width)
+    
+    target_convert_global = '''        const x =
+            direction === FlipDirection.FORWARD
+                ? pos.x + rect.left + rect.width / 2
+                : rect.width / 2 - pos.x + rect.left;'''
+                
+    replacement_convert_global = '''        let spineOffset = rect.width / 2;
+        if (this.app.getSettings().display === DisplayType.SINGLE) {
+            spineOffset = direction === FlipDirection.FORWARD ? 0 : rect.width;
+        }
+        
+        const x =
+            direction === FlipDirection.FORWARD
+                ? pos.x + rect.left + spineOffset
+                : spineOffset - pos.x + rect.left;'''
+                
+    content = safe_replace(content, target_convert_global, replacement_convert_global, RENDER_FILE)
+    
+    # 5. Patch convertToPage for dynamic spine positioning
+    target_convert_page = '''        const x =
+            direction === FlipDirection.FORWARD
+                ? pos.x - rect.left - rect.width / 2
+                : rect.width / 2 - pos.x + rect.left;'''
+                
+    replacement_convert_page = '''        let spineOffset = rect.width / 2;
+        if (this.app.getSettings().display === DisplayType.SINGLE) {
+            spineOffset = direction === FlipDirection.FORWARD ? 0 : rect.width;
+        }
+        
+        const x =
+            direction === FlipDirection.FORWARD
+                ? pos.x - rect.left - spineOffset
+                : spineOffset - pos.x + rect.left;'''
+                
+    content = safe_replace(content, target_convert_page, replacement_convert_page, RENDER_FILE)
     
     with open(RENDER_FILE, 'w') as f:
         f.write(content)
