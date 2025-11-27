@@ -54,7 +54,8 @@ body {
 
 #controls-panel {
     position: fixed;
-    bottom: 24px;
+    /* Use safe-area-inset-bottom to avoid browser UI on mobile */
+    bottom: max(24px, env(safe-area-inset-bottom, 0px) + 12px);
     left: 50%;
     transform: translateX(-50%);
 
@@ -72,6 +73,9 @@ body {
     opacity: 0.3;
     transition: opacity 0.3s ease, transform 0.3s ease;
     backdrop-filter: blur(8px);
+
+    /* Ensure panel doesn't overflow viewport on small screens */
+    max-width: calc(100vw - 32px);
 }
 
 #controls-panel:hover,
