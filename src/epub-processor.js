@@ -220,8 +220,9 @@ async function createEnrichedPages(book, zip, options) {
                     // Always apply styles
                     img.style.maxWidth = '100%';
                     img.style.height = 'auto';
-                    img.style.display = 'block';
-                    img.style.margin = '1em auto';
+                    // REMOVED: img.style.display = 'block';
+                    // REMOVED: img.style.margin = '1em auto';
+                    // Allow images to be inline (default) or whatever the EPUB CSS specifies
                 }
 
                 // 2. Resolve CSS (Simplified - mostly works with epub.js default, but we can enhance if needed)
