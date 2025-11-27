@@ -26,7 +26,47 @@ const ZOOM_RESET_TOLERANCE = 0.01;
 let BOOK_WIDTH_AT_1X = 0;
 let BOOK_HEIGHT_AT_1X = 0;
 let pageFlip = null;
+let isUpdatingFromHash = false; // Prevent infinite loops between hash and flip events
 // updateImageTimeout is replaced by debounce
+
+/**
+ * URL Helper Functions for Page Navigation
+ */
+
+/**
+ * Get the current page number from URL hash
+ * @param {number} maxPage - Maximum valid page number
+ * @returns {number|null} Page number (1-indexed) or null if invalid/not present
+ */
+function getPageFromHash(maxPage) {
+    const hash = window.location.hash;
+    if (!hash) return null;
+
+    const match = hash.match(/#page=(\d+)/);
+    if (!match) return null;
+
+    const pageNum = parseInt(match[1]);
+    // Validate page number using same logic as page input handler
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= maxPage) {
+        return pageNum;
+    }
+    return null;
+}
+
+/**
+ * Update URL hash with current page number
+ * @param {number} pageNum - Page number (1-indexed)
+ */
+function setPageInHash(pageNum) {
+    const newHash = `#page=${pageNum}`;
+    // Use replaceState to update URL without creating browser history entries
+    if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', newHash);
+    } else {
+        // Fallback for older browsers
+        window.location.hash = newHash;
+    }
+}
 
 /**
  * Update img sizes attribute based on zoom level for currently visible pages
@@ -158,6 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // Check if there's an initial page in the URL hash
+    const initialPage = getPageFromHash(pageCount);
+
     if (typeof St === 'undefined' || !St.PageFlip) {
         console.error('StPageFlip not loaded');
         return;
@@ -260,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
             autoSize: false, // We control the container size
             showCover: false,
             usePortrait: false, // no margins on the sides
-            startPage: 0, // 0-based index
+            startPage: initialPage ? initialPage - 1 : 0, // 0-based index, load from URL if present
             drawShadow: true,
             maxShadowOpacity: 0.5, // Shadow intensity (0-1)
             flippingTime: 500,
@@ -292,6 +335,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update controls
             const pageNum = e.data + 1; // 0-based index to 1-based page number
             if (pageInput) pageInput.value = pageNum;
+
+            // Update URL hash (only if not already updating from hash to prevent loops)
+            if (!isUpdatingFromHash) {
+                setPageInHash(pageNum);
+            }
 
             // Update image sizes for responsiveness
             updateImageSizes();
@@ -606,4 +654,25 @@ document.addEventListener('DOMContentLoaded', () => {
     ['mousemove', 'pointermove'].forEach(evt => {
         flipbookEl.addEventListener(evt, blockHover, { capture: true });
     });
+
+    // Handle URL hash changes (e.g., browser back/forward, manual URL edit)
+    window.addEventListener('hashchange', () => {
+        if (zoom > 1) return; // Disable when zoomed (same as page input)
+
+        const targetPage = getPageFromHash(pageCount);
+        if (targetPage !== null && pageFlip) {
+            // Prevent infinite loop: flip event -> setPageInHash -> hashchange -> flip
+            isUpdatingFromHash = true;
+            pageFlip.flip(targetPage - 1);
+            // Reset flag after flip completes
+            setTimeout(() => {
+                isUpdatingFromHash = false;
+            }, 100);
+        }
+    });
+
+    // Set initial URL hash if not present
+    if (!window.location.hash && initialPage === null) {
+        setPageInHash(1);
+    }
 });
