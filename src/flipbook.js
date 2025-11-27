@@ -278,6 +278,9 @@ document.addEventListener('DOMContentLoaded', () => {
             otherShadowOpacityScale: .5, // Scale factor for other shadows (0-1)
         });
 
+        // Ensure content is scaled BEFORE StPageFlip captures it
+        updateEpubContentScale();
+
         // Load pages
         pageFlip.loadFromHTML(document.querySelectorAll('.page-container'));
 

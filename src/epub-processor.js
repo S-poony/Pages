@@ -101,9 +101,10 @@ async function createEnrichedPages(book, zip, options) {
     measureContainer.style.visibility = 'hidden';
 
     // Inject default styles to ensure measurement matches final output
+    // We append to document.head to ensure it persists even when measureContainer.innerHTML is cleared
     const styleEl = document.createElement('style');
     styleEl.textContent = EPUB_DEFAULTS_CSS;
-    measureContainer.appendChild(styleEl);
+    document.head.appendChild(styleEl);
 
     document.body.appendChild(measureContainer);
 
@@ -351,6 +352,9 @@ async function createEnrichedPages(book, zip, options) {
     } finally {
         if (measureContainer.parentNode) {
             measureContainer.parentNode.removeChild(measureContainer);
+        }
+        if (styleEl && styleEl.parentNode) {
+            styleEl.parentNode.removeChild(styleEl);
         }
     }
 
