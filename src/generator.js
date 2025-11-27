@@ -340,13 +340,25 @@ ENRICHMENT GUIDE:
         pageImages.forEach((pageData, i) => {
             const pageNum = i + 1;
             if (typeof pageData === 'string') {
-                // Legacy data URL
+                // Data URL (could be JPEG, PNG, or SVG)
+                // Detect file type from data URL
+                let ext = 'jpg'; // default
+                if (pageData.startsWith('data:image/svg+xml')) {
+                    ext = 'svg';
+                } else if (pageData.startsWith('data:image/png')) {
+                    ext = 'png';
+                } else if (pageData.startsWith('data:image/webp')) {
+                    ext = 'webp';
+                } else if (pageData.startsWith('data:image/gif')) {
+                    ext = 'gif';
+                }
+
                 assets.push({
-                    filename: `images/page-${pageNum}.jpg`,
-                    data: pageData // Base64 string
+                    filename: `images/page-${pageNum}.${ext}`,
+                    data: pageData
                 });
             } else {
-                // Variants
+                // Variants (PDF multi-scale mode)
                 pageData.forEach(v => {
                     assets.push({
                         filename: `images/page-${pageNum}-${v.width}w.jpg`,
