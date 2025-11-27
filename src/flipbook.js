@@ -311,6 +311,9 @@ document.addEventListener('DOMContentLoaded', () => {
             swipeDistance: 30,
             mobileScrollSupport: false, // We handle panning
 
+            // DISPLAY MODE
+            display: 'single', // TEST: Single page display mode
+
             // CUSTOM SHADOW SETTINGS
             flippingShadow: true, // Enable/disable the flipping shadow
             flippingShadowOpacity: 0.5, // Base opacity (0-1), independent of flip progress

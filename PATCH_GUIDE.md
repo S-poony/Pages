@@ -175,8 +175,77 @@ You must also apply similar changes to `node_modules/page-flip/src/Render/HTMLRe
         // ... existing code ...
     }
 ```
-\`\`\`
+```
 
 > [!NOTE]
-> Ensure your \`node_modules/page-flip/src/Settings.ts\` includes the custom settings (\`flippingShadow\`, \`flippingShadowStartAlpha\`, etc.) in the \`FlipSetting\` interface and default values.
+> Ensure your `node_modules/page-flip/src/Settings.ts` includes the custom settings (`flippingShadow`, `flippingShadowStartAlpha`, etc.) in the `FlipSetting` interface and default values.
 
+---
+
+## 🔧 Single Page Display Mode Patch
+
+### Overview
+
+This patch adds support for single page display mode, allowing the flipbook to show one page at a time instead of the default two-page spread.
+
+### Script: `add_single_page_display.py`
+
+This automated script modifies the page-flip library to add a new `display` option.
+
+**Features:**
+- ✅ Well-documented and easy to modify
+- ✅ Adds `DisplayType` enum with `'single'` and `'double'` modes
+- ✅ Updates `Settings.ts` interface and default values
+- ✅ Modifies `PageCollection.ts` to respect display mode
+- ✅ Auto-generates the patch file
+
+### Usage
+
+1. **Run the patch script:**
+   ```bash
+   python3 add_single_page_display.py
+   ```
+
+2. **Use in your flipbook:**
+   ```javascript
+   new St.PageFlip(element, {
+       display: 'single',  // Shows one page at a time
+       // ... other options
+   });
+   ```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `display` | `'single'` \| `'double'` | `'double'` | Display mode: single page or double-page spread |
+
+### What Gets Modified
+
+#### `Settings.ts`
+- Adds `DisplayType` enum
+- Adds `display: DisplayType` to `FlipSetting` interface
+- Sets default value to `DisplayType.DOUBLE`
+
+#### `PageCollection.ts`
+- Imports `DisplayType` from Settings
+- Modifies landscape spread creation logic to create single-page spreads when `display: 'single'`
+- Maintains backward compatibility (default is still double-page)
+
+### Testing
+
+The script has been configured in `src/flipbook.js` with:
+```javascript
+display: 'single', // TEST: Single page display mode
+```
+
+Remove or change this line to switch between single and double page modes.
+
+### Maintenance
+
+To modify the patch behavior, edit `add_single_page_display.py`:
+- All modifications are clearly documented in the script
+- Each function handles a specific part of the patch
+- Easy to adjust logic or add new features
+
+Re-run the script after any modifications to regenerate the patch.
