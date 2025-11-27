@@ -210,9 +210,12 @@ def patch_page_collection():
                 : this.pages[current - 1];
         } else {
             // SINGLE MODE: flip the current page, not the next one
+            // Use newTemporaryCopy to ensure we have a fresh instance for each flip
             if (this.render.getSettings().display === DisplayType.SINGLE) {
                 const spread = this.getSpread()[current];
-                return this.pages[spread[0]];
+                if (spread && spread[0] !== undefined) {
+                    return this.pages[spread[0]].newTemporaryCopy();
+                }
             }
             
             const spread =
