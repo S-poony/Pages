@@ -311,8 +311,9 @@ document.addEventListener('DOMContentLoaded', () => {
             swipeDistance: 30,
             mobileScrollSupport: false, // We handle panning
 
-            // DISPLAY MODE
-            display: 'single', // TEST: Single page display mode
+            // DISPLAY MODE - Auto-detect based on window orientation
+            // Vertical (portrait) = single page, Horizontal (landscape) = double page
+            display: window.innerHeight > window.innerWidth ? 'single' : 'double',
 
             // CUSTOM SHADOW SETTINGS
             flippingShadow: true, // Enable/disable the flipping shadow
