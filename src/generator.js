@@ -309,6 +309,13 @@ ENRICHMENT GUIDE:
         <div id="flipbook-container">
             <div id="flipbook" data-double-spread="${doubleSpread}">${pagesHtml}</div>
         </div>
+        <div id="fullscreen-panel">
+            <button id="fullscreen-btn" aria-label="Toggle Fullscreen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                </svg>
+            </button>
+        </div>
         <div id="controls-panel">
             <input type="number" id="page-input" min="2" max="${actualPageCount}" value="2">
             <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1">

@@ -421,13 +421,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomText = document.getElementById('zoom-level');
     const pageInput = document.getElementById('page-input');
     const controlsPanel = document.getElementById('controls-panel');
+    const fullscreenPanel = document.getElementById('fullscreen-panel');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
 
-    // Mobile-friendly control panel activation
+    // Mobile-friendly control panel activation (both panels share state)
     let controlsPanelTimeout = null;
     let isUsingSlider = false;
 
     const activateControlPanel = () => {
-        controlsPanel.classList.add('active');
+        if (controlsPanel) controlsPanel.classList.add('active');
+        if (fullscreenPanel) fullscreenPanel.classList.add('active');
 
         // Clear any existing timeout
         if (controlsPanelTimeout) {
@@ -442,7 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Remove active class after 1 second
         controlsPanelTimeout = setTimeout(() => {
-            controlsPanel.classList.remove('active');
+            if (controlsPanel) controlsPanel.classList.remove('active');
+            if (fullscreenPanel) fullscreenPanel.classList.remove('active');
         }, 1000);
     };
 
@@ -450,6 +454,28 @@ document.addEventListener('DOMContentLoaded', () => {
         controlsPanel.addEventListener('click', () => {
             activateControlPanel();
             deactivateControlPanel();
+        });
+    }
+
+    if (fullscreenPanel) {
+        fullscreenPanel.addEventListener('click', () => {
+            activateControlPanel();
+            deactivateControlPanel();
+        });
+    }
+
+    // Fullscreen button handler
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                wrapper.requestFullscreen().catch(err => {
+                    console.error('Error attempting to enable fullscreen:', err);
+                });
+            } else {
+                // Exit fullscreen
+                document.exitFullscreen();
+            }
         });
     }
 
