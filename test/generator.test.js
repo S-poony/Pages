@@ -107,8 +107,9 @@ describe('Flipbook HTML Generator', () => {
             // Check page structure
             assert(result.includes('class="page-container"'));
             assert(result.includes('class="enrichment-layer"'));
-            assert(result.includes('<img src="data:image/jpeg;base64,test1"'));
-            assert(result.includes('<img src="data:image/jpeg;base64,test2"'));
+            assert(result.includes('class="enrichment-layer"'));
+            assert(result.includes('src="data:image/jpeg;base64,test1"'));
+            assert(result.includes('src="data:image/jpeg;base64,test2"'));
         });
 
         it('should generate folder mode with assets object', async () => {
@@ -225,7 +226,8 @@ describe('Flipbook HTML Generator', () => {
             assert(result.includes('<div id="flipbook-container">'));
             assert(result.includes('<div id="flipbook"'));
             assert(result.includes('class="page-container"'));
-            assert(result.includes('<img src="data:image/jpeg;base64,test"'));
+            assert(result.includes('class="page-container"'));
+            assert(result.includes('src="data:image/jpeg;base64,test"'));
             assert(result.includes('loading="eager"'));
         });
 
@@ -253,7 +255,7 @@ describe('Flipbook HTML Generator', () => {
             const result = await generateFlipbookHtml(pageImages, {}, mockAssetLoader);
 
             assert(result.includes('ENRICHMENT ZONE'));
-            assert(result.includes('PASTE YOUR CODE HERE'));
+            assert(result.includes('Add interactive elements INSIDE enrichment-layer'));
         });
 
         it('should include controls panel in HTML', async () => {

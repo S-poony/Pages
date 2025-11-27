@@ -33,7 +33,7 @@ let pageFlip = null;
  */
 function updateImageSizes() {
     const zoomLevel = window.currentZoom || 1;
-    const images = document.querySelectorAll('#flipbook img');
+    const images = document.querySelectorAll('.page-image');
 
     images.forEach((img) => {
         if (img && img.hasAttribute('srcset')) {
@@ -229,8 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
         page.style.width = (BOOK_WIDTH_AT_1X / 2) + 'px';
         page.style.height = BOOK_HEIGHT_AT_1X + 'px';
         // Ensure overflow is hidden so content doesn't leak during measurement
-        page.style.overflow = 'hidden'; 
-        
+        page.style.overflow = 'hidden';
+
         flipbookEl.appendChild(page.cloneNode(true));
     });
 
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Frame 1: Browser applies the style.width/height we just set above.
     // Frame 2: Browser performs layout/paint.
     // Callback: StPageFlip initializes using the now-rendered correct dimensions.
-    
+
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             initStPageFlip();

@@ -42,7 +42,7 @@ body {
     height: 100%;
 }
 
-#flipbook img {
+.page-image {
     width: 100%;
     height: 100%;
     object-fit: contain;

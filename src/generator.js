@@ -209,7 +209,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
         throw new Error('pageImages must contain at least one image');
     }
 
-    const { title = 'Flipbook', doubleSpread = false, addBlankPage = false, mode = 'single' } = options;
+    const { title = 'Flipbook', doubleSpread = false, addBlankPage = false, mode = 'single', extraCss = '' } = options;
     const [baseCss, js, pageFlipJs] = await Promise.all([
         assetLoader.loadCss().catch(() => ''),
         assetLoader.loadJs().catch(() => ''),
@@ -290,6 +290,9 @@ export async function generateFlipbookHtml(pageImages, options = {},
         /* --- END UTILITIES --- */
 
         ${baseCss}
+        
+        /* --- EXTRA CSS --- */
+        ${extraCss}
         </style>
 </head>
 <body>

@@ -91,13 +91,20 @@ async function createEnrichedPages(book, zip, options) {
     };
 
     const measureContainer = document.createElement('div');
+    measureContainer.className = 'epub-content epub-measure-container'; // Match final class for exact styling
     measureContainer.style.position = 'absolute';
     measureContainer.style.left = '-9999px';
     measureContainer.style.top = '-9999px';
     measureContainer.style.width = `${pageWidth}px`;
-    measureContainer.style.height = `${pageHeight}px`;
+    measureContainer.style.height = 'auto'; // Allow container to grow to measure content
     Object.assign(measureContainer.style, PAGE_STYLES);
     measureContainer.style.visibility = 'hidden';
+
+    // Inject default styles to ensure measurement matches final output
+    const styleEl = document.createElement('style');
+    styleEl.textContent = EPUB_DEFAULTS_CSS;
+    measureContainer.appendChild(styleEl);
+
     document.body.appendChild(measureContainer);
 
     // Helper to find a file in the zip case-insensitively or with URL decoding
@@ -136,6 +143,9 @@ async function createEnrichedPages(book, zip, options) {
     };
 
     try {
+        // Ensure fonts are loaded before measuring to avoid layout shifts
+        await document.fonts.ready;
+
         for (let i = 0; i < spineItems.length; i++) {
             const item = spineItems[i];
             try {
@@ -356,37 +366,42 @@ async function createEnrichedPages(book, zip, options) {
  */
 async function paginateContent(html, measureContainer, pageHeight) {
     const pages = [];
-
     const sourceDiv = document.createElement('div');
     sourceDiv.innerHTML = html;
 
     let currentPageDiv = document.createElement('div');
+    currentPageDiv.style.display = 'flow-root'; // Contain child margins
     measureContainer.innerHTML = '';
     measureContainer.appendChild(currentPageDiv);
+
+    const checkOverflow = () => {
+        // Use offsetHeight of the container which includes padding and content
+        // Since measureContainer has height: auto, it grows with content
+        const currentHeight = measureContainer.offsetHeight;
+
+        // Target height is the fixed page height
+        // We subtract the safety margin from the page height
+        const safetyMargin = 100;
+
+        return currentHeight > (pageHeight - safetyMargin);
+    };
 
     const startNewPage = () => {
         if (currentPageDiv.childNodes.length > 0) {
             pages.push(currentPageDiv.innerHTML);
         }
         currentPageDiv = document.createElement('div');
+        currentPageDiv.style.display = 'flow-root'; // Contain child margins
         measureContainer.innerHTML = '';
         measureContainer.appendChild(currentPageDiv);
     };
 
-    /**
-     * Appends a node to the current page, handling overflow by splitting or moving to next page.
-     * @param {Node} node - The node to process (from source)
-     * @param {HTMLElement} targetParent - The element on the current page to append to
-     * @param {Array<HTMLElement>} ancestors - Stack of ancestor elements to recreate on new page
-     */
     const processNodeRecursive = (node, targetParent, ancestors) => {
-        // Try to fit the whole node (deep clone) first
         const deepClone = node.cloneNode(true);
         targetParent.appendChild(deepClone);
 
-        // Use clientHeight instead of pageHeight to account for padding
-        // clientHeight = height - padding (with box-sizing: border-box)
-        const fits = measureContainer.scrollHeight <= measureContainer.clientHeight;
+        // FIX: Use precise overflow check
+        const fits = !checkOverflow();
 
         if (fits) {
             return;
@@ -394,42 +409,84 @@ async function paginateContent(html, measureContainer, pageHeight) {
 
         targetParent.removeChild(deepClone);
 
-        const isAtomic = node.nodeType === Node.TEXT_NODE ||
-            (node.nodeType === Node.ELEMENT_NODE && ['IMG', 'BR', 'HR', 'VIDEO', 'AUDIO', 'INPUT', 'TABLE'].includes(node.tagName));
+        // FIX: Don't treat text nodes as atomic - split them instead
+        const isAtomic = node.nodeType === Node.ELEMENT_NODE &&
+            ['IMG', 'BR', 'HR', 'VIDEO', 'AUDIO', 'INPUT', 'TABLE'].includes(node.tagName);
 
         if (isAtomic) {
             startNewPage();
-
-            // Re-create ancestor path on the new page
             let currentNewParent = currentPageDiv;
             for (const ancestor of ancestors) {
                 const ancestorClone = ancestor.cloneNode(false);
                 currentNewParent.appendChild(ancestorClone);
                 currentNewParent = ancestorClone;
             }
-
             currentNewParent.appendChild(deepClone);
             return { pageBroken: true };
         }
 
-        // Container splitting
+        // Handle text nodes by splitting at word boundaries
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent || '';
+            const words = text.split(/(\s+)/); // Split preserving spaces
+
+            let currentParent = targetParent;
+            let hasBrokenPage = false;
+
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i];
+                if (!word) continue;
+
+                const textNode = document.createTextNode(word);
+                currentParent.appendChild(textNode);
+
+                // Check fit with precise overflow
+                if (checkOverflow()) {
+                    textNode.remove();
+
+                    // If the page is empty, we MUST accept the word to avoid infinite loop
+                    if (currentParent.childNodes.length === 0) {
+                        currentParent.appendChild(textNode);
+                        continue;
+                    }
+
+                    // Page is not empty, so break page
+                    startNewPage();
+                    hasBrokenPage = true;
+
+                    // Recreate ancestor path on new page
+                    let newParent = currentPageDiv;
+                    for (const ancestor of ancestors) {
+                        const clone = ancestor.cloneNode(false);
+                        newParent.appendChild(clone);
+                        newParent = clone;
+                    }
+
+                    currentParent = newParent;
+                    currentParent.appendChild(textNode);
+                }
+            }
+
+            if (hasBrokenPage) {
+                return { pageBroken: true };
+            }
+            return;
+        }
+
+        // Container splitting for element nodes
         const shallowClone = node.cloneNode(false);
         targetParent.appendChild(shallowClone);
-
         const childAncestors = [...ancestors, node];
         let currentTarget = shallowClone;
 
         for (const child of Array.from(node.childNodes)) {
             const result = processNodeRecursive(child, currentTarget, childAncestors);
-
             if (result && result.pageBroken) {
-                // Find the new insertion point on the new page
                 let pointer = currentPageDiv;
                 for (const ancestor of childAncestors) {
                     if (pointer.lastElementChild) {
                         pointer = pointer.lastElementChild;
                     } else {
-                        // Fallback: recreate path if missing (should not happen if logic is correct)
                         const aClone = ancestor.cloneNode(false);
                         pointer.appendChild(aClone);
                         pointer = aClone;
@@ -441,8 +498,7 @@ async function paginateContent(html, measureContainer, pageHeight) {
     };
 
     for (const child of Array.from(sourceDiv.childNodes)) {
-        const result = processNodeRecursive(child, currentPageDiv, []);
-        // If page broke at top level, currentPageDiv is already updated
+        processNodeRecursive(child, currentPageDiv, []);
     }
 
     if (currentPageDiv.childNodes.length > 0) {
@@ -481,6 +537,59 @@ export async function processEpub(input, options = {}) {
         pageCount: enrichedPages.length,
         pages: enrichedPages,
         pageWidth: normalizedOptions.pageWidth,
-        pageHeight: normalizedOptions.pageHeight
+        pageHeight: normalizedOptions.pageHeight,
+        css: EPUB_DEFAULTS_CSS // Return the CSS so it can be injected into the final flipbook
     };
 }
+
+const EPUB_DEFAULTS_CSS = `
+    /* Enforce consistent content styling between measurement and playback */
+    .epub-content, .epub-measure-container {
+        font-family: Georgia, serif;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #000000;
+        text-align: justify;
+        
+        /* Ensure consistent rendering */
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-size-adjust: 100%;
+        -webkit-text-size-adjust: 100%;
+        
+        /* Reset box model */
+        box-sizing: border-box;
+    }
+    
+    /* Reset all elements within the container to ensure no inherited styles interfere */
+    .epub-content *, .epub-measure-container * {
+        box-sizing: border-box;
+    }
+    
+    .epub-content p, .epub-measure-container p { 
+        margin: 1em 0 !important; 
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    .epub-content h1, .epub-measure-container h1 { margin: 0.67em 0 !important; font-size: 2em !important; font-weight: bold !important; line-height: 1.2 !important; }
+    .epub-content h2, .epub-measure-container h2 { margin: 0.83em 0 !important; font-size: 1.5em !important; font-weight: bold !important; line-height: 1.3 !important; }
+    .epub-content h3, .epub-measure-container h3 { margin: 1em 0 !important; font-size: 1.17em !important; font-weight: bold !important; line-height: 1.4 !important; }
+    .epub-content h4, .epub-measure-container h4 { margin: 1.33em 0 !important; font-size: 1em !important; font-weight: bold !important; }
+    .epub-content h5, .epub-measure-container h5 { margin: 1.67em 0 !important; font-size: 0.83em !important; font-weight: bold !important; }
+    .epub-content h6, .epub-measure-container h6 { margin: 2.33em 0 !important; font-size: 0.67em !important; font-weight: bold !important; }
+    
+    .epub-content ul, .epub-measure-container ul { margin: 1em 0 !important; padding-left: 40px !important; }
+    .epub-content ol, .epub-measure-container ol { margin: 1em 0 !important; padding-left: 40px !important; }
+    .epub-content li, .epub-measure-container li { margin-bottom: 0.5em !important; }
+    
+    .epub-content blockquote, .epub-measure-container blockquote { margin: 1em 40px !important; }
+    .epub-content pre, .epub-measure-container pre { margin: 1em 0 !important; white-space: pre-wrap !important; }
+    
+    /* Ensure images don't overflow */
+    .epub-content img, .epub-measure-container img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+`;
