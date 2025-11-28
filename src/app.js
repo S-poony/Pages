@@ -153,7 +153,7 @@ class FlipbookApp {
 
       const opts = { scales: [1, 2, 3], format: 'image/jpeg', quality: 0.92, doubleSpread };
 
-      const { pageCount, renderPage, renderPageVariants } = await processPdf(file, opts);
+      const { pageCount, renderPage, renderPageVariants, tableOfContents } = await processPdf(file, opts);
 
       this.showProgress(10, `Processing ${pageCount} pages…`);
 
@@ -191,7 +191,8 @@ class FlipbookApp {
         title: file.name.replace(/\.pdf$/i, ''),
         doubleSpread,
         addBlankPage,
-        mode: 'single'
+        mode: 'single',
+        tableOfContents
       }, {
         loadCss: async () => flipbookCss,
         loadJs: async () => flipbookJs,
@@ -203,7 +204,8 @@ class FlipbookApp {
         title: file.name.replace(/\.pdf$/i, ''),
         doubleSpread,
         addBlankPage,
-        mode: 'folder'
+        mode: 'folder',
+        tableOfContents
       }, {
         loadCss: async () => flipbookCss,
         loadJs: async () => flipbookJs,
@@ -252,7 +254,8 @@ class FlipbookApp {
           addBlankPage,
           mode: 'single',
           extraCss: epubResult.css,
-          linkMap: epubResult.linkMap
+          linkMap: epubResult.linkMap,
+          tableOfContents: epubResult.tableOfContents
         },
         {
           loadCss: async () => flipbookCss,

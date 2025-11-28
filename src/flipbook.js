@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomText = document.getElementById('zoom-level');
     const pageInput = document.getElementById('page-input');
     const controlsPanel = document.getElementById('controls-panel');
-    const fullscreenPanel = document.getElementById('fullscreen-panel');
+    const topControlsPanel = document.getElementById('top-controls-panel');
     const fullscreenBtn = document.getElementById('fullscreen-btn');
 
     // Mobile-friendly control panel activation (both panels share state)
@@ -452,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const activateControlPanel = () => {
         if (controlsPanel) controlsPanel.classList.add('active');
-        if (fullscreenPanel) fullscreenPanel.classList.add('active');
+        if (topControlsPanel) topControlsPanel.classList.add('active');
 
         // Clear any existing timeout
         if (controlsPanelTimeout) {
@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Remove active class after 1 second
         controlsPanelTimeout = setTimeout(() => {
             if (controlsPanel) controlsPanel.classList.remove('active');
-            if (fullscreenPanel) fullscreenPanel.classList.remove('active');
+            if (topControlsPanel) topControlsPanel.classList.remove('active');
         }, 1000);
     };
 
@@ -479,8 +479,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (fullscreenPanel) {
-        fullscreenPanel.addEventListener('click', () => {
+    if (topControlsPanel) {
+        topControlsPanel.addEventListener('click', () => {
             activateControlPanel();
             deactivateControlPanel();
         });
@@ -505,15 +505,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => {
         // Check if click is outside both panels
         const isClickInsideControls = controlsPanel && controlsPanel.contains(e.target);
-        const isClickInsideFullscreen = fullscreenPanel && fullscreenPanel.contains(e.target);
+        const isClickInsideTopControls = topControlsPanel && topControlsPanel.contains(e.target);
 
         // Also check if it's the zoom slider interaction (handled separately)
         if (isUsingSlider) return;
 
-        if (!isClickInsideControls && !isClickInsideFullscreen) {
+        if (!isClickInsideControls && !isClickInsideTopControls) {
             // Clicked outside - deactivate immediately
             if (controlsPanel) controlsPanel.classList.remove('active');
-            if (fullscreenPanel) fullscreenPanel.classList.remove('active');
+            if (topControlsPanel) topControlsPanel.classList.remove('active');
 
             // Clear any pending timeout
             if (controlsPanelTimeout) {
@@ -608,6 +608,69 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetPage = parseInt(e.target.value);
             if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= pageCount) {
                 pageFlip.flip(targetPage - 1);
+            }
+        });
+
+    }
+
+    // Table of Contents
+    const tocBtn = document.getElementById('toc-btn');
+    const tocModal = document.getElementById('toc-modal');
+    const tocList = document.getElementById('toc-list');
+    const tocCloseBtn = document.getElementById('toc-close-btn');
+    const tocOverlay = document.querySelector('.toc-overlay');
+
+    const tableOfContents = config.tableOfContents || [];
+
+    if (tocBtn && tableOfContents.length > 0) {
+        tocBtn.style.display = 'flex'; // Show button
+
+        // Render TOC
+        function renderTOC(items, container, level = 0) {
+            items.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = `toc-item toc-level-${level}`;
+                itemEl.innerHTML = `
+                    <span class="toc-item-title">${item.title}</span>
+                    <span class="toc-item-page">${item.page}</span>
+                `;
+                itemEl.addEventListener('click', () => {
+                    if (pageFlip) {
+                        pageFlip.flip(item.page - 1);
+                        closeTOC();
+                    }
+                });
+                container.appendChild(itemEl);
+
+                if (item.children && item.children.length > 0) {
+                    renderTOC(item.children, container, level + 1);
+                }
+            });
+        }
+
+        renderTOC(tableOfContents, tocList);
+
+        // Event Listeners
+        const openTOC = () => {
+            tocModal.classList.remove('hidden');
+        };
+
+        const closeTOC = () => {
+            tocModal.classList.add('hidden');
+        };
+
+        tocBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openTOC();
+        });
+
+        if (tocCloseBtn) tocCloseBtn.addEventListener('click', closeTOC);
+        if (tocOverlay) tocOverlay.addEventListener('click', closeTOC);
+
+        // Close on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !tocModal.classList.contains('hidden')) {
+                closeTOC();
             }
         });
     }

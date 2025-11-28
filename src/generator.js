@@ -309,7 +309,11 @@ ENRICHMENT GUIDE:
         <div id="flipbook-container">
             <div id="flipbook" data-double-spread="${doubleSpread}">${pagesHtml}</div>
         </div>
-        <div id="fullscreen-panel">
+        <div id="top-controls-panel">
+            <div class="zoom-controls">
+                <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1" aria-label="Zoom">
+                <div id="zoom-level">1x</div>
+            </div>
             <button id="fullscreen-btn" aria-label="Toggle Fullscreen">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -317,6 +321,12 @@ ENRICHMENT GUIDE:
             </button>
         </div>
         <div id="controls-panel">
+            <button id="toc-btn" class="icon-btn" aria-label="Table of Contents" style="display: none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M3 12h18M3 18h18"/>
+                </svg>
+            </button>
+
             <div class="page-input-container">
                 <button id="prev-page-btn" class="page-nav-btn" aria-label="Previous Page">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -330,8 +340,23 @@ ENRICHMENT GUIDE:
                     </svg>
                 </button>
             </div>
-            <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1">
-            <div id="zoom-level">1x</div>
+            
+            <div style="width: 40px;"></div> <!-- Spacer -->
+        </div>
+
+        <div id="toc-modal" class="toc-modal hidden">
+            <div class="toc-overlay"></div>
+            <div class="toc-content">
+                <div class="toc-header">
+                    <h2>Table of Contents</h2>
+                    <button id="toc-close-btn" aria-label="Close">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div id="toc-list" class="toc-list"></div>
+            </div>
         </div>
     </div>
     <script>
@@ -342,7 +367,8 @@ ENRICHMENT GUIDE:
             pageCount: ${actualPageCount},
             doubleSpread: ${doubleSpread},
             pageAspectRatio: ${aspectRatio},
-            linkMap: ${JSON.stringify(options.linkMap || {})}
+            linkMap: ${JSON.stringify(options.linkMap || {})},
+            tableOfContents: ${JSON.stringify(options.tableOfContents || [])}
         };
     </script>
     <script>${pageFlipJs}</script>

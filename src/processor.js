@@ -27,6 +27,8 @@
 // Lazy initialization of pdf.js to handle different environments
 let pdfjsLibPromise = null;
 
+import { extractBookmarks } from './pdf-bookmarks.js';
+
 async function getPdfJsLib() {
     if (!pdfjsLibPromise) {
         pdfjsLibPromise = (async () => {
@@ -231,7 +233,7 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
                 window.__RENDER_METRICS__ = window.__RENDER_METRICS__ || [];
                 window.__RENDER_METRICS__.push({ page: pageNumber, scale: renderScale, step: 'renderToCanvas', ms: Math.round(t1 - t0) });
             }
-        } catch (e) {}
+        } catch (e) { }
 
         return canvas;
     }
@@ -246,7 +248,7 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
                 window.__RENDER_METRICS__ = window.__RENDER_METRICS__ || [];
                 window.__RENDER_METRICS__.push({ step: 'canvasToDataUrl', ms: Math.round(t1 - t0) });
             }
-        } catch (e) {}
+        } catch (e) { }
 
         return data;
     }
@@ -268,7 +270,7 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
                 window.__RENDER_METRICS__ = window.__RENDER_METRICS__ || [];
                 window.__RENDER_METRICS__.push({ page: pageNumber, scale: renderScale, step: 'renderVariant', ms: Math.round(t1 - t0) });
             }
-        } catch (e) {}
+        } catch (e) { }
 
         return {
             scale: renderScale,
@@ -325,7 +327,7 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
                 window.__RENDER_METRICS__ = window.__RENDER_METRICS__ || [];
                 window.__RENDER_METRICS__.push({ step: 'splitHalf', side, scale: renderScale, ms: Math.round(t1 - t0) });
             }
-        } catch (e) {}
+        } catch (e) { }
 
         return {
             scale: renderScale,
@@ -379,6 +381,16 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
     const pdf = await loadPdfDocument(arrayBuffer);
     const renderer = createPageRenderer(pdf, normalizedOptions, canvasAPI);
 
+    // Extract bookmarks (only for normal mode, not double-spread)
+    let tableOfContents = [];
+    if (!doubleSpread) {
+        try {
+            tableOfContents = await extractBookmarks(pdf);
+        } catch (error) {
+            console.warn('Failed to extract PDF bookmarks:', error);
+        }
+    }
+
     // Helper to get all variants for a page (for non-double-spread mode)
     const renderPageVariants = async (pageNumber) => {
         return renderer.renderPageVariants(pageNumber);
@@ -394,15 +406,15 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
                 throw new Error(`Page ${halfIndex} is out of range (1-${halfPageCount})`);
 
             const pdfPageNumber = Math.ceil(halfIndex / 2);
-            const side          = halfIndex % 2 === 1 ? 'left' : 'right';
+            const side = halfIndex % 2 === 1 ? 'left' : 'right';
 
-            const page    = await pdf.getPage(pdfPageNumber);
+            const page = await pdf.getPage(pdfPageNumber);
             const wholeVp = page.getViewport({ scale: renderScale });
 
             const halfWidth = Math.floor(wholeVp.width / 2);
 
             const canvas = canvasAPI.createCanvas();
-            canvas.width  = halfWidth;
+            canvas.width = halfWidth;
             canvas.height = Math.round(wholeVp.height);
 
             // For right half, shift rendering area left by halfWidth to capture the right side
@@ -411,8 +423,8 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
             const t0 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
             await page.render({
                 canvasContext: canvas.getContext('2d'),
-                viewport     : wholeVp,
-                transform    : transform
+                viewport: wholeVp,
+                transform: transform
             }).promise;
             const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
 
@@ -422,18 +434,18 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
                 if (typeof window !== 'undefined') {
                     window.__RENDER_METRICS__ = window.__RENDER_METRICS__ || [];
                     window.__RENDER_METRICS__.push({
-                        page : pdfPageNumber,
+                        page: pdfPageNumber,
                         side,
                         scale: renderScale,
-                        step : 'renderHalf',
-                        ms   : Math.round(t1 - t0)
+                        step: 'renderHalf',
+                        ms: Math.round(t1 - t0)
                     });
                 }
-            } catch (e) {}
+            } catch (e) { }
 
             return {
-                scale : renderScale,
-                width : canvas.width,
+                scale: renderScale,
+                width: canvas.width,
                 height: canvas.height,
                 dataUrl
             };
@@ -454,9 +466,10 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
         }
 
         return {
-            pageCount        : halfPageCount,
+            pageCount: halfPageCount,
             renderPage,
-            renderPageVariants
+            renderPageVariants,
+            tableOfContents: [] // No TOC for double-spread mode
         };
     }
 
@@ -474,6 +487,7 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
     return {
         pageCount: pdf.numPages,
         renderPage,
-        renderPageVariants: async (pageNumber) => renderer.renderPageVariants(pageNumber)
+        renderPageVariants: async (pageNumber) => renderer.renderPageVariants(pageNumber),
+        tableOfContents
     };
 }
