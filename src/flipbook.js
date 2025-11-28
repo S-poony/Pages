@@ -501,6 +501,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Deactivate controls when clicking outside
+    document.addEventListener('click', (e) => {
+        // Check if click is outside both panels
+        const isClickInsideControls = controlsPanel && controlsPanel.contains(e.target);
+        const isClickInsideFullscreen = fullscreenPanel && fullscreenPanel.contains(e.target);
+
+        // Also check if it's the zoom slider interaction (handled separately)
+        if (isUsingSlider) return;
+
+        if (!isClickInsideControls && !isClickInsideFullscreen) {
+            // Clicked outside - deactivate immediately
+            if (controlsPanel) controlsPanel.classList.remove('active');
+            if (fullscreenPanel) fullscreenPanel.classList.remove('active');
+
+            // Clear any pending timeout
+            if (controlsPanelTimeout) {
+                clearTimeout(controlsPanelTimeout);
+                controlsPanelTimeout = null;
+            }
+        }
+    });
+
     // Create Zoom Blocker
     let blocker = document.getElementById('zoom-blocker');
     if (!blocker) {
