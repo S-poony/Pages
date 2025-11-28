@@ -768,4 +768,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!window.location.hash && initialPage === null) {
         setPageInHash(1);
     }
+
+    // Handle EPUB Internal Links
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[data-epub-href]');
+        if (link) {
+            e.preventDefault();
+            const targetPath = link.getAttribute('data-epub-href');
+            const config = window.FLIPBOOK_CONFIG || {};
+            const linkMap = config.linkMap || {};
+
+            if (linkMap[targetPath]) {
+                const targetPage = linkMap[targetPath];
+                if (pageFlip) {
+                    pageFlip.flip(targetPage - 1); // flip uses 0-based index
+                }
+            } else {
+                console.warn('Target page not found for link:', targetPath);
+                console.warn('Available linkMap keys:', Object.keys(linkMap));
+                console.warn('Trying to find partial match...');
+
+                // Try to find a partial match (maybe the path has been modified)
+                const matchingKeys = Object.keys(linkMap).filter(key =>
+                    key.includes(targetPath) || targetPath.includes(key)
+                );
+                if (matchingKeys.length > 0) {
+                    console.warn('Found potential matches:', matchingKeys);
+                }
+            }
+        }
+    });
 });

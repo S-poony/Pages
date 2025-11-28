@@ -251,7 +251,8 @@ class FlipbookApp {
           doubleSpread,
           addBlankPage,
           mode: 'single',
-          extraCss: epubResult.css
+          extraCss: epubResult.css,
+          linkMap: epubResult.linkMap
         },
         {
           loadCss: async () => flipbookCss,
@@ -269,7 +270,8 @@ class FlipbookApp {
           doubleSpread,
           addBlankPage,
           mode: 'folder',
-          extraCss: epubResult.css
+          extraCss: epubResult.css,
+          linkMap: epubResult.linkMap
         },
         {
           loadCss: async () => flipbookCss,

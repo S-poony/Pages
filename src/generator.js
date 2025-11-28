@@ -341,7 +341,8 @@ ENRICHMENT GUIDE:
         window.FLIPBOOK_CONFIG = {
             pageCount: ${actualPageCount},
             doubleSpread: ${doubleSpread},
-            pageAspectRatio: ${aspectRatio}
+            pageAspectRatio: ${aspectRatio},
+            linkMap: ${JSON.stringify(options.linkMap || {})}
         };
     </script>
     <script>${pageFlipJs}</script>

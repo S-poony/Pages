@@ -12,12 +12,31 @@ import DOMPurify from 'dompurify';
  * @param {string} html - Raw HTML content to sanitize
  * @returns {string} Sanitized HTML safe for rendering
  */
+// Handle DOMPurify in both Browser and Node.js (JSDOM) environments
+function getSanitizer() {
+    let sanitizer = DOMPurify;
+
+    if (typeof DOMPurify === 'function') {
+        // In Node.js/JSDOM, DOMPurify is a factory function
+        // Check global.window first (JSDOM in tests)
+        if (typeof global !== 'undefined' && global.window) {
+            sanitizer = DOMPurify(global.window);
+        } else if (typeof window !== 'undefined') {
+            sanitizer = DOMPurify(window);
+        }
+    }
+
+    return sanitizer;
+}
+
 export function sanitizeEpubHtml(html) {
     if (typeof html !== 'string') {
         return '';
     }
 
-    return DOMPurify.sanitize(html, {
+    const sanitizer = getSanitizer();
+
+    return sanitizer.sanitize(html, {
         // Allow common HTML tags for text formatting and structure
         ALLOWED_TAGS: [
             'p', 'div', 'span', 'a', 'img', 'br', 'hr',
@@ -36,7 +55,7 @@ export function sanitizeEpubHtml(html) {
         ALLOWED_ATTR: [
             'href', 'src', 'alt', 'title', 'class', 'id', 'style',
             'width', 'height', 'align', 'colspan', 'rowspan',
-            'datetime', 'cite'
+            'datetime', 'cite', 'data-epub-href', 'target', 'rel'
         ],
 
         // Allow only safe URI schemes

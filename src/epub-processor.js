@@ -64,11 +64,13 @@ export async function loadEpubDocument(arrayBuffer) {
  * @param {Object} book - EPUB book object
  * @param {JSZip} zip - JSZip instance containing the EPUB files
  * @param {EpubProcessorOptions} options - Processing options
- * @returns {Promise<Array<{backgroundImage: string, enrichmentHtml: string}>>}
+ * @returns {Promise<{pages: Array<{backgroundImage: string, enrichmentHtml: string}>, linkMap: Object}>}
  */
-async function createEnrichedPages(book, zip, options) {
+export async function createEnrichedPages(book, zip, options) {
     const { pageWidth, pageHeight, backgroundColor } = options;
     const pages = [];
+    const linkMap = {}; // Global map of "path/to/chapter.xhtml#anchor" -> globalPageIndex
+    let globalPageIndex = 0;
     const spineItems = book.spine.spineItems;
 
     // Determine the Base Path (directory containing the OPF file)
@@ -260,9 +262,33 @@ async function createEnrichedPages(book, zip, options) {
                 const anchors = tempDiv.querySelectorAll('a');
                 for (const link of anchors) {
                     const href = link.getAttribute('href');
-                    if (href && href.startsWith('http')) {
-                        link.setAttribute('target', '_blank');
-                        link.setAttribute('rel', 'noopener noreferrer');
+                    if (href) {
+                        if (href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('data:')) {
+                            link.setAttribute('target', '_blank');
+                            link.setAttribute('rel', 'noopener noreferrer');
+                        } else {
+                            // Internal Link
+                            // Resolve href relative to current spine item
+                            // item.href is relative to OPF.
+                            // We want a canonical path for the linkMap.
+                            // Let's use the path relative to the OPF root as the key.
+
+                            try {
+                                const chapterBaseUrl = new URL(item.href, 'http://epub-internal/');
+                                const resolvedUrl = new URL(href, chapterBaseUrl);
+                                // pathname has leading slash, remove it
+                                const resolvedPath = decodeURIComponent(resolvedUrl.pathname.substring(1));
+                                const hash = resolvedUrl.hash; // includes #
+
+                                const fullLink = resolvedPath + hash;
+
+                                link.setAttribute('data-epub-href', fullLink);
+                                link.setAttribute('href', 'javascript:void(0)'); // Disable default nav
+                                link.style.cursor = 'pointer';
+                            } catch (e) {
+                                console.warn('Failed to resolve internal link', href, e);
+                            }
+                        }
                     }
                 }
 
@@ -311,7 +337,19 @@ async function createEnrichedPages(book, zip, options) {
                 // 5. Sanitize and Paginate
                 const sanitizedHtml = sanitizeEpubHtml(tempDiv.innerHTML);
                 document.body.removeChild(stagingContainer);
-                const contentPages = await paginateContent(sanitizedHtml, measureContainer, pageHeight);
+
+                // Paginate and get anchors
+                const { pages: contentPages, anchors: pageAnchors } = await paginateContent(sanitizedHtml, measureContainer, pageHeight);
+
+                // Register Chapter Start
+                // item.href is the path relative to OPF root
+                linkMap[decodeURIComponent(item.href)] = globalPageIndex + 1; // 1-based index
+
+                // Register Anchors
+                for (const [anchorId, localPageIndex] of Object.entries(pageAnchors)) {
+                    const fullKey = decodeURIComponent(item.href) + '#' + anchorId;
+                    linkMap[fullKey] = globalPageIndex + localPageIndex + 1; // 1-based index
+                }
 
                 // 6. Create Page Objects
                 for (const pageContent of contentPages) {
@@ -341,12 +379,15 @@ async function createEnrichedPages(book, zip, options) {
                     });
                 }
 
+                globalPageIndex += contentPages.length;
+
             } catch (error) {
                 console.warn(`Failed to load chapter ${i}:`, error);
                 pages.push({
                     backgroundImage: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${pageWidth}" height="${pageHeight}"><rect width="100%" height="100%" fill="${backgroundColor}"/></svg>`)}`,
                     enrichmentHtml: `<div style="padding: 40px; color: red;">Error loading chapter: ${error.message}</div>`
                 });
+                globalPageIndex++;
             }
         }
     } finally {
@@ -358,7 +399,7 @@ async function createEnrichedPages(book, zip, options) {
         }
     }
 
-    return pages;
+    return { pages, linkMap };
 }
 
 /**
@@ -367,10 +408,11 @@ async function createEnrichedPages(book, zip, options) {
  * @param {string} html - HTML content to paginate
  * @param {HTMLElement} measureContainer - Hidden container for measuring
  * @param {number} pageHeight - Target height for each page
- * @returns {Promise<Array<string>>} Array of HTML strings for each page
+ * @returns {Promise<{pages: Array<string>, anchors: Object}>} Array of HTML strings for each page and anchor map
  */
-async function paginateContent(html, measureContainer, pageHeight) {
+export async function paginateContent(html, measureContainer, pageHeight) {
     const pages = [];
+    const anchors = {}; // Map of anchorId -> pageIndex (0-based within this chapter)
     const sourceDiv = document.createElement('div');
     sourceDiv.innerHTML = html;
 
@@ -404,6 +446,11 @@ async function paginateContent(html, measureContainer, pageHeight) {
     const processNodeRecursive = (node, targetParent, ancestors) => {
         const deepClone = node.cloneNode(true);
         targetParent.appendChild(deepClone);
+
+        // Track ID if present
+        if (node.nodeType === Node.ELEMENT_NODE && node.id) {
+            anchors[node.id] = pages.length; // Current page index
+        }
 
         // FIX: Use precise overflow check
         const fits = !checkOverflow();
@@ -510,14 +557,14 @@ async function paginateContent(html, measureContainer, pageHeight) {
         pages.push(currentPageDiv.innerHTML);
     }
 
-    return pages;
+    return { pages, anchors };
 }
 
 /**
  * Processes an EPUB file and returns page data for flipbook generation
  * @param {File|ArrayBuffer} input - The EPUB file or array buffer to process
  * @param {EpubProcessorOptions} options - Processing options
- * @returns {Promise<{pageCount: number, pages: Array, pageHeight: number}>}
+ * @returns {Promise<{pageCount: number, pages: Array, pageHeight: number, linkMap: Object}>}
  */
 export async function processEpub(input, options = {}) {
     const normalizedOptions = normalizeEpubProcessorOptions(options);
@@ -536,14 +583,15 @@ export async function processEpub(input, options = {}) {
     // Load zip directly for asset extraction
     const zip = await JSZip.loadAsync(arrayBuffer);
 
-    const enrichedPages = await createEnrichedPages(book, zip, normalizedOptions);
+    const { pages: enrichedPages, linkMap } = await createEnrichedPages(book, zip, normalizedOptions);
 
     return {
         pageCount: enrichedPages.length,
         pages: enrichedPages,
         pageWidth: normalizedOptions.pageWidth,
         pageHeight: normalizedOptions.pageHeight,
-        css: EPUB_DEFAULTS_CSS // Return the CSS so it can be injected into the final flipbook
+        css: EPUB_DEFAULTS_CSS, // Return the CSS so it can be injected into the final flipbook
+        linkMap
     };
 }
 
