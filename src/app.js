@@ -274,7 +274,8 @@ class FlipbookApp {
           addBlankPage,
           mode: 'folder',
           extraCss: epubResult.css,
-          linkMap: epubResult.linkMap
+          linkMap: epubResult.linkMap,
+          tableOfContents: epubResult.tableOfContents
         },
         {
           loadCss: async () => flipbookCss,
