@@ -721,7 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mouse Listeners
     wrapper.addEventListener('mousedown', (e) => {
-        if (e.target.closest('#controls-panel')) return;
+        if (e.target.closest('#controls-panel') || e.target.closest('#top-controls-panel')) return;
         onStart(e.clientX, e.clientY);
     });
     window.addEventListener('mousemove', (e) => {
@@ -734,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Touch Listeners
     wrapper.addEventListener('touchstart', (e) => {
-        if (e.target.closest('#controls-panel')) return;
+        if (e.target.closest('#controls-panel') || e.target.closest('#top-controls-panel')) return;
         if (e.touches.length === 1) {
             onStart(e.touches[0].clientX, e.touches[0].clientY);
         }
