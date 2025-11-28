@@ -331,7 +331,7 @@ ENRICHMENT GUIDE:
                 </button>
             </div>
             <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1">
-            <div id="zoom-level">100%</div>
+            <div id="zoom-level">1x</div>
         </div>
     </div>
     <script>

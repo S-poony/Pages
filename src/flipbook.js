@@ -564,7 +564,10 @@ document.addEventListener('DOMContentLoaded', () => {
         zoomSlider.addEventListener('input', e => {
             const newZoom = parseFloat(e.target.value);
             zoom = newZoom;
-            if (zoomText) zoomText.textContent = `${Math.round(zoom * 100)}%`;
+            if (zoomText) {
+                const v = zoom;
+                zoomText.textContent = Number.isInteger(v) ? `${v}x` : `${v.toFixed(2)}x`;
+            }
             updateTransform();
 
             // Debounce image update for zoom
