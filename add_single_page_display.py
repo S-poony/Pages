@@ -344,6 +344,21 @@ def patch_render():
             
     content = safe_replace(content, target_code, replacement_code, RENDER_FILE)
     
+    # 2.5 Fix pageWidth calculation in STRETCH mode
+    # The library assumes landscape = double spread = width/2.
+    # We need to force full width for SINGLE mode.
+    target_width_calc = '''            pageWidth =
+                orientation === Orientation.PORTRAIT
+                    ? this.getBlockWidth()
+                    : this.getBlockWidth() / 2;'''
+                    
+    replacement_width_calc = '''            pageWidth =
+                orientation === Orientation.PORTRAIT || this.app.getSettings().display === DisplayType.SINGLE
+                    ? this.getBlockWidth()
+                    : this.getBlockWidth() / 2;'''
+                    
+    content = safe_replace(content, target_width_calc, replacement_width_calc, RENDER_FILE)
+    
     # 3. Fix the boundsRect width for single mode
     # We want the interactive area to be the full spread width (pageWidth * 2) so we can click left/right?
     # OR we want it to be just pageWidth?

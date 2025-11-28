@@ -28,12 +28,14 @@ body {
 }
 
 #flipbook-container {
-    width: 90vw;
-    height: 90vh;
+    /* Dimensions set by JavaScript - no fixed sizes to allow proper scaling */
     position: relative;
     transition: transform 0.15s ease-out;
     transform-origin: center center;
     flex-shrink: 0;
+    /* Ensure container is visible even before JS runs */
+    min-width: 100px;
+    min-height: 100px;
 }
 
 #flipbook {

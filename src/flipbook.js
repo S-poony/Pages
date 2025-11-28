@@ -217,20 +217,34 @@ document.addEventListener('DOMContentLoaded', () => {
         // Use injected aspect ratio or fallback to A4-ish (0.707)
         const pageAspectRatio = config.pageAspectRatio || 0.707;
 
-        // Since we force usePortrait: false (always 2 pages), 
-        // the target aspect ratio is ALWAYS double spread.
-        // This prevents large vertical margins on mobile.
-        const targetAspectRatio = pageAspectRatio * 2;
+        // Detect display mode
+        const isSingleMode = window.innerHeight > window.innerWidth;
 
-        // Calculate dimensions to fit within wrapper while maintaining targetAspectRatio
-        // 1. Try fitting by width
-        let width = wrapperWidth;
-        let height = width / targetAspectRatio;
+        let width, height;
 
-        // 2. If height exceeds wrapper height, fit by height
-        if (height > wrapperHeight) {
-            height = wrapperHeight;
-            width = height * targetAspectRatio;
+        if (isSingleMode) {
+            // SINGLE MODE RADICAL FIX: Force 100% viewport width to eliminate margins!
+            // The flexbox centering (justify-content: center) was causing margins
+            // when container was smaller than viewport width.
+            // Solution: Always fill full width, calculate height from aspect ratio.
+            width = wrapperWidth;  // Always 100% width - NO MARGINS!
+            height = width / pageAspectRatio;
+
+            // If height exceeds viewport, that's acceptable - better than side margins
+            if (height > wrapperHeight) {
+                height = wrapperHeight;
+                width = height * pageAspectRatio;
+            }
+        } else {
+            // DOUBLE MODE: Fit to viewport maintaining aspect ratio as before
+            const targetAspectRatio = pageAspectRatio * 2;
+            width = wrapperWidth;
+            height = width / targetAspectRatio;
+
+            if (height > wrapperHeight) {
+                height = wrapperHeight;
+                width = height * targetAspectRatio;
+            }
         }
 
         return {
@@ -269,7 +283,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // We strictly enforce pixel dimensions on the elements before StPageFlip sees them.
         // This prevents pages preview in animation to look different from the final result.
-        page.style.width = (BOOK_WIDTH_AT_1X / 2) + 'px';
+        // In single mode: BOOK_WIDTH_AT_1X is for 1 page, so each page = full width
+        // In double mode: BOOK_WIDTH_AT_1X is for 2 pages, so each page = half width
+        const isSingleMode = window.innerHeight > window.innerWidth;
+        page.style.width = (isSingleMode ? BOOK_WIDTH_AT_1X : BOOK_WIDTH_AT_1X / 2) + 'px';
         page.style.height = BOOK_HEIGHT_AT_1X + 'px';
         // Ensure overflow is hidden so content doesn't leak during measurement
         page.style.overflow = 'hidden';
@@ -291,8 +308,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function initStPageFlip() {
         // Initialize StPageFlip
         // We use size: 'stretch' so it adapts to the container size (which we resize for zoom)
+        // Width parameter must match container sizing:
+        //   - Single mode: container = 1× page width, so width = BOOK_WIDTH_AT_1X
+        //   - Double mode: container = 2× page width, so width = BOOK_WIDTH_AT_1X / 2
+        const isSingleMode = window.innerHeight > window.innerWidth;
         pageFlip = new St.PageFlip(flipbookEl, {
-            width: BOOK_WIDTH_AT_1X / 2, // Always 2 pages, so width is half of container
+            width: isSingleMode ? BOOK_WIDTH_AT_1X : BOOK_WIDTH_AT_1X / 2,
             height: BOOK_HEIGHT_AT_1X,
             size: 'stretch',
             // "You must set threshold values ​​with size: 'stretch'"
@@ -310,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
             useMouseEvents: true,
             swipeDistance: 30,
             mobileScrollSupport: false, // We handle panning
+            usePortrait: false, // no margins on the sides
 
             // DISPLAY MODE - Auto-detect based on window orientation
             // Vertical (portrait) = single page, Horizontal (landscape) = double page
