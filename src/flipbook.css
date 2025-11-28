@@ -122,11 +122,44 @@ input[type="range"]::-webkit-slider-thumb:hover {
     font-family: var(--font-sans);
     color: var(--color-charcoal);
     font-size: 14px;
+    /* Hide spinners */
+    -moz-appearance: textfield;
+}
+
+#page-input::-webkit-outer-spin-button,
+#page-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
 }
 
 #page-input:focus {
     outline: none;
     border-color: var(--color-terracotta);
+}
+
+.page-input-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.page-nav-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: var(--color-charcoal);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.page-nav-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--color-terracotta);
 }
 
 /* Fullscreen Panel - Top Control Island */

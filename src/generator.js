@@ -317,7 +317,19 @@ ENRICHMENT GUIDE:
             </button>
         </div>
         <div id="controls-panel">
-            <input type="number" id="page-input" min="2" max="${actualPageCount}" value="2">
+            <div class="page-input-container">
+                <button id="prev-page-btn" class="page-nav-btn" aria-label="Previous Page">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+                <input type="number" id="page-input" min="2" max="${actualPageCount}" value="2">
+                <button id="next-page-btn" class="page-nav-btn" aria-label="Next Page">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </button>
+            </div>
             <input type="range" id="zoom-slider" min="1" max="3" step="0.05" value="1">
             <div id="zoom-level">100%</div>
         </div>

@@ -579,6 +579,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+
+    // Page navigation buttons
+    const prevPageBtn = document.getElementById('prev-page-btn');
+    const nextPageBtn = document.getElementById('next-page-btn');
+
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', () => {
+            if (zoom > 1) return; // Disable when zoomed
+            pageFlip.flipPrev();
+        });
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', () => {
+            if (zoom > 1) return; // Disable when zoomed
+            pageFlip.flipNext();
+        });
+    }
+
     // Page input handler
     if (pageInput) {
         pageInput.addEventListener('change', e => {
