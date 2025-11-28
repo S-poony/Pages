@@ -1,25 +1,41 @@
-# Flipbook Generator
+# Pages
 
-Transform your PDF files into beautiful, interactive 3D flipbooks with this pure client-side JavaScript application. Experience the elegance of handcrafted digital books with smooth page transitions and a calm, soothing aesthetic.
+Pages allows you to create static websites from PDF or EPUB. 
 
-## What is This?
+1. These sites have the form of e-books: the user can easily navigate the site by turning the pages interactively.
+2. All the code is free: it belongs to you and you have the legal right to sell books that you create using Pages
+3. Ability to download the source code or publish the book online
+4. Ability to download the book as a single html file that can be opened by any machine by clicking on it
+5. Fluid zoom that forces the browser to display the images to the highest possible definition
+6. Support for internal links (link to a specific page/appendix) and external links (link to a website) in the document (EPUB only for the moment)
+7. Dual-page mode to cut each page into 2 (Use if your PDF is a scan of a book with two pages of the book per pdf page)
+8. Full screen and portrait mode for mobile
+9. Discreet control panel to navigate to a specific page/zoomer
+10. The page number is in the URL
+	1. Ability to share/save a specific page
+	2. Reloading the page doesn’t make you come back to the beginning of the book
+	3. If your book has 30 pages and you published it on the internet, there’s a 30 times more chance that the gods of the algorithm will make you rich and famous 
 
-This application lets you convert any PDF document into a self-contained HTML flipbook file. The generated file is completely standalone - no internet connection or server needed. You can:
+*PS: You never need to create an account, share your email, or other shit of the kind to use the service*
 
-- Upload a PDF through a beautiful drag-and-drop interface
-- Watch it transform into an interactive 3D flipbook
-- Navigate pages with arrow keys or mouse clicks
-- Download the result as a single HTML file
-- Share the file with others - it works offline
+
+# Philosophy
+
+By creating an eBook with Pages, you have the source code. This means several things:
+	1. You can enrich your e-book with any feature that exists on a website: add music, allow readers to draw on pages, or even put a big popup that asks people to give you money. [Demo of all this in 2 minutes, it's easy to do I promise you]
+	2. You can create a book from an extremely heavy PDF or EPUB, with very high quality images, without worrying about loading time: if the file is present in your computer, everything will load instantly
+	3. If Pages ceases to exist one day, you keep the file of your book that will remain functional for eternity, and that you can publish elsewhere.
+
 
 ## Features
 
 - **Pure Client-Side Processing**: No server required - all processing happens in your browser
 - **Drag & Drop Interface**: Simply drop your PDF or click to browse
-- **Beautiful 3D Page Turning**: Smooth animations with realistic book-like transitions
+- **Page Turning**: Uses a patched version of St Page Flip lib (MIT License)
 - **Standalone Output**: Generate a single self-contained HTML file
 - **Keyboard & Click Navigation**: Use arrow keys or click pages to navigate
-- **Download & Share**: Save or open your flipbook in a new tab
+- **Download**: Open your flipbook in a new tab, or save it either as standalone html or zip
+- **Publish**: You can publish your flipbook on my server (STILL IN TESTING, ALL CONTENT PUBLISHED FOR NOW MAY BE DELETED LATER)
 
 ## Prerequisites
 
@@ -34,11 +50,7 @@ This application lets you convert any PDF document into a self-contained HTML fl
 
 ### Browser Compatibility
 
-This application works on all modern browsers:
-- ✅ Chrome/Edge (recommended)
-- ✅ Firefox
-- ✅ Safari
-- ✅ Opera
+This application works on all modern browsers, and is optimized for mobile too.
 
 ## Quick Start
 
@@ -346,7 +358,7 @@ A: Yes! Run `npm run build` and deploy the `dist/` folder to any static hosting 
 A: Approximately 50-100KB per PDF page. A 20-page PDF creates a ~1-2MB HTML file.
 
 **Q: Can I edit the generated flipbook?**  
-A: The generated HTML is plain text, but it's quite complex. It's better to regenerate with different settings.
+A: YES. The generated HTML is designed to be easily editable
 
 **Q: Does this work on mobile?**  
 A: The interface works, but PDF processing may be slow due to mobile hardware limitations.
