@@ -2,49 +2,73 @@
 
 This project uses [`patch-package`](https://github.com/ds300/patch-package) to maintain custom modifications to the `page-flip` library.
 
-## 📝 Making Changes
+## 📂 Patch Scripts
 
-### 1. Modify the library files in `node_modules/page-flip/`
+All patch scripts are located in **`scripts/page-flip-patches/`**
 
-For example, to adjust shadow gradients:
+See [scripts/page-flip-patches/README.md](scripts/page-flip-patches/README.md) for the full list and usage instructions.
+
+## 📝 Quick Reference
+
+### Apply a patch script:
 ```bash
-# Edit the file directly
-code node_modules/page-flip/src/Render/CanvasRender.ts
+python scripts/page-flip-patches/01-single-page-display.py
 ```
 
-### 2. Rebuild TypeScript (Important!)
-
-After making TypeScript changes:
+### Rebuild after changes:
 ```bash
-cd node_modules/page-flip
-npm run build
-cd ../..
+cd node_modules/page-flip && npm run build && cd ../..
 ```
 
-### 3. Create a patch
-
+### Save changes to patch file:
 ```bash
 npx patch-package page-flip
 ```
 
-This creates/updates the patch file in `patches/page-flip+2.0.7.patch`
-
-### 4. Commit the patch
-
+### Commit:
 ```bash
 git add patches/
-git commit -m "feat: customize page-flip shadow gradients"
+git commit -m "Update page-flip patches"
 ```
 
 ## 🔄 How It Works
 
 - The `postinstall` script in `package.json` automatically applies patches after `npm install`
-- Patches are stored in the `patches/` directory (tracked in git)
-- Anyone who clones the repo and runs `npm install` will get your customizations
+- Patches are stored in `patches/` (tracked in git)
+- Anyone who clones the repo and runs `npm install` gets the customizations
 
 ---
 
-## 🎨 Custom Flipping Shadow Patch
+## 🎨 Shadow Direction Fix
+
+To experiment with shadow projection direction:
+
+```bash
+# Edit the config options at the top:
+code scripts/page-flip-patches/07-fix-shadow-direction.js
+
+# Run the script:
+node scripts/page-flip-patches/07-fix-shadow-direction.js
+
+# Rebuild and update patch:
+cd node_modules/page-flip && npm run build && cd ../..
+npx patch-package page-flip
+```
+
+**Configuration options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `REVERSE_DIRECTION` | `true` | Swap FORWARD/BACK shadow logic |
+| `ADD_EXTRA_ROTATION` | `false` | Add 180° to shadow rotation |
+
+### Manual Editing
+
+Edit `node_modules/page-flip/src/Render/CanvasRender.ts` directly.
+
+Key sections:
+- **Line ~125**: `drawOuterShadow()` rotation and gradient
+- **Line ~165**: `drawInnerShadow()` rotation and gradient
 
 This patch adds precise control over the flipping shadow (the shadow cast by the turning page onto the underlying spread).
 
