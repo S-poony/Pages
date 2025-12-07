@@ -668,3 +668,71 @@ body {
     color: #b45309;
     text-decoration: underline;
 }
+
+/* Configuration Button */
+.config-button-container {
+    margin: 20px auto 0;
+    text-align: center;
+}
+
+.config-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    padding: 10px 20px;
+    border-radius: 24px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #555;
+    transition: all 0.2s ease;
+}
+
+.config-btn:hover {
+    border-color: var(--color-terracotta);
+    color: var(--color-terracotta);
+    background: rgba(201, 120, 91, 0.05);
+}
+
+.config-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* Configuration Modal Styles */
+.config-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.config-item {
+    padding: 16px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    cursor: help;
+    transition: background-color 0.2s;
+}
+
+.config-item:hover {
+    background: #f3f3f3;
+}
+
+.config-item .toggle-switch {
+    padding: 0;
+    margin-bottom: 8px;
+}
+
+.config-item .toggle-switch:hover {
+    background: transparent;
+}
+
+.config-description {
+    font-size: 0.85rem;
+    color: #777;
+    margin: 0;
+    padding-left: 60px;
+}

@@ -47,7 +47,6 @@ class FlipbookApp {
     this.resetBtn = document.getElementById('reset-btn');
 
     this.errorMessage = document.getElementById('error-message');
-    this.optionsContainer = document.querySelector('.options-container');
 
     // Restore and initialize UI state
     const savedDoubleSpread = localStorage.getItem('doubleSpread');
@@ -68,6 +67,12 @@ class FlipbookApp {
     this.infoBtn = document.getElementById('info-btn');
     this.infoModal = document.getElementById('info-modal');
     this.infoCloseBtn = document.getElementById('info-close-btn');
+
+    // Config Modal Elements
+    this.configBtn = document.getElementById('config-btn');
+    this.configModal = document.getElementById('config-modal');
+    this.configCloseBtn = document.getElementById('config-close-btn');
+    this.configButtonContainer = document.querySelector('.config-button-container');
   }
 
   setupEventListeners() {
@@ -102,6 +107,10 @@ class FlipbookApp {
     // Info Modal Listeners
     if (this.infoBtn) this.infoBtn.addEventListener('click', () => this.openInfoModal());
     if (this.infoCloseBtn) this.infoCloseBtn.addEventListener('click', () => this.closeInfoModal());
+
+    // Config Modal Listeners
+    if (this.configBtn) this.configBtn.addEventListener('click', () => this.openConfigModal());
+    if (this.configCloseBtn) this.configCloseBtn.addEventListener('click', () => this.closeConfigModal());
   }
 
 
@@ -439,6 +448,14 @@ class FlipbookApp {
     this.infoModal.classList.add('hidden');
   }
 
+  openConfigModal() {
+    this.configModal.classList.remove('hidden');
+  }
+
+  closeConfigModal() {
+    this.configModal.classList.add('hidden');
+  }
+
   async copyUrl() {
     try {
       await navigator.clipboard.writeText(this.publishedUrlInput.value);
@@ -465,14 +482,14 @@ class FlipbookApp {
   showProgress(pct, txt) {
     this.progressContainer.classList.remove('hidden');
     this.uploadArea.classList.add('hidden');
-    this.optionsContainer.classList.add('hidden');
+    if (this.configButtonContainer) this.configButtonContainer.classList.add('hidden');
     this.progressBar.style.width = `${pct}%`;
     this.progressText.textContent = txt;
   }
   showResult(html) {
     this.progressContainer.classList.add('hidden');
     this.resultContainer.classList.remove('hidden');
-    this.optionsContainer.classList.add('hidden');
+    if (this.configButtonContainer) this.configButtonContainer.classList.add('hidden');
     const blob = new Blob([html], { type: 'text/html' });
     this.previewIframe.src = URL.createObjectURL(blob);
   }
@@ -530,13 +547,11 @@ class FlipbookApp {
   }
   reset() {
     this.uploadArea.classList.remove('hidden');
-    this.optionsContainer.classList.remove('hidden');
+    if (this.configButtonContainer) this.configButtonContainer.classList.remove('hidden');
     [this.progressContainer, this.resultContainer, this.errorMessage].forEach(el => el.classList.add('hidden'));
     this.fileInput.value = '';
     this.currentHtml = null;
     this.currentFolderData = null;
-    // Blank page option is now always visible (removed visibility management)
-
   }
   showError(msg) { this.errorMessage.textContent = msg; this.errorMessage.classList.remove('hidden'); }
   hideError() { this.errorMessage.classList.add('hidden'); }
