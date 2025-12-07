@@ -4,7 +4,7 @@ This project uses [`patch-package`](https://github.com/ds300/patch-package) to m
 
 ## 📝 Making Changes
 
-### 1. **Modify the library files** in `node_modules/page-flip/`
+### 1. Modify the library files in `node_modules/page-flip/`
 
 For example, to adjust shadow gradients:
 ```bash
@@ -12,16 +12,24 @@ For example, to adjust shadow gradients:
 code node_modules/page-flip/src/Render/CanvasRender.ts
 ```
 
-### 2. **Create a patch**
+### 2. Rebuild TypeScript (Important!)
 
-After making your changes:
+After making TypeScript changes:
+```bash
+cd node_modules/page-flip
+npm run build
+cd ../..
+```
+
+### 3. Create a patch
+
 ```bash
 npx patch-package page-flip
 ```
 
-This creates a patch file in `patches/page-flip+2.0.7.patch`
+This creates/updates the patch file in `patches/page-flip+2.0.7.patch`
 
-### 3. **Commit the patch**
+### 4. Commit the patch
 
 ```bash
 git add patches/
@@ -34,157 +42,63 @@ git commit -m "feat: customize page-flip shadow gradients"
 - Patches are stored in the `patches/` directory (tracked in git)
 - Anyone who clones the repo and runs `npm install` will get your customizations
 
-## 📂 Key Files to Modify
+---
 
-### Shadow/Gradient Logic:
-- **Canvas mode**: `node_modules/page-flip/src/Render/CanvasRender.ts`
-  - Lines 57-84: Center book shadow
-  - Lines 86-117: Outer flip shadow
-  - Lines 119-161: Inner flip shadow
+## 🎨 Custom Flipping Shadow Patch
 
-- **HTML mode**: `node_modules/page-flip/src/Render/HTMLRender.ts`
-  - Lines 74-135: Hard page shadows
-  - Lines 140-199: Soft page inner shadows
-  - Lines 204-262: Soft page outer shadows
+This patch adds precise control over the flipping shadow (the shadow cast by the turning page onto the underlying spread).
 
-## ⚠️ Important Notes
+### New Settings
 
-1. **Always rebuild after TypeScript changes:**
-   ```bash
-   cd node_modules/page-flip
-   npm run build
-   cd ../..
-   npx patch-package page-flip
-   ```
+Add these to `Settings.ts` in the `FlipSetting` interface:
 
-2. **Add comments** to your modifications:
-   ```typescript
-   // CUSTOM: Reduced shadow opacity for cleaner appearance
-   outerGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.2)');
-   ```
+| Setting | Type | Description |
+|---------|------|-------------|
+| `flippingShadow` | `boolean` | Enable/disable the flipping shadow |
+| `flippingShadowOpacity` | `number` | Base opacity (0-1), independent of flip progress |
+| `flippingShadowWidthOffset` | `number` | Base width in pixels (minimum shadow width) |
+| `flippingShadowWidthScale` | `number` | Width scale factor (multiplier of base shadow width) |
+| `flippingShadowStartAlpha` | `number` | Gradient start opacity (0-1) |
+| `flippingShadowEndAlpha` | `number` | Gradient end opacity (0-1) |
+| `otherShadowOpacityScale` | `number` | Scale factor for other shadows (0-1) |
 
-3. **Updating the library:**
-   ```bash
-   npm update page-flip
-   # Your patches will be re-applied automatically
-   # If conflicts occur, resolve them and recreate the patch
-   ```
+### Usage in flipbook.js
 
-## 🧪 Testing Changes
-
-After modifying and patching:
-```bash
-npm run dev
-# Test your flipbook to verify the changes
-\`\`\`
-
-### 4. Custom Flipping Shadow (Canvas Mode)
-
-To implement the custom flipping shadow in Canvas mode, replace the \`drawFlippingShadow\` method in \`node_modules/page-flip/src/Render/CanvasRender.ts\` with the following code. This uses the custom settings defined in \`src/flipbook.js\`.
-
-\`\`\`typescript
-    private drawFlippingShadow(): void {
-        // ... (CanvasRender implementation) ...
-        if (shadow.direction === FlipDirection.FORWARD) {
-            this.ctx.translate(-shadow.width, -100);
-            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + endAlpha + ')');
-            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + startAlpha + ')');
-        } else {
-            this.ctx.translate(0, -100);
-            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + startAlpha + ')');
-            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + endAlpha + ')');
-        }
-        // ...
-    }
+```javascript
+pageFlip = new St.PageFlip(flipbookEl, {
+    // ... other options ...
+    
+    // Custom shadow settings
+    flippingShadow: true,
+    flippingShadowOpacity: 0.5,
+    flippingShadowWidthOffset: 50,
+    flippingShadowWidthScale: 1.5,
+    flippingShadowStartAlpha: 0.7,
+    flippingShadowEndAlpha: 0,
+    otherShadowOpacityScale: 0.5,
+});
 ```
 
-## Custom Shadow Settings
+### Files to Modify
 
-This patch adds precise control over the flipping shadow (the shadow cast by the turning page onto the underlying spread):
+#### `node_modules/page-flip/src/Settings.ts`
+- Add settings to `FlipSetting` interface
+- Add default values
 
-### New Settings in `Settings.ts`:
+#### `node_modules/page-flip/src/Render/CanvasRender.ts`
+- **`drawFlippingShadow()`** - Uses custom opacity/width/gradient settings
+- **`drawOuterShadow()`** - Uses `otherShadowOpacityScale`
+- **`drawInnerShadow()`** - Uses `otherShadowOpacityScale`
 
-```typescript
-{
-    flippingShadow: boolean;              // Enable/disable the flipping shadow
-    flippingShadowOpacity: number;        // Base opacity (0-1), independent of flip progress
-    flippingShadowWidth: number;          // Shadow width in pixels
-    flippingShadowStartAlpha: number;     // Gradient start opacity (0-1)
-    flippingShadowEndAlpha: number;       // Gradient end opacity (0-1)
-    otherShadowOpacityScale: number;      // Scale factor for other shadows (0-1)
-}
-```
-
-**Key Changes:**
-- `flippingShadowOpacity`: Constant opacity that doesn't fade with flip progress (replaces `shadow.opacity * maxShadowOpacity`)
-- `flippingShadowWidth`: Fixed shadow width in pixels (replaces `shadow.width`)
-- The shadow now remains consistent throughout the flip animation
-
-### 4. Update CanvasRender.ts
-
-You must also apply similar changes to `node_modules/page-flip/src/Render/HTMLRender.ts` if you are using HTML mode.
-
-```typescript
-    private drawFlippingShadow(): void {
-        // ...
-        let shadowDirection = 'to left'; // Default
-        let shadowTranslate = 0;
-
-        if (shadow.direction === FlipDirection.FORWARD) {
-            shadowDirection = 'to left';
-            shadowTranslate = shadow.width; 
-        } else {
-            shadowDirection = 'to right';
-            shadowTranslate = 0;
-        }
-        // ...
-    }
-```
-
-    private drawOuterShadow(): void {
-        // ... existing code ...
-        // Update opacity to use otherShadowOpacityScale
-        if (this.shadow.direction === FlipDirection.FORWARD) {
-            this.ctx.translate(0, -100);
-            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
-            outerGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        } else {
-            this.ctx.translate(-this.shadow.width, -100);
-            outerGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
-        }
-        // ... existing code ...
-    }
-
-    private drawInnerShadow(): void {
-        // ... existing code ...
-        // Update opacity to use otherShadowOpacityScale
-        if (this.shadow.direction === FlipDirection.FORWARD) {
-            this.ctx.translate(-isw, -100);
-            innerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
-            innerGradient.addColorStop(0.9, 'rgba(0, 0, 0, 0.05)');
-            innerGradient.addColorStop(0.7, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
-            innerGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-        } else {
-            this.ctx.translate(0, -100);
-            innerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
-            innerGradient.addColorStop(0.1, 'rgba(0, 0, 0, 0.05)');
-            innerGradient.addColorStop(0.3, 'rgba(0, 0, 0, ' + this.shadow.opacity * this.getSettings().otherShadowOpacityScale + ')');
-            innerGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        }
-        // ... existing code ...
-    }
-```
-```
+#### `node_modules/page-flip/src/Render/HTMLRender.ts`
+Apply similar changes if using HTML mode.
 
 > [!NOTE]
-> Ensure your `node_modules/page-flip/src/Settings.ts` includes the custom settings (`flippingShadow`, `flippingShadowStartAlpha`, etc.) in the `FlipSetting` interface and default values.
+> Add `// CUSTOM:` comments to your modifications for easy identification.
 
 ---
 
-## 🔧 Single Page Display Mode Patch
-
-### Overview
+## 📖 Single Page Display Mode Patch
 
 This patch adds support for single page display mode, allowing the flipbook to show one page at a time instead of the default two-page spread.
 
@@ -193,7 +107,6 @@ This patch adds support for single page display mode, allowing the flipbook to s
 This automated script modifies the page-flip library to add a new `display` option.
 
 **Features:**
-- ✅ Well-documented and easy to modify
 - ✅ Adds `DisplayType` enum with `'single'` and `'double'` modes
 - ✅ Updates `Settings.ts` interface and default values
 - ✅ Modifies `PageCollection.ts` to respect display mode
@@ -214,7 +127,7 @@ This automated script modifies the page-flip library to add a new `display` opti
    });
    ```
 
-### Configuration Options
+### Configuration
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -222,30 +135,36 @@ This automated script modifies the page-flip library to add a new `display` opti
 
 ### What Gets Modified
 
-#### `Settings.ts`
-- Adds `DisplayType` enum
-- Adds `display: DisplayType` to `FlipSetting` interface
-- Sets default value to `DisplayType.DOUBLE`
+| File | Changes |
+|------|---------|
+| `Settings.ts` | Adds `DisplayType` enum, `display` to interface, default value |
+| `PageCollection.ts` | Imports `DisplayType`, modifies spread creation logic |
 
-#### `PageCollection.ts`
-- Imports `DisplayType` from Settings
-- Modifies landscape spread creation logic to create single-page spreads when `display: 'single'`
-- Maintains backward compatibility (default is still double-page)
+---
 
-### Testing
+## 📂 Key Files Reference
 
-The script has been configured in `src/flipbook.js` with:
-```javascript
-display: 'single', // TEST: Single page display mode
+| File | Purpose | Lines |
+|------|---------|-------|
+| `node_modules/page-flip/src/Render/CanvasRender.ts` | Canvas mode shadows | 57-161 |
+| `node_modules/page-flip/src/Render/HTMLRender.ts` | HTML mode shadows | 74-262 |
+| `node_modules/page-flip/src/Settings.ts` | Configuration interface | - |
+| `node_modules/page-flip/src/Page/PageCollection.ts` | Page spread logic | - |
+
+---
+
+## 🧪 Testing Changes
+
+After modifying and patching:
+```bash
+npm run dev
+# Test your flipbook to verify the changes
 ```
 
-Remove or change this line to switch between single and double page modes.
+## ⚠️ Updating the Library
 
-### Maintenance
-
-To modify the patch behavior, edit `add_single_page_display.py`:
-- All modifications are clearly documented in the script
-- Each function handles a specific part of the patch
-- Easy to adjust logic or add new features
-
-Re-run the script after any modifications to regenerate the patch.
+```bash
+npm update page-flip
+# Your patches will be re-applied automatically
+# If conflicts occur, resolve them and recreate the patch
+```
