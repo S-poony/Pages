@@ -1,81 +1,63 @@
 /**
- * Shadow Direction Patch for page-flip library
- * 
- * This script patches the CanvasRender.ts file to fix shadow direction.
- * Much easier to read and modify than the raw patch file!
- * 
+ * Shadow Direction Fix – OPTION A
+ * Adds Math.PI to the shadow angle so the gradient vector is reversed
+ * but leaves all FlipDirection tests in the library unchanged.
+ *
  * Usage:
- *   node patches/apply-shadow-fix.js
- * 
- * After running:
+ *   node patches/07-fix-shadow-direction-angle.js
  *   cd node_modules/page-flip && npm run build
  *   npx patch-package page-flip
  */
 
-const fs = require('fs');
+const fs   = require('fs');
 const path = require('path');
 
-// =============================================================================
-// CONFIGURATION - Change these values to experiment!
-// =============================================================================
+const file = path.join(__dirname,
+          '../node_modules/page-flip/src/Render/CanvasRender.ts');
 
-// If true, swap FORWARD/BACK logic (treats forward as back and vice versa)
-const REVERSE_DIRECTION = true;
+console.log('Reading CanvasRender.ts …');
+let src = fs.readFileSync(file, 'utf8');
+const orig = src;
 
-// If true, add extra Math.PI to rotation (flips shadow 180°)
-const ADD_EXTRA_ROTATION = false;
+/* ----------------------------------------------------------
+ * 1.  Find the line that creates the linear-gradient angle
+ *     (two possible spellings exist in the lib)
+ * ---------------------------------------------------------- */
+const patterns = [
+  /(const\s+angle\s*=\s*this\.shadow\.angle)(\s*;)/,                       // const angle = this.shadow.angle;
+  /(this\.ctx\.rotate\()(Math\.PI\s*\+\s*this\.shadow\.angle\s*\+\s*Math\.PI\s*\/\s*2)(\);)/ // existing rotate line
+];
 
-// =============================================================================
-// PATCH LOGIC
-// =============================================================================
-
-const filePath = path.join(__dirname, '../node_modules/page-flip/src/Render/CanvasRender.ts');
-
-console.log('Reading CanvasRender.ts...');
-let content = fs.readFileSync(filePath, 'utf8');
-
-// Store original for comparison
-const original = content;
-
-// The key insight: FlipDirection.FORWARD = 0, FlipDirection.BACK = 1
-// When flipping right-to-left (forward), shadow should appear on LEFT
-// When flipping left-to-right (back), shadow should appear on RIGHT
-
-if (REVERSE_DIRECTION) {
-    console.log('Applying: REVERSE_DIRECTION = true');
-
-    // Replace all instances of direction checks
-    // This swaps which code runs for FORWARD vs BACK
-
-    // Pattern: if (this.shadow.direction === FlipDirection.FORWARD)
-    // Replace with: if (this.shadow.direction === FlipDirection.BACK)
-
-    content = content.replace(
-        /if \(this\.shadow\.direction === FlipDirection\.FORWARD\)/g,
-        'if (this.shadow.direction === FlipDirection.BACK /* PATCHED: was FORWARD */)'
-    );
-}
-
-if (ADD_EXTRA_ROTATION) {
-    console.log('Applying: ADD_EXTRA_ROTATION = true');
-
-    // Add extra Math.PI to the rotation calculation
-    content = content.replace(
-        /this\.ctx\.rotate\(Math\.PI \+ this\.shadow\.angle \+ Math\.PI \/ 2\)/g,
-        'this.ctx.rotate(Math.PI + this.shadow.angle + Math.PI / 2 + Math.PI /* PATCHED: extra PI */)'
-    );
-}
-
-// Check if anything changed
-if (content === original) {
-    console.log('No changes made - file may already be patched or patterns not found.');
+/* ----------------------------------------------------------
+ * 2.  Patch 1 – add π to the *angle* variable
+ * ---------------------------------------------------------- */
+if (patterns[0].test(src)) {
+  src = src.replace(patterns[0], '$1 + Math.PI$2');
+  console.log('✓ Added + Math.PI to shadow angle');
 } else {
-    fs.writeFileSync(filePath, content);
-    console.log('✓ Patched successfully!');
-    console.log('');
-    console.log('Next steps:');
-    console.log('  1. cd node_modules/page-flip');
-    console.log('  2. npm run build');
-    console.log('  3. cd ../..');
-    console.log('  4. npx patch-package page-flip');
+  console.log('⚠  Angle declaration not found – skipping');
+}
+
+/* ----------------------------------------------------------
+ * 3.  Patch 2 – (optional safety) add π inside rotate() as well
+ *     Only if the old patch hadn’t already touched it.
+ * ---------------------------------------------------------- */
+if (!/shadow\.angle.*\+.*Math\.PI.*\/.*2.*\+.*Math\.PI/.test(src)) {
+  src = src.replace(patterns[1], '$1$2 + Math.PI$3');
+  console.log('✓ Added + Math.PI inside rotate()');
+}
+
+/* ----------------------------------------------------------
+ * 4.  Write back if we changed anything
+ * ---------------------------------------------------------- */
+if (src === orig) {
+  console.log('No changes made – file already patched or patterns missing');
+} else {
+  fs.writeFileSync(file, src);
+  console.log('✅ CanvasRender.ts patched (angle + π)');
+  console.log('');
+  console.log('Next:');
+  console.log('  1. cd node_modules/page-flip');
+  console.log('  2. npm run build');
+  console.log('  3. npx patch-package page-flip');
 }
