@@ -671,7 +671,7 @@ body {
 
 /* Configuration Button */
 .config-button-container {
-    margin: 20px auto 0;
+    margin: 0 auto 20px;
     text-align: center;
 }
 

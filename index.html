@@ -24,19 +24,6 @@
         </header>
 
         <main class="main-content">
-            <div id="upload-area" class="upload-area">
-                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <!-- Updated Text to reflect EPUB support -->
-                <h2 class="upload-title">Drop PDF or EPUB</h2>
-                <p class="upload-subtitle">Upload your document to get started</p>
-                <!-- Added accept=".epub" -->
-                <input type="file" id="file-input" accept=".pdf,.epub" style="display: none;">
-            </div>
-
             <!-- Configuration Button -->
             <div class="config-button-container">
                 <button id="config-btn" class="config-btn" aria-label="Configuration">
@@ -48,6 +35,19 @@
                     </svg>
                     Configuration
                 </button>
+            </div>
+
+            <div id="upload-area" class="upload-area">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <!-- Updated Text to reflect EPUB support -->
+                <h2 class="upload-title">Drop PDF or EPUB</h2>
+                <p class="upload-subtitle">Upload your document to get started</p>
+                <!-- Added accept=".epub" -->
+                <input type="file" id="file-input" accept=".pdf,.epub" style="display: none;">
             </div>
 
             <div id="progress-container" class="progress-container hidden">
@@ -227,7 +227,7 @@
                     </div>
 
                     <div class="config-item"
-                        title="Inserts an empty page before your first page. Useful for right-to-left reading or to ensure the first content page appears on the right.">
+                        title="Inserts an empty page before your first page. Useful to ensure the first content page appears on the right, or to add an offset that works with double-spread.">
                         <label class="toggle-switch">
                             <input type="checkbox" id="blank-page-toggle">
                             <span class="slider"></span>
