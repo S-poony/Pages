@@ -199,7 +199,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 /* Icon Buttons */
-.icon-btn, #fullscreen-btn {
+.icon-btn,
+#fullscreen-btn {
     background: none;
     border: none;
     color: var(--color-charcoal);
@@ -212,7 +213,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
     border-radius: 4px;
 }
 
-.icon-btn:hover, #fullscreen-btn:hover {
+.icon-btn:hover,
+#fullscreen-btn:hover {
     color: var(--color-terracotta);
     background-color: rgba(0, 0, 0, 0.05);
 }
@@ -253,8 +255,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 @keyframes modalSlideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .toc-header {
@@ -316,10 +325,21 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 /* Indentation for nested items */
-.toc-level-0 { padding-left: 20px; }
-.toc-level-1 { padding-left: 40px; }
-.toc-level-2 { padding-left: 60px; }
-.toc-level-3 { padding-left: 80px; }
+.toc-level-0 {
+    padding-left: 20px;
+}
+
+.toc-level-1 {
+    padding-left: 40px;
+}
+
+.toc-level-2 {
+    padding-left: 60px;
+}
+
+.toc-level-3 {
+    padding-left: 80px;
+}
 
 /* Text */
 #zoom-level,
@@ -336,4 +356,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
     background-color: white;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
     /* Subtle shadow for pages */
+}
+
+/* Fullscreen backdrop - use light theme instead of default black */
+#flipbook-wrapper::backdrop {
+    background-color: var(--color-cream);
 }
