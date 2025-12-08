@@ -25,7 +25,7 @@ npx patch-package page-flip
 | 04 | `04-adjust-shadow-fadein.py` | Slows down shadow fade-in animation |
 | 05 | `05-add-css-transition.py` | Adds CSS transition for smooth opacity |
 | 06 | `06-fix-opacity-transition.py` | Fixes opacity transition behavior |
-| 07 | `07-fix-shadow-direction.js` | Fixes shadow projection direction (configurable) |
+| 07 | `07-growing-shadow.py` | Adds growing shadow effect |
 
 ## Patch Order
 
