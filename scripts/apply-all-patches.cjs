@@ -42,8 +42,6 @@ function main() {
 
   if (!patches.length) die('No .py or .js patches found.');
 
-  log('Installing dependencies first …');
-  run('npm', ['install', '--legacy-peer-deps'], LIB_ROOT);
 
   log(`Found ${patches.length} patch(es): ${patches.join(', ')}`);
 

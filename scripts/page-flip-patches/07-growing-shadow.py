@@ -1,112 +1,110 @@
+#!/usr/bin/env python3
+"""
+Patch 07 – Growing Flipping Shadow (raw-number version)
+Adds the widening shadow under the flipping page without relying on FlipDirection enum.
+Compatible with the six existing patches (01-06) which do not define that enum.
+"""
 
 import os
 import re
 
-# Paths
-settings_path = 'node_modules/page-flip/src/Settings.ts'
-html_render_path = 'node_modules/page-flip/src/Render/HTMLRender.ts'
-canvas_render_path = 'node_modules/page-flip/src/Render/CanvasRender.ts'
-
+# ------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------
 def patch_file(path, name, operations):
     print(f"Patching {name} ({path})...")
     if not os.path.exists(path):
-        print(f"  ERROR: File not found: {path}")
+        print(f"  ERROR: File not found – skipping {name}")
         return
 
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         content = f.read()
-    
+
     modified = False
     for op in operations:
-        description = op['desc']
-        # simple 'replace' or 'regex'
-        if 'replace' in op:
-            old = op['replace'][0]
-            new = op['replace'][1]
+        desc = op["desc"]
+        if "replace" in op:
+            old, new = op["replace"]
             if old in content:
                 content = content.replace(old, new)
-                print(f"  - {description}: Success")
+                print(f"  - {desc}: Success")
+                modified = True
+            elif new in content:
+                print(f"  - {desc}: Already applied – skipping")
+            else:
+                print(f"  - {desc}: FAILED – pattern not found")
+        elif "regex" in op:
+            pat, repl = op["regex"]
+            if re.search(pat, content):
+                content = re.sub(pat, repl, content)
+                print(f"  - {desc}: Success")
                 modified = True
             else:
-                # Check if already applied
-                if new in content:
-                    print(f"  - {description}: Already applied (Skipping)")
-                else:
-                    print(f"  - {description}: FAILED - Pattern not found")
-        elif 'regex' in op:
-            pattern = op['regex'][0]
-            repl = op['regex'][1]
-            if re.search(pattern, content):
-                content = re.sub(pattern, repl, content)
-                print(f"  - {description}: Success")
-                modified = True
-            else:
-                # Basic check if already seemingly applied isn't easy with regex substitution
-                 print(f"  - {description}: FAILED/SKIPPED - Pattern not found")
-    
+                print(f"  - {desc}: FAILED – regex pattern not found")
+
     if modified:
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(content)
-        print(f"  Saved {name}.")
+        print(f"  Saved {name}\n")
     else:
-        print(f"  No changes made to {name}.")
+        print(f"  No changes made to {name}\n")
 
 
-# ==================================================================================
-# 1. Patch Settings.ts
-# ==================================================================================
+# ------------------------------------------------------------------
+# 1. Settings.ts  –  add two new keys
+# ------------------------------------------------------------------
 settings_ops = [
     {
-        'desc': 'Add new settings to interface',
-        'replace': (
-            "    /** Scale factor for other shadows (0-1) */\n    otherShadowOpacityScale: number;",
-            "    /** Scale factor for other shadows (0-1) */\n    otherShadowOpacityScale: number;\n\n    /** Base width of flattening shadow in pixels */\n    flippingShadowWidthOffset: number;\n    /** Scale factor of flattening shadow width */\n    flippingShadowWidthScale: number;"
-        )
+        "desc": "Add new interface members",
+        "replace": (
+            "    /** Scale factor for other shadows (0-1) */\n    otherShadowOpacityScale: number;\n\n}",
+            "    /** Scale factor for other shadows (0-1) */\n    otherShadowOpacityScale: number;\n\n    /** Base width of flipping shadow (px) */\n    flippingShadowWidthOffset: number;\n    /** Width multiplier vs progress */\n    flippingShadowWidthScale: number;\n\n}"
+        ),
     },
     {
-        'desc': 'Add default values',
-        'replace': (
-            "        otherShadowOpacityScale: 0.7,",
-            "        otherShadowOpacityScale: 0.7,\n        flippingShadowWidthOffset: 50,\n        flippingShadowWidthScale: 2,"
-        )
-    }
+        "desc": "Add default values",
+        "replace": (
+            "        otherShadowOpacityScale: 0.7,\n    };",
+            "        otherShadowOpacityScale: 0.7,\n        flippingShadowWidthOffset: 50,\n        flippingShadowWidthScale: 2,\n    };"
+        ),
+    },
 ]
 
-# ==================================================================================
-# 2. Patch HTMLRender.ts
-# ==================================================================================
+# ------------------------------------------------------------------
+# 2. HTMLRender.ts  –  inject element, member & method
+# ------------------------------------------------------------------
 html_ops = [
     {
-        'desc': 'Add private flippingShadow property',
-        'replace': (
+        "desc": "Add private flippingShadow member",
+        "replace": (
             "    private hardInnerShadow: HTMLElement = null;",
             "    private hardInnerShadow: HTMLElement = null;\n    private flippingShadow: HTMLElement = null;"
-        )
+        ),
     },
     {
-        'desc': 'Inject shadow HTML in createShadows',
-        'replace': (
+        "desc": "Inject extra DIV into createShadows template",
+        "replace": (
             '             <div class="stf__hardInnerShadow"></div>`',
             '             <div class="stf__hardInnerShadow"></div>\n             <div class="stf__flippingShadow"></div>`'
-        )
+        ),
     },
     {
-        'desc': 'Select flippingShadow element',
-        'replace': (
+        "desc": "Cache flippingShadow element",
+        "replace": (
             "        this.hardInnerShadow = this.element.querySelector('.stf__hardInnerShadow');",
             "        this.hardInnerShadow = this.element.querySelector('.stf__hardInnerShadow');\n        this.flippingShadow = this.element.querySelector('.stf__flippingShadow');"
-        )
+        ),
     },
     {
-        'desc': 'Clear/Hide flippingShadow',
-        'replace': (
+        "desc": "Hide flippingShadow in clearShadow()",
+        "replace": (
             "        this.hardInnerShadow.style.cssText = 'display: none';",
             "        this.hardInnerShadow.style.cssText = 'display: none';\n        this.flippingShadow.style.cssText = 'display: none';"
-        )
+        ),
     },
     {
-        'desc': 'Inject drawFlippingShadow method',
-        'replace': (
+        "desc": "Insert drawFlippingShadow method (raw numbers)",
+        "replace": (
             "    protected drawFrame(): void {",
             """    private drawFlippingShadow(): void {
         const rect = this.getRect();
@@ -120,30 +118,23 @@ html_ops = [
         const shadowPos = this.convertToGlobal({ x: shadow.pos.x, y: shadow.pos.y });
         const angle = shadow.angle + 3 * Math.PI / 2;
         const progress = shadow.progress / 100;
-        
-        const width = this.getSettings().flippingShadowWidthOffset + 
+
+        const width = this.getSettings().flippingShadowWidthOffset +
                       shadow.width * this.getSettings().flippingShadowWidthScale * progress;
-                      
+
         const opacity = this.getSettings().flippingShadowOpacity;
         const startAlpha = this.getSettings().flippingShadowStartAlpha * opacity;
         const endAlpha = this.getSettings().flippingShadowEndAlpha * opacity;
 
-        let direction = 'to left';
-        let translateX = 0;
-        
-        if (shadow.direction === FlipDirection.BACK) { // 0 in JS logic
-             direction = 'to left';
-             translateX = width;
-        } else {
-             direction = 'to right';
-             translateX = 0;
-        }
+        // 0 = BACK direction, 1 = FORWARD direction
+        const direction = shadow.direction === 0 ? 'to left' : 'to right';
+        const translateX = shadow.direction === 0 ? width : 0;
 
-        const newStyle = `
+        const style = `
             display: block;
             z-index: ${(this.getSettings().startZIndex + 4).toString(10)};
             width: ${width}px;
-            height: ${rect.height * 4}px;
+            height: ${4 * rect.height}px;
             background: linear-gradient(${direction}, rgba(0, 0, 0, ${startAlpha}), rgba(0, 0, 0, ${endAlpha}));
             left: ${rect.left}px;
             top: ${rect.top}px;
@@ -152,30 +143,30 @@ html_ops = [
             transform: translate3d(${shadowPos.x - translateX - rect.left}px, ${shadowPos.y - rect.height - rect.top}px, 0) rotate(${angle}rad);
             pointer-events: none;
         `;
-        
-        this.flippingShadow.style.cssText = newStyle;
+
+        this.flippingShadow.style.cssText = style;
     }
 
     protected drawFrame(): void {"""
-        )
+        ),
     },
     {
-        'desc': 'Call drawFlippingShadow in drawFrame',
-        'replace': (
+        "desc": "Call drawFlippingShadow inside drawFrame",
+        "replace": (
             "        if (this.shadow != null && this.flippingPage !== null && this.getSettings().flippingShadow) {",
             "        if (this.shadow != null && this.getSettings().flippingShadow) this.drawFlippingShadow();\n\n        if (this.shadow != null && this.flippingPage !== null && this.getSettings().flippingShadow) {"
-        )
-    }
+        ),
+    },
 ]
 
-# ==================================================================================
-# 3. Patch CanvasRender.ts
-# ==================================================================================
+# ------------------------------------------------------------------
+# 3. CanvasRender.ts  –  add Canvas method (raw numbers)
+# ------------------------------------------------------------------
 canvas_ops = [
     {
-        'desc': 'Inject drawFlippingShadow method',
-        'replace': (
-            "    private drawBookShadow(): void {",  # Insert before drawBookShadow
+        "desc": "Insert drawFlippingShadow method before drawBookShadow",
+        "replace": (
+            "    private drawBookShadow(): void {",
             """    private drawFlippingShadow(): void {
         if (!this.app.getSettings().flippingShadow) return;
         if (!this.flippingPage) return;
@@ -192,25 +183,25 @@ canvas_ops = [
         this.ctx.rotate(Math.PI + shadow.angle + Math.PI / 2);
 
         const progress = shadow.progress / 100;
-        const width = this.app.getSettings().flippingShadowWidthOffset + 
+        const width = this.app.getSettings().flippingShadowWidthOffset +
                       shadow.width * this.app.getSettings().flippingShadowWidthScale * progress;
-        
+
         const opacity = this.app.getSettings().flippingShadowOpacity;
         const startAlpha = this.app.getSettings().flippingShadowStartAlpha * opacity;
         const endAlpha = this.app.getSettings().flippingShadowEndAlpha * opacity;
 
-        if (shadow.direction === FlipDirection.BACK) {
+        if (shadow.direction === 0) {                       // BACK
             this.ctx.translate(-width, -100);
-            const gradient = this.ctx.createRadialGradient(width, rect.height, 0, width, rect.height, width);
-            gradient.addColorStop(0, "rgba(0, 0, 0, " + startAlpha + ")");
-            gradient.addColorStop(1, "rgba(0, 0, 0, " + endAlpha + ")");
-            this.ctx.fillStyle = gradient;
-        } else {
+            const g = this.ctx.createRadialGradient(width, rect.height, 0, width, rect.height, width);
+            g.addColorStop(0, "rgba(0, 0, 0, " + startAlpha + ")");
+            g.addColorStop(1, "rgba(0, 0, 0, " + endAlpha + ")");
+            this.ctx.fillStyle = g;
+        } else {                                              // FORWARD
             this.ctx.translate(0, -100);
-            const gradient = this.ctx.createRadialGradient(0, rect.height, 0, 0, rect.height, width);
-            gradient.addColorStop(0, "rgba(0, 0, 0, " + startAlpha + ")");
-            gradient.addColorStop(1, "rgba(0, 0, 0, " + endAlpha + ")");
-            this.ctx.fillStyle = gradient;
+            const g = this.ctx.createRadialGradient(0, rect.height, 0, 0, rect.height, width);
+            g.addColorStop(0, "rgba(0, 0, 0, " + startAlpha + ")");
+            g.addColorStop(1, "rgba(0, 0, 0, " + endAlpha + ")");
+            this.ctx.fillStyle = g;
         }
 
         this.ctx.clip();
@@ -219,18 +210,21 @@ canvas_ops = [
     }
 
     private drawBookShadow(): void {"""
-        )
+        ),
     },
     {
-        'desc': 'Call drawFlippingShadow in drawFrame',
-        'replace': (
+        "desc": "Call drawFlippingShadow inside drawFrame",
+        "replace": (
             "        this.drawBookShadow();",
             "        this.drawBookShadow();\n        if (this.shadow != null) this.drawFlippingShadow();"
-        )
-    }
+        ),
+    },
 ]
 
-# Run patches
-patch_file(settings_path, "Settings.ts", settings_ops)
-patch_file(html_render_path, "HTMLRender.ts", html_ops)
-patch_file(canvas_render_path, "CanvasRender.ts", canvas_ops)
+# ------------------------------------------------------------------
+# Run
+# ------------------------------------------------------------------
+if __name__ == "__main__":
+    patch_file("node_modules/page-flip/src/Settings.ts", "Settings.ts", settings_ops)
+    patch_file("node_modules/page-flip/src/Render/HTMLRender.ts", "HTMLRender.ts", html_ops)
+    patch_file("node_modules/page-flip/src/Render/CanvasRender.ts", "CanvasRender.ts", canvas_ops)
