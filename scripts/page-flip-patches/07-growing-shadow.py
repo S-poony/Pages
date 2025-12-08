@@ -186,6 +186,7 @@ canvas_ops = [
         this.ctx.save();
         this.ctx.beginPath();
         this.ctx.rect(rect.left, rect.top, rect.width, rect.height);
+        this.ctx.clip();
 
         const shadowPos = this.convertToGlobal({ x: shadow.pos.x, y: shadow.pos.y });
         this.ctx.translate(shadowPos.x, shadowPos.y);
@@ -212,8 +213,7 @@ canvas_ops = [
             g.addColorStop(1, "rgba(0, 0, 0, " + endAlpha + ")");
             this.ctx.fillStyle = g;
         }
-
-        this.ctx.clip();
+        
         this.ctx.fillRect(0, 0, width, 2 * rect.height);
         this.ctx.restore();
     }
