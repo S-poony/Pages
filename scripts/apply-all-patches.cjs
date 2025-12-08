@@ -9,7 +9,7 @@
  *      (optionally set env-var NO_PATCH=1 to skip patch-package step)
  */
 
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
@@ -17,7 +17,7 @@ const { spawnSync } = require('child_process');
 // CONFIG
 // -----------------------------------------------------------
 const PATCH_DIR = path.join(__dirname, 'page-flip-patches'); // scripts/page-flip-patches
-const LIB_ROOT  = path.join(__dirname, '../../node_modules/page-flip'); // adjust if necessary
+const LIB_ROOT = path.join(__dirname, '../../node_modules/page-flip'); // adjust if necessary
 
 // -----------------------------------------------------------
 // UTILS
@@ -37,10 +37,13 @@ function main() {
   if (!fs.existsSync(PATCH_DIR)) die(`Patch directory not found: ${PATCH_DIR}`);
 
   const patches = fs.readdirSync(PATCH_DIR)
-                    .filter(f => /\.(py|js)$/i.test(f))
-                    .sort(); // 01-foo.py, 02-bar.py … 99-zot.js
+    .filter(f => /\.(py|js)$/i.test(f))
+    .sort(); // 01-foo.py, 02-bar.py … 99-zot.js
 
   if (!patches.length) die('No .py or .js patches found.');
+
+  log('Installing dependencies first …');
+  run('npm', ['install', '--legacy-peer-deps'], LIB_ROOT);
 
   log(`Found ${patches.length} patch(es): ${patches.join(', ')}`);
 
@@ -55,7 +58,7 @@ function main() {
   });
 
   log('Rebuilding page-flip …');
-  run('npm', ['install', '--legacy-peer-deps'], LIB_ROOT); // ensure deps
+  // run('npm', ['install', '--legacy-peer-deps'], LIB_ROOT); // ensure deps - MOVED TO START
   run('npm', ['run', 'build'], LIB_ROOT);
 
   if (process.env.NO_PATCH) {
