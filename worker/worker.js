@@ -56,7 +56,10 @@ export default {
       }
 
       // 2. UPLOAD / PUBLISH (PUT request)
-      // Supports: PUT /upload (saves as index.html) OR PUT /upload/filename.ext
+      // Supports:
+      //   PUT /upload              -> UUID/index.html (legacy)
+      //   PUT /upload/slug         -> slug-shortid/index.html (for HTML with beautiful URLs)
+      //   PUT /upload/siteId/file  -> siteId/file (for assets, siteId passed by frontend)
       if (request.method === "PUT" && url.pathname.startsWith('/upload')) {
         // Check size limit
         const contentLength = request.headers.get("Content-Length");
@@ -67,20 +70,38 @@ export default {
           });
         }
 
-        const siteId = crypto.randomUUID();
-        let savePath = `${siteId}/index.html`; // Default
+        const pathParts = url.pathname.split('/').filter(p => p);
+        // pathParts[0] = 'upload', pathParts[1] = slug/siteId/filename, etc.
 
-        // Check if a filename was provided in the path: /upload/image.jpg
-        const pathParts = url.pathname.split('/');
-        if (pathParts.length > 2 && pathParts[2]) {
-          savePath = `${siteId}/${pathParts.slice(2).join('/')}`;
+        const contentType = request.headers.get("Content-Type") || 'application/octet-stream';
+        const isHtml = contentType.includes('text/html');
+
+        let siteId;
+        let savePath;
+
+        if (pathParts.length === 1) {
+          // PUT /upload -> legacy UUID-based path
+          siteId = crypto.randomUUID();
+          savePath = `${siteId}/index.html`;
+        } else if (pathParts.length === 2 && isHtml) {
+          // PUT /upload/my-slug -> slug-based path for HTML
+          const slug = pathParts[1].slice(0, 50).replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+          const shortId = crypto.randomUUID().slice(0, 8);
+          siteId = slug ? `${slug}-${shortId}` : shortId;
+          savePath = `${siteId}/index.html`;
+        } else if (pathParts.length === 2) {
+          // PUT /upload/filename.ext -> asset with new UUID siteId
+          siteId = crypto.randomUUID();
+          savePath = `${siteId}/${pathParts[1]}`;
+        } else {
+          // PUT /upload/siteId/path/to/file -> use provided siteId
+          siteId = pathParts[1];
+          savePath = pathParts.slice(1).join('/');
         }
 
         // Save to R2 with Content-Type
         await env.FLIPBOOK_BUCKET.put(savePath, request.body, {
-          httpMetadata: {
-            contentType: request.headers.get("Content-Type") || 'application/octet-stream',
-          }
+          httpMetadata: { contentType }
         });
 
         return new Response(JSON.stringify({

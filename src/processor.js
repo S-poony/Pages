@@ -381,6 +381,15 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
     const pdf = await loadPdfDocument(arrayBuffer);
     const renderer = createPageRenderer(pdf, normalizedOptions, canvasAPI);
 
+    // Extract title from PDF metadata
+    let pdfTitle = '';
+    try {
+        const metadata = await pdf.getMetadata();
+        pdfTitle = metadata?.info?.Title || '';
+    } catch (e) {
+        console.warn('Failed to extract PDF title:', e);
+    }
+
     // Extract bookmarks (only for normal mode, not double-spread)
     let tableOfContents = [];
     if (!doubleSpread) {
@@ -469,7 +478,8 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
             pageCount: halfPageCount,
             renderPage,
             renderPageVariants,
-            tableOfContents: [] // No TOC for double-spread mode
+            tableOfContents: [], // No TOC for double-spread mode
+            title: pdfTitle
         };
     }
 
@@ -488,6 +498,7 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
         pageCount: pdf.numPages,
         renderPage,
         renderPageVariants: async (pageNumber) => renderer.renderPageVariants(pageNumber),
-        tableOfContents
+        tableOfContents,
+        title: pdfTitle
     };
 }

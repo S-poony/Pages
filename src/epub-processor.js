@@ -634,6 +634,14 @@ export async function processEpub(input, options = {}) {
 
     const book = await loadEpubDocument(arrayBuffer);
 
+    // Extract title from EPUB metadata
+    let epubTitle = '';
+    try {
+        epubTitle = book.package?.metadata?.title || '';
+    } catch (e) {
+        console.warn('Failed to extract EPUB title:', e);
+    }
+
     // Load zip directly for asset extraction
     const zip = await JSZip.loadAsync(arrayBuffer);
 
@@ -649,7 +657,8 @@ export async function processEpub(input, options = {}) {
         pageHeight: normalizedOptions.pageHeight,
         css: EPUB_DEFAULTS_CSS, // Return the CSS so it can be injected into the final flipbook
         linkMap,
-        tableOfContents
+        tableOfContents,
+        title: epubTitle
     };
 }
 

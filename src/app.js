@@ -6,6 +6,7 @@
 import { processPdf } from './processor.js';
 import { processEpub } from './epub-processor.js';
 import { generateFlipbookHtml } from './generator.js';
+import { sanitizeTitle, slugifyTitle } from './sanitizer.js';
 import pageFlipJs from 'page-flip/dist/js/page-flip.browser.js?raw';
 import flipbookCss from './flipbook.css?raw';
 import flipbookJs from './flipbook.js?raw';
@@ -24,6 +25,7 @@ class FlipbookApp {
 
     this.currentHtml = null;
     this.currentFolderData = null; // { html, assets }
+    this.detectedTitle = ''; // Title auto-detected from PDF/EPUB metadata
   }
 
   /* ----------  UI initialisation  ---------- */
@@ -72,6 +74,7 @@ class FlipbookApp {
     this.configBtn = document.getElementById('config-btn');
     this.configModal = document.getElementById('config-modal');
     this.configCloseBtn = document.getElementById('config-close-btn');
+    this.customTitleInput = document.getElementById('custom-title-input');
     this.configButtonContainer = document.querySelector('.config-button-container');
   }
 
@@ -151,6 +154,22 @@ class FlipbookApp {
     // Blank page option is now always visible (removed visibility toggle)
   }
 
+  /* ----------  Title helpers  ---------- */
+  getEffectiveTitle() {
+    const customTitle = sanitizeTitle(this.customTitleInput?.value || '');
+    if (customTitle) return customTitle;
+    if (this.detectedTitle) return this.detectedTitle;
+    return 'flipbook';
+  }
+
+  getFilenameBase() {
+    return this.getEffectiveTitle().replace(/[^a-zA-Z0-9-_ ]/g, '').trim() || 'flipbook';
+  }
+
+  getUrlSlug() {
+    return slugifyTitle(this.getEffectiveTitle()) || 'flipbook';
+  }
+
   /* ----------  PDF processing  ---------- */
   async processFile(file) {
     this.hideError();
@@ -162,7 +181,11 @@ class FlipbookApp {
 
       const opts = { scales: [1, 2, 3], format: 'image/jpeg', quality: 0.92, doubleSpread };
 
-      const { pageCount, renderPage, renderPageVariants, tableOfContents } = await processPdf(file, opts);
+      const result = await processPdf(file, opts);
+      const { pageCount, renderPage, renderPageVariants, tableOfContents } = result;
+
+      // Store detected title from PDF metadata
+      this.detectedTitle = result.title || file.name.replace(/\.pdf$/i, '');
 
       this.showProgress(10, `Processing ${pageCount} pages…`);
 
@@ -196,8 +219,9 @@ class FlipbookApp {
       this.showProgress(95, 'Generating flipbook…');
 
       // Generate Single File Version (for preview and simple download)
+      const effectiveTitle = this.getEffectiveTitle();
       const htmlSingle = await generateFlipbookHtml(pageImages, {
-        title: file.name.replace(/\.pdf$/i, ''),
+        title: effectiveTitle,
         doubleSpread,
         addBlankPage,
         mode: 'single',
@@ -210,7 +234,7 @@ class FlipbookApp {
 
       // Generate Folder Version (for ZIP download and publishing)
       const folderData = await generateFlipbookHtml(pageImages, {
-        title: file.name.replace(/\.pdf$/i, ''),
+        title: effectiveTitle,
         doubleSpread,
         addBlankPage,
         mode: 'folder',
@@ -248,6 +272,9 @@ class FlipbookApp {
         backgroundColor: '#ffffff'
       });
 
+      // Store detected title from EPUB metadata
+      this.detectedTitle = epubResult.title || file.name.replace(/\.epub$/i, '');
+
       this.showProgress(50, 'Generating flipbook…');
 
       // Extract background images and enrichment HTML
@@ -255,10 +282,11 @@ class FlipbookApp {
       const enrichmentHtmlList = epubResult.pages.map(p => p.enrichmentHtml);
 
       // Generate Single File Version (for preview and simple download)
+      const effectiveTitle = this.getEffectiveTitle();
       const htmlSingle = await generateFlipbookHtml(
         pageImages,
         {
-          title: file.name.replace(/\.epub$/i, ''),
+          title: effectiveTitle,
           doubleSpread,
           addBlankPage,
           mode: 'single',
@@ -278,7 +306,7 @@ class FlipbookApp {
       const folderData = await generateFlipbookHtml(
         pageImages,
         {
-          title: file.name.replace(/\.epub$/i, ''),
+          title: effectiveTitle,
           doubleSpread,
           addBlankPage,
           mode: 'folder',
@@ -392,11 +420,12 @@ class FlipbookApp {
         finalHtml = finalHtml.split(filename).join(url);
       }
 
-      // 3. Upload HTML
+      // 3. Upload HTML with slug-based URL
       this.publishBtn.innerHTML = `<svg class="animate-spin btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke-width="2" stroke-linecap="round"/></svg> Publishing HTML...`;
 
+      const slug = this.getUrlSlug();
       const blob = new Blob([finalHtml], { type: 'text/html' });
-      const response = await fetch(`${WORKER_URL}/upload`, {
+      const response = await fetch(`${WORKER_URL}/upload/${slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'text/html' },
         body: blob
@@ -495,10 +524,11 @@ class FlipbookApp {
   }
   downloadFlipbook() {
     if (!this.currentHtml) return;
+    const filename = `${this.getFilenameBase()}.html`;
     const blob = new Blob([this.currentHtml], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    Object.assign(a, { href: url, download: 'flipbook.html', style: 'display:none' });
+    Object.assign(a, { href: url, download: filename, style: 'display:none' });
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
@@ -532,10 +562,11 @@ class FlipbookApp {
     });
 
     // Generate ZIP
+    const filename = `${this.getFilenameBase()}.zip`;
     const content = await zip.generateAsync({ type: "blob" });
     const url = URL.createObjectURL(content);
     const a = document.createElement('a');
-    Object.assign(a, { href: url, download: 'flipbook.zip', style: 'display:none' });
+    Object.assign(a, { href: url, download: filename, style: 'display:none' });
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   }
@@ -552,6 +583,7 @@ class FlipbookApp {
     this.fileInput.value = '';
     this.currentHtml = null;
     this.currentFolderData = null;
+    this.detectedTitle = '';
   }
   showError(msg) { this.errorMessage.textContent = msg; this.errorMessage.classList.remove('hidden'); }
   hideError() { this.errorMessage.classList.add('hidden'); }

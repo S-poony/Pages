@@ -736,3 +736,43 @@ body {
     margin: 0;
     padding-left: 60px;
 }
+
+/* Text Input Styles */
+.text-input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: #fff;
+    color: #333;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.text-input:focus {
+    outline: none;
+    border-color: var(--color-terracotta);
+    box-shadow: 0 0 0 3px rgba(201, 120, 91, 0.1);
+}
+
+.text-input::placeholder {
+    color: #999;
+}
+
+.input-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #374151;
+}
+
+/* Config item with text input - override cursor */
+.config-item:has(.text-input) {
+    cursor: default;
+}
+
+.config-item .config-description {
+    padding-left: 0;
+    margin-top: 8px;
+}

@@ -120,3 +120,40 @@ export function sanitizeEpubCss(css) {
 
     return css;
 }
+
+/**
+ * Sanitizes a title string for use in filenames
+ * Removes filesystem-unsafe characters and normalizes whitespace
+ * @param {string} title - Raw title input
+ * @returns {string} Sanitized title safe for filenames
+ */
+export function sanitizeTitle(title) {
+    if (typeof title !== 'string' || !title.trim()) {
+        return '';
+    }
+
+    return title
+        .trim()
+        .replace(/[<>:"/\\|?*]/g, '')     // Remove filesystem-unsafe chars
+        .replace(/\s+/g, ' ')              // Normalize whitespace
+        .slice(0, 100);                    // Limit length
+}
+
+/**
+ * Creates a URL-friendly slug from a title
+ * @param {string} title - Title to slugify
+ * @returns {string} URL-safe slug
+ */
+export function slugifyTitle(title) {
+    if (typeof title !== 'string' || !title.trim()) {
+        return '';
+    }
+
+    return title
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')          // Remove non-word chars
+        .replace(/\s+/g, '-')              // Spaces to hyphens
+        .replace(/-+/g, '-')               // Collapse hyphens
+        .slice(0, 50);                     // URL-friendly length
+}
