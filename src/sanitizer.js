@@ -55,7 +55,8 @@ export function sanitizeEpubHtml(html) {
         ALLOWED_ATTR: [
             'href', 'src', 'alt', 'title', 'class', 'id', 'style',
             'width', 'height', 'align', 'colspan', 'rowspan',
-            'datetime', 'cite', 'data-epub-href', 'target', 'rel'
+            'datetime', 'cite', 'data-epub-href', 'target', 'rel',
+            'epub:type', 'role'
         ],
 
         // Allow only safe URI schemes

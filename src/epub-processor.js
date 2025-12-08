@@ -12,6 +12,7 @@
 import ePub from 'epubjs';
 import JSZip from 'jszip';
 import { sanitizeEpubHtml } from './sanitizer.js';
+import EPUB_DEFAULTS_CSS_RAW from './epub-defaults.css?raw';
 
 /**
  * Validates and normalizes EPUB processor options
@@ -652,54 +653,4 @@ export async function processEpub(input, options = {}) {
     };
 }
 
-const EPUB_DEFAULTS_CSS = `
-    /* Enforce consistent content styling between measurement and playback */
-    .epub-content, .epub-measure-container {
-        font-family: Georgia, serif;
-        font-size: 16px;
-        line-height: 1.6;
-        color: #000000;
-        text-align: justify;
-        
-        /* Ensure consistent rendering */
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        text-size-adjust: 100%;
-        -webkit-text-size-adjust: 100%;
-        
-        /* Reset box model */
-        box-sizing: border-box;
-    }
-    
-    /* Reset all elements within the container to ensure no inherited styles interfere */
-    .epub-content *, .epub-measure-container * {
-        box-sizing: border-box;
-    }
-    
-    .epub-content p, .epub-measure-container p { 
-        margin: 1em 0 !important; 
-        padding: 0 !important;
-        max-width: 100% !important;
-    }
-    
-    .epub-content h1, .epub-measure-container h1 { margin: 0.67em 0 !important; font-size: 2em !important; font-weight: bold !important; line-height: 1.2 !important; }
-    .epub-content h2, .epub-measure-container h2 { margin: 0.83em 0 !important; font-size: 1.5em !important; font-weight: bold !important; line-height: 1.3 !important; }
-    .epub-content h3, .epub-measure-container h3 { margin: 1em 0 !important; font-size: 1.17em !important; font-weight: bold !important; line-height: 1.4 !important; }
-    .epub-content h4, .epub-measure-container h4 { margin: 1.33em 0 !important; font-size: 1em !important; font-weight: bold !important; }
-    .epub-content h5, .epub-measure-container h5 { margin: 1.67em 0 !important; font-size: 0.83em !important; font-weight: bold !important; }
-    .epub-content h6, .epub-measure-container h6 { margin: 2.33em 0 !important; font-size: 0.67em !important; font-weight: bold !important; }
-    
-    .epub-content ul, .epub-measure-container ul { margin: 1em 0 !important; padding-left: 40px !important; }
-    .epub-content ol, .epub-measure-container ol { margin: 1em 0 !important; padding-left: 40px !important; }
-    .epub-content li, .epub-measure-container li { margin-bottom: 0.5em !important; }
-    
-    .epub-content blockquote, .epub-measure-container blockquote { margin: 1em 40px !important; }
-    .epub-content pre, .epub-measure-container pre { margin: 1em 0 !important; white-space: pre-wrap !important; }
-    
-    /* Ensure images don't overflow */
-    .epub-content img, .epub-measure-container img {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-`;
+const EPUB_DEFAULTS_CSS = EPUB_DEFAULTS_CSS_RAW;
