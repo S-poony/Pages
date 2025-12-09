@@ -75,70 +75,45 @@ settings_ops = [
 # ------------------------------------------------------------------
 html_ops = [
     {
-        "desc": "Add growingShadow property to class",
+        "desc": "Add growingShadow properties to class",
         "replace": (
             "    private hardInnerShadow: HTMLElement = null;",
-            "    private hardInnerShadow: HTMLElement = null;\n    private growingShadow: HTMLElement = null;"
+            "    private hardInnerShadow: HTMLElement = null;\n    private growingShadowContainer: HTMLElement = null;\n    private growingShadow: HTMLElement = null;"
         ),
     },
     {
-        "desc": "Inject dedicated growing-shadow DIV",
+        "desc": "Inject dedicated growing-shadow container structure",
         "replace": (
             '             <div class="stf__hardInnerShadow"></div>`',
-            '             <div class="stf__hardInnerShadow"></div>\n             <div class="stf__growingShadow"></div>`'
+            '             <div class="stf__hardInnerShadow"></div>\n             <div class="stf__growingShadowContainer"><div class="stf__growingShadow"></div></div>`'
         ),
     },
     {
-        "desc": "Cache growingShadow element",
+        "desc": "Cache growingShadow elements",
         "replace": (
             "        this.hardInnerShadow = this.element.querySelector('.stf__hardInnerShadow');",
-            "        this.hardInnerShadow = this.element.querySelector('.stf__hardInnerShadow');\n        this.growingShadow = this.element.querySelector('.stf__growingShadow');"
+            "        this.hardInnerShadow = this.element.querySelector('.stf__hardInnerShadow');\n        this.growingShadowContainer = this.element.querySelector('.stf__growingShadowContainer');\n        this.growingShadow = this.element.querySelector('.stf__growingShadow');"
         ),
     },
     {
         "desc": "Hide growingShadow in clearShadow()",
         "replace": (
             "        this.hardInnerShadow.style.cssText = 'display: none';",
-            "        this.hardInnerShadow.style.cssText = 'display: none';\n        this.growingShadow.style.cssText = 'opacity: 0; pointer-events: none;';"
+            "        this.hardInnerShadow.style.cssText = 'display: none';\n        this.growingShadowContainer.style.cssText = 'display: none;';"
         ),
     },
     {
-        "desc": "Insert drawGrowingShadow method (clipped)",
+        "desc": "Insert drawGrowingShadow method (Container Clipped)",
         "replace": (
             "    protected drawFrame(): void {",
-            """    private buildClipPolygonForShadow(
-        pageCornersGlobal: { topLeft: { x: number; y: number }; topRight: { x: number; y: number }; bottomLeft: { x: number; y: number }; bottomRight: { x: number; y: number } },
-        shadowPos: { x: number; y: number },
-        angle: number,
-        originX: number,
-        pivotY: number
-    ): string {
-        const pts: string[] = [];
-        for (const p of [pageCornersGlobal.topLeft, pageCornersGlobal.topRight, pageCornersGlobal.bottomRight, pageCornersGlobal.bottomLeft]) {
-            if (!p) continue;
-            const rel = { x: (this.getDirection() === 1 ? -p.x + shadowPos.x : p.x - shadowPos.x), y: p.y - shadowPos.y };
-            const rot = { x: rel.x * Math.cos(angle) + rel.y * Math.sin(angle) + originX,
-                          y: rel.y * Math.cos(angle) - rel.x * Math.sin(angle) + pivotY };
-            pts.push(`${rot.x}px ${rot.y}px`);
-        }
-        return `polygon(${pts.join(', ')})`;
-    }
-
-    private drawGrowingShadow(): void {
+            """    private drawGrowingShadow(): void {
         const rect = this.getRect();
         const shadow = this.shadow;
-
-        console.log('[ShadowDebug] drawGrowingShadow called', {
-            setting: this.getSettings().flippingShadow,
-            shadowValid: !!shadow,
-            progress: shadow ? shadow.progress : 'N/A'
-        });
 
         if (!shadow) return;
 
         if (!this.getSettings().flippingShadow) {
-            console.log('[ShadowDebug] properties missing or disabled');
-            this.growingShadow.style.display = 'none';
+            this.growingShadowContainer.style.display = 'none';
             return;
         }
 
@@ -156,38 +131,36 @@ html_ops = [
         const direction = shadow.direction === 0 ? 'to left' : 'to right';
         const translateX = shadow.direction === 0 ? width : 0;
 
-        // FIX: Use static book bounds (this.getRect()) instead of flipping page bounds
-        // const pageCornersGlobal = this.convertRectToGlobal(this.pageRect);
-        const pageCornersGlobal = {
-            topLeft: { x: rect.left, y: rect.top },
-            topRight: { x: rect.left + rect.width, y: rect.top },
-            bottomRight: { x: rect.left + rect.width, y: rect.top + rect.height },
-            bottomLeft: { x: rect.left, y: rect.top + rect.height }
-        };
-
-        // Pass rect.height as the pivotY (matches transform-origin Y)
-        const clipPoly = this.buildClipPolygonForShadow(pageCornersGlobal, shadowPos, angle, translateX, rect.height);
-
-        const style = `
+        // Container Style: Positioned at book bounds, clips overflow
+        const containerStyle = `
             display: block;
             z-index: ${(this.getSettings().startZIndex + 4).toString(10)};
+            position: absolute;
+            left: ${rect.left}px;
+            top: ${rect.top}px;
+            width: ${rect.width}px;
+            height: ${rect.height}px;
+            overflow: hidden;
+            pointer-events: none;
+        `;
+        this.growingShadowContainer.style.cssText = containerStyle;
+
+        // Shadow Style: Positioned relative to container (0,0 maps to rect.left, rect.top)
+        // Transform relies on the fact that 'rect.left' and 'rect.top' are subtracted
+        // from global coordinates to map to local container space.
+        const shadowStyle = `
+            display: block;
             width: ${width}px;
             height: ${4 * rect.height}px;
             background: linear-gradient(${direction}, rgba(0, 0, 0, ${startAlpha}), rgba(0, 0, 0, ${endAlpha}));
-            left: ${rect.left}px;
-            top: ${rect.top}px;
             position: absolute;
+            left: 0;
+            top: 0;
             transform-origin: ${translateX}px ${rect.height}px;
             transform: translate3d(${shadowPos.x - translateX - rect.left}px, ${shadowPos.y - rect.height - rect.top}px, 0) rotate(${angle}rad);
-            pointer-events: none;
-            clip-path: ${clipPoly};
-            -webkit-clip-path: ${clipPoly};
         `;
         
-        // Remove newlines and excess whitespace for log cleanliness
-        console.log('[ShadowDebug] Applied Style:', style.replace(/\s+/g, ' ').trim());
-
-        this.growingShadow.style.cssText = style;
+        this.growingShadow.style.cssText = shadowStyle;
     }
 
     protected drawFrame(): void {"""

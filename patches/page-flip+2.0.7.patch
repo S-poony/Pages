@@ -12827,7 +12827,7 @@ index 0629588..994d35f 100644
  
          this.ctx.clip();
 diff --git a/node_modules/page-flip/src/Render/HTMLRender.ts b/node_modules/page-flip/src/Render/HTMLRender.ts
-index fe079e1..886bda4 100644
+index fe079e1..3da0c57 100644
 --- a/node_modules/page-flip/src/Render/HTMLRender.ts
 +++ b/node_modules/page-flip/src/Render/HTMLRender.ts
 @@ -4,7 +4,7 @@ import { FlipDirection } from '../Flip/Flip';
@@ -12839,40 +12839,42 @@ index fe079e1..886bda4 100644
  
  /**
   * Class responsible for rendering the HTML book
-@@ -20,6 +20,7 @@ export class HTMLRender extends Render {
+@@ -20,6 +20,8 @@ export class HTMLRender extends Render {
      private innerShadow: HTMLElement = null;
      private hardShadow: HTMLElement = null;
      private hardInnerShadow: HTMLElement = null;
++    private growingShadowContainer: HTMLElement = null;
 +    private growingShadow: HTMLElement = null;
  
      /**
       * @constructor
-@@ -42,13 +43,15 @@ export class HTMLRender extends Render {
+@@ -42,13 +44,16 @@ export class HTMLRender extends Render {
              `<div class="stf__outerShadow"></div>
               <div class="stf__innerShadow"></div>
               <div class="stf__hardShadow"></div>
 -             <div class="stf__hardInnerShadow"></div>`
 +             <div class="stf__hardInnerShadow"></div>
-+             <div class="stf__growingShadow"></div>`
++             <div class="stf__growingShadowContainer"><div class="stf__growingShadow"></div></div>`
          );
  
          this.outerShadow = this.element.querySelector('.stf__outerShadow');
          this.innerShadow = this.element.querySelector('.stf__innerShadow');
          this.hardShadow = this.element.querySelector('.stf__hardShadow');
          this.hardInnerShadow = this.element.querySelector('.stf__hardInnerShadow');
++        this.growingShadowContainer = this.element.querySelector('.stf__growingShadowContainer');
 +        this.growingShadow = this.element.querySelector('.stf__growingShadow');
      }
  
      public clearShadow(): void {
-@@ -58,6 +61,7 @@ export class HTMLRender extends Render {
+@@ -58,6 +63,7 @@ export class HTMLRender extends Render {
          this.innerShadow.style.cssText = 'display: none';
          this.hardShadow.style.cssText = 'display: none';
          this.hardInnerShadow.style.cssText = 'display: none';
-+        this.growingShadow.style.cssText = 'opacity: 0; pointer-events: none;';
++        this.growingShadowContainer.style.cssText = 'display: none;';
      }
  
      public reload(): void {
-@@ -178,14 +182,13 @@ export class HTMLRender extends Render {
+@@ -178,14 +184,13 @@ export class HTMLRender extends Render {
          polygon += ')';
  
          const newStyle = `
@@ -12889,7 +12891,7 @@ index fe079e1..886bda4 100644
                  rgba(0, 0, 0, 0) 100%);
              transform-origin: ${shadowTranslate}px 100px;
              transform: translate3d(${shadowPos.x - shadowTranslate}px, ${
-@@ -243,7 +246,6 @@ export class HTMLRender extends Render {
+@@ -243,7 +248,6 @@ export class HTMLRender extends Render {
          polygon += ')';
  
          const newStyle = `
@@ -12897,7 +12899,7 @@ index fe079e1..886bda4 100644
              z-index: ${(this.getSettings().startZIndex + 10).toString(10)};
              width: ${this.shadow.width}px;
              height: ${rect.height * 2}px;
-@@ -301,6 +303,9 @@ export class HTMLRender extends Render {
+@@ -301,6 +305,9 @@ export class HTMLRender extends Render {
              this.rightPage.setHardDrawingAngle(180 + this.flippingPage.getHardAngle());
              this.rightPage.draw(this.flippingPage.getDrawingDensity());
          } else {
@@ -12907,43 +12909,18 @@ index fe079e1..886bda4 100644
              this.rightPage.simpleDraw(PageOrientation.RIGHT);
          }
      }
-@@ -323,6 +328,90 @@ export class HTMLRender extends Render {
+@@ -323,6 +330,63 @@ export class HTMLRender extends Render {
          }
      }
  
-+    private buildClipPolygonForShadow(
-+        pageCornersGlobal: { topLeft: { x: number; y: number }; topRight: { x: number; y: number }; bottomLeft: { x: number; y: number }; bottomRight: { x: number; y: number } },
-+        shadowPos: { x: number; y: number },
-+        angle: number,
-+        originX: number,
-+        pivotY: number
-+    ): string {
-+        const pts: string[] = [];
-+        for (const p of [pageCornersGlobal.topLeft, pageCornersGlobal.topRight, pageCornersGlobal.bottomRight, pageCornersGlobal.bottomLeft]) {
-+            if (!p) continue;
-+            const rel = { x: (this.getDirection() === 1 ? -p.x + shadowPos.x : p.x - shadowPos.x), y: p.y - shadowPos.y };
-+            const rot = { x: rel.x * Math.cos(angle) + rel.y * Math.sin(angle) + originX,
-+                          y: rel.y * Math.cos(angle) - rel.x * Math.sin(angle) + pivotY };
-+            pts.push(`${rot.x}px ${rot.y}px`);
-+        }
-+        return `polygon(${pts.join(', ')})`;
-+    }
-+
 +    private drawGrowingShadow(): void {
 +        const rect = this.getRect();
 +        const shadow = this.shadow;
 +
-+        console.log('[ShadowDebug] drawGrowingShadow called', {
-+            setting: this.getSettings().flippingShadow,
-+            shadowValid: !!shadow,
-+            progress: shadow ? shadow.progress : 'N/A'
-+        });
-+
 +        if (!shadow) return;
 +
 +        if (!this.getSettings().flippingShadow) {
-+            console.log('[ShadowDebug] properties missing or disabled');
-+            this.growingShadow.style.display = 'none';
++            this.growingShadowContainer.style.display = 'none';
 +            return;
 +        }
 +
@@ -12961,44 +12938,42 @@ index fe079e1..886bda4 100644
 +        const direction = shadow.direction === 0 ? 'to left' : 'to right';
 +        const translateX = shadow.direction === 0 ? width : 0;
 +
-+        // FIX: Use static book bounds (this.getRect()) instead of flipping page bounds
-+        // const pageCornersGlobal = this.convertRectToGlobal(this.pageRect);
-+        const pageCornersGlobal = {
-+            topLeft: { x: rect.left, y: rect.top },
-+            topRight: { x: rect.left + rect.width, y: rect.top },
-+            bottomRight: { x: rect.left + rect.width, y: rect.top + rect.height },
-+            bottomLeft: { x: rect.left, y: rect.top + rect.height }
-+        };
-+
-+        // Pass rect.height as the pivotY (matches transform-origin Y)
-+        const clipPoly = this.buildClipPolygonForShadow(pageCornersGlobal, shadowPos, angle, translateX, rect.height);
-+
-+        const style = `
++        // Container Style: Positioned at book bounds, clips overflow
++        const containerStyle = `
 +            display: block;
 +            z-index: ${(this.getSettings().startZIndex + 4).toString(10)};
++            position: absolute;
++            left: ${rect.left}px;
++            top: ${rect.top}px;
++            width: ${rect.width}px;
++            height: ${rect.height}px;
++            overflow: hidden;
++            pointer-events: none;
++        `;
++        this.growingShadowContainer.style.cssText = containerStyle;
++
++        // Shadow Style: Positioned relative to container (0,0 maps to rect.left, rect.top)
++        // Transform relies on the fact that 'rect.left' and 'rect.top' are subtracted
++        // from global coordinates to map to local container space.
++        const shadowStyle = `
++            display: block;
 +            width: ${width}px;
 +            height: ${4 * rect.height}px;
 +            background: linear-gradient(${direction}, rgba(0, 0, 0, ${startAlpha}), rgba(0, 0, 0, ${endAlpha}));
-+            left: ${rect.left}px;
-+            top: ${rect.top}px;
 +            position: absolute;
++            left: 0;
++            top: 0;
 +            transform-origin: ${translateX}px ${rect.height}px;
 +            transform: translate3d(${shadowPos.x - translateX - rect.left}px, ${shadowPos.y - rect.height - rect.top}px, 0) rotate(${angle}rad);
-+            pointer-events: none;
-+            clip-path: ${clipPoly};
-+            -webkit-clip-path: ${clipPoly};
 +        `;
 +        
-+        // Remove newlines and excess whitespace for log cleanliness
-+        console.log('[ShadowDebug] Applied Style:', style.replace(/\s+/g, ' ').trim());
-+
-+        this.growingShadow.style.cssText = style;
++        this.growingShadow.style.cssText = shadowStyle;
 +    }
 +
      protected drawFrame(): void {
          this.clear();
  
-@@ -340,7 +429,9 @@ export class HTMLRender extends Render {
+@@ -340,7 +404,9 @@ export class HTMLRender extends Render {
              this.flippingPage.draw();
          }
  
@@ -13009,7 +12984,7 @@ index fe079e1..886bda4 100644
              if (this.flippingPage.getDrawingDensity() === PageDensity.SOFT) {
                  this.drawOuterShadow();
                  this.drawInnerShadow();
-@@ -372,6 +463,9 @@ export class HTMLRender extends Render {
+@@ -372,6 +438,9 @@ export class HTMLRender extends Render {
          super.update();
  
          if (this.rightPage !== null) {
