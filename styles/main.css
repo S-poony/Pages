@@ -28,7 +28,8 @@ body {
     background: var(--color-cream);
     color: var(--color-charcoal);
     line-height: 1.7;
-    min-height: 100vh;
+    min-height: 100vh; /* fallback */
+    min-height: 100dvh; 
     display: flex;
     align-items: center;
     justify-content: center;
