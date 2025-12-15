@@ -33,6 +33,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Build local library
+        run: |
+          cd src/lib/StPageFlip-master
+          npm install
+          npm run build
+
       - name: Build
         run: npm run build
       
