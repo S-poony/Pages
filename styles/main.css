@@ -28,8 +28,9 @@ body {
     background: var(--color-cream);
     color: var(--color-charcoal);
     line-height: 1.7;
-    min-height: 100vh; /* fallback */
-    min-height: 100dvh; 
+    min-height: 100vh;
+    /* fallback */
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -736,6 +737,10 @@ body {
     color: #777;
     margin: 0;
     padding-left: 60px;
+}
+
+#config-modal .modal-footer {
+    text-align: center;
 }
 
 /* Text Input Styles */

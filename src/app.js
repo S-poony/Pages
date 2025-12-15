@@ -74,6 +74,7 @@ class FlipbookApp {
     this.configBtn = document.getElementById('config-btn');
     this.configModal = document.getElementById('config-modal');
     this.configCloseBtn = document.getElementById('config-close-btn');
+    this.configDoneBtn = document.getElementById('config-done-btn');
     this.customTitleInput = document.getElementById('custom-title-input');
     this.configButtonContainer = document.querySelector('.config-button-container');
   }
@@ -114,6 +115,7 @@ class FlipbookApp {
     // Config Modal Listeners
     if (this.configBtn) this.configBtn.addEventListener('click', () => this.openConfigModal());
     if (this.configCloseBtn) this.configCloseBtn.addEventListener('click', () => this.closeConfigModal());
+    if (this.configDoneBtn) this.configDoneBtn.addEventListener('click', () => this.closeConfigModal());
   }
 
 
