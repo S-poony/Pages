@@ -36,7 +36,7 @@ jobs:
       - name: Build local library
         run: |
           cd src/lib/StPageFlip-master
-          npm install
+          npm install --legacy-peer-deps
           npm run build
 
       - name: Build
