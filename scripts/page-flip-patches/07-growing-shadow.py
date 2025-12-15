@@ -241,6 +241,6 @@ canvas_ops = [
 # Run
 # ------------------------------------------------------------------
 if __name__ == "__main__":
-    patch_file("node_modules/page-flip/src/Settings.ts", "Settings.ts", settings_ops)
-    patch_file("node_modules/page-flip/src/Render/HTMLRender.ts", "HTMLRender.ts", html_ops)
-    patch_file("node_modules/page-flip/src/Render/CanvasRender.ts", "CanvasRender.ts", canvas_ops)
+    patch_file("src/lib/StPageFlip-master/src/Settings.ts", "Settings.ts", settings_ops)
+    patch_file("src/lib/StPageFlip-master/src/Render/HTMLRender.ts", "HTMLRender.ts", html_ops)
+    patch_file("src/lib/StPageFlip-master/src/Render/CanvasRender.ts", "CanvasRender.ts", canvas_ops)

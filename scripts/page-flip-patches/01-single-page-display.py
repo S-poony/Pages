@@ -29,12 +29,13 @@ import re
 import sys
 
 # Configuration
-SETTINGS_FILE = 'node_modules/page-flip/src/Settings.ts'
-PAGEFLIP_FILE = 'node_modules/page-flip/src/PageFlip.ts'
-PAGE_COLLECTION_FILE = 'node_modules/page-flip/src/Collection/PageCollection.ts'
-RENDER_FILE = 'node_modules/page-flip/src/Render/Render.ts'
-CANVAS_RENDER_FILE = 'node_modules/page-flip/src/Render/CanvasRender.ts'
-HTML_RENDER_FILE = 'node_modules/page-flip/src/Render/HTMLRender.ts'
+# Configuration
+SETTINGS_FILE = 'src/lib/StPageFlip-master/src/Settings.ts'
+PAGEFLIP_FILE = 'src/lib/StPageFlip-master/src/PageFlip.ts'
+PAGE_COLLECTION_FILE = 'src/lib/StPageFlip-master/src/Collection/PageCollection.ts'
+RENDER_FILE = 'src/lib/StPageFlip-master/src/Render/Render.ts'
+CANVAS_RENDER_FILE = 'src/lib/StPageFlip-master/src/Render/CanvasRender.ts'
+HTML_RENDER_FILE = 'src/lib/StPageFlip-master/src/Render/HTMLRender.ts'
 
 
 def safe_replace(content, target, replacement, filename):
@@ -518,7 +519,7 @@ def rebuild_library():
     print("\n🔨 Rebuilding page-flip library...")
     cwd = os.getcwd()
     try:
-        os.chdir('node_modules/page-flip')
+        os.chdir('src/lib/StPageFlip-master')
         
         # Install dependencies if needed
         if not os.path.exists('node_modules'):
@@ -557,7 +558,7 @@ def main():
         patch_canvas_render()
         patch_html_render()
         rebuild_library()
-        create_patch()
+        # create_patch() # Disabled: patch-package is for node_modules
         
         print("\n" + "=" * 60)
         print("✅ SUCCESS! Single page display mode has been added.")

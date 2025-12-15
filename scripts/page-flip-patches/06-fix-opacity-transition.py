@@ -2,7 +2,7 @@
 import os
 import re
 
-file_path = 'node_modules/page-flip/src/Render/HTMLRender.ts'
+file_path = 'src/lib/StPageFlip-master/src/Render/HTMLRender.ts'
 
 with open(file_path, 'r') as f:
     content = f.read()

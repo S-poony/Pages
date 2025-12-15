@@ -3,7 +3,7 @@ import os
 import re
 
 # 1. Patch HTMLRender.ts
-html_render_path = 'node_modules/page-flip/src/Render/HTMLRender.ts'
+html_render_path = 'src/lib/StPageFlip-master/src/Render/HTMLRender.ts'
 print(f"Patching {html_render_path}...")
 
 with open(html_render_path, 'r') as f:
@@ -115,7 +115,7 @@ with open(html_render_path, 'w') as f:
 
 
 # 2. Patch CanvasRender.ts
-canvas_render_path = 'node_modules/page-flip/src/Render/CanvasRender.ts'
+canvas_render_path = 'src/lib/StPageFlip-master/src/Render/CanvasRender.ts'
 print(f"Patching {canvas_render_path}...")
 
 with open(canvas_render_path, 'r') as f:
