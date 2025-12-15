@@ -2,6 +2,7 @@ import { Orientation, Render } from '../Render/Render';
 import { Page, PageDensity } from '../Page/Page';
 import { PageFlip } from '../PageFlip';
 import { FlipDirection } from '../Flip/Flip';
+import { DisplayType } from '../Settings';
 
 type NumberArray = number[];
 
@@ -63,11 +64,19 @@ export abstract class PageCollection {
             start++;
         }
 
-        for (let i = start; i < this.pages.length; i += 2) {
-            if (i < this.pages.length - 1) this.landscapeSpread.push([i, i + 1]);
-            else {
+        const isSingleMode = this.render.getSettings().display === DisplayType.SINGLE;
+
+        if (isSingleMode) {
+             for (let i = start; i < this.pages.length; i++) {
                 this.landscapeSpread.push([i]);
-                this.pages[i].setDensity(PageDensity.HARD);
+             }
+        } else {
+            for (let i = start; i < this.pages.length; i += 2) {
+                if (i < this.pages.length - 1) this.landscapeSpread.push([i, i + 1]);
+                else {
+                    this.landscapeSpread.push([i]);
+                    this.pages[i].setDensity(PageDensity.HARD);
+                }
             }
         }
     }
@@ -161,6 +170,15 @@ export abstract class PageCollection {
                 ? this.pages[current].newTemporaryCopy()
                 : this.pages[current - 1];
         } else {
+            // SINGLE MODE: flip the current page, not the next one
+            // Use newTemporaryCopy to ensure we have a fresh instance for each flip
+            if (this.render.getSettings().display === DisplayType.SINGLE) {
+                const spread = this.getSpread()[current];
+                if (spread && spread[0] !== undefined) {
+                    return this.pages[spread[0]].newTemporaryCopy();
+                }
+            }
+            
             const spread =
                 direction === FlipDirection.FORWARD
                     ? this.getSpread()[current + 1]
@@ -187,6 +205,13 @@ export abstract class PageCollection {
                 ? this.pages[current + 1]
                 : this.pages[current - 1];
         } else {
+            // SINGLE MODE: reveal the next page
+            if (this.render.getSettings().display === DisplayType.SINGLE) {
+                const nextSpreadIndex = direction === FlipDirection.FORWARD ? current + 1 : current - 1;
+                const spread = this.getSpread()[nextSpreadIndex];
+                return spread ? this.pages[spread[0]] : null;
+            }
+            
             const spread =
                 direction === FlipDirection.FORWARD
                     ? this.getSpread()[current + 1]
@@ -273,7 +298,11 @@ export abstract class PageCollection {
             this.render.setLeftPage(this.pages[spread[0]]);
             this.render.setRightPage(this.pages[spread[1]]);
         } else {
-            if (this.render.getOrientation() === Orientation.LANDSCAPE) {
+            if (this.render.getSettings().display === DisplayType.SINGLE) {
+                // Dual-direction flipping: populate both slots with the same page
+                this.render.setLeftPage(this.pages[spread[0]]);
+                this.render.setRightPage(this.pages[spread[0]]);
+            } else if (this.render.getOrientation() === Orientation.LANDSCAPE) {
                 if (spread[0] === this.pages.length - 1) {
                     this.render.setLeftPage(this.pages[spread[0]]);
                     this.render.setRightPage(null);

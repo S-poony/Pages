@@ -557,7 +557,7 @@ def main():
         patch_render()
         patch_canvas_render()
         patch_html_render()
-        rebuild_library()
+        # rebuild_library() # Disabled by user request
         # create_patch() # Disabled: patch-package is for node_modules
         
         print("\n" + "=" * 60)

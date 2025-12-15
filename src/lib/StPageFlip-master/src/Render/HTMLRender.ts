@@ -4,7 +4,7 @@ import { FlipDirection } from '../Flip/Flip';
 import { PageDensity, PageOrientation } from '../Page/Page';
 import { HTMLPage } from '../Page/HTMLPage';
 import { Helper } from '../Helper';
-import { FlipSetting } from '../Settings';
+import { FlipSetting, DisplayType } from '../Settings';
 
 /**
  * Class responsible for rendering the HTML book
@@ -20,6 +20,8 @@ export class HTMLRender extends Render {
     private innerShadow: HTMLElement = null;
     private hardShadow: HTMLElement = null;
     private hardInnerShadow: HTMLElement = null;
+    private growingShadowContainer: HTMLElement = null;
+    private growingShadow: HTMLElement = null;
 
     /**
      * @constructor
@@ -42,13 +44,16 @@ export class HTMLRender extends Render {
             `<div class="stf__outerShadow"></div>
              <div class="stf__innerShadow"></div>
              <div class="stf__hardShadow"></div>
-             <div class="stf__hardInnerShadow"></div>`
+             <div class="stf__hardInnerShadow"></div>
+             <div class="stf__growingShadowContainer"><div class="stf__growingShadow"></div></div>`
         );
 
         this.outerShadow = this.element.querySelector('.stf__outerShadow');
         this.innerShadow = this.element.querySelector('.stf__innerShadow');
         this.hardShadow = this.element.querySelector('.stf__hardShadow');
         this.hardInnerShadow = this.element.querySelector('.stf__hardInnerShadow');
+        this.growingShadowContainer = this.element.querySelector('.stf__growingShadowContainer');
+        this.growingShadow = this.element.querySelector('.stf__growingShadow');
     }
 
     public clearShadow(): void {
@@ -58,6 +63,7 @@ export class HTMLRender extends Render {
         this.innerShadow.style.cssText = 'display: none';
         this.hardShadow.style.cssText = 'display: none';
         this.hardInnerShadow.style.cssText = 'display: none';
+        this.growingShadowContainer.style.cssText = 'display: none;';
     }
 
     public reload(): void {
@@ -178,14 +184,13 @@ export class HTMLRender extends Render {
         polygon += ')';
 
         const newStyle = `
-            display: block;
             z-index: ${(this.getSettings().startZIndex + 10).toString(10)};
             width: ${innerShadowSize}px;
             height: ${rect.height * 2}px;
             background: linear-gradient(${shadowDirection},
-                rgba(0, 0, 0, ${this.shadow.opacity}) 5%,
+                rgba(0, 0, 0, ${this.shadow.opacity * this.getSettings().otherShadowOpacityScale}) 5%,
                 rgba(0, 0, 0, 0.05) 15%,
-                rgba(0, 0, 0, ${this.shadow.opacity}) 35%,
+                rgba(0, 0, 0, ${this.shadow.opacity * this.getSettings().otherShadowOpacityScale}) 35%,
                 rgba(0, 0, 0, 0) 100%);
             transform-origin: ${shadowTranslate}px 100px;
             transform: translate3d(${shadowPos.x - shadowTranslate}px, ${
@@ -243,13 +248,10 @@ export class HTMLRender extends Render {
         polygon += ')';
 
         const newStyle = `
-            display: block;
             z-index: ${(this.getSettings().startZIndex + 10).toString(10)};
             width: ${this.shadow.width}px;
             height: ${rect.height * 2}px;
-            background: linear-gradient(${shadowDirection}, rgba(0, 0, 0, ${
-            this.shadow.opacity
-        }), rgba(0, 0, 0, 0));
+            background: linear-gradient(${shadowDirection}, rgba(0, 0, 0, ${this.shadow.opacity * this.getSettings().flippingShadowStartAlpha}), rgba(0, 0, 0, ${this.shadow.opacity * this.getSettings().flippingShadowEndAlpha});
             transform-origin: ${shadowTranslate}px 100px;
             transform: translate3d(${shadowPos.x - shadowTranslate}px, ${
             shadowPos.y - 100
@@ -301,6 +303,9 @@ export class HTMLRender extends Render {
             this.rightPage.setHardDrawingAngle(180 + this.flippingPage.getHardAngle());
             this.rightPage.draw(this.flippingPage.getDrawingDensity());
         } else {
+            if (this.getSettings().display === DisplayType.SINGLE)
+            this.rightPage.simpleDraw(PageOrientation.LEFT);
+        else
             this.rightPage.simpleDraw(PageOrientation.RIGHT);
         }
     }
@@ -323,6 +328,63 @@ export class HTMLRender extends Render {
         }
     }
 
+    private drawGrowingShadow(): void {
+        const rect = this.getRect();
+        const shadow = this.shadow;
+
+        if (!shadow) return;
+
+        if (!this.getSettings().flippingShadow) {
+            this.growingShadowContainer.style.display = 'none';
+            return;
+        }
+
+        const shadowPos = this.convertToGlobal({ x: shadow.pos.x, y: shadow.pos.y });
+        const angle = shadow.angle + 3 * Math.PI / 2;
+        const progress = shadow.progress / 100;
+
+        const width = this.getSettings().flippingShadowWidthOffset +
+                      shadow.width * this.getSettings().flippingShadowWidthScale * progress;
+
+        const opacity = this.getSettings().flippingShadowOpacity;
+        const startAlpha = this.getSettings().flippingShadowStartAlpha * opacity;
+        const endAlpha = this.getSettings().flippingShadowEndAlpha * opacity;
+
+        const direction = shadow.direction === 0 ? 'to left' : 'to right';
+        const translateX = shadow.direction === 0 ? width : 0;
+
+        // Container Style: Positioned at book bounds, clips overflow
+        const containerStyle = `
+            display: block;
+            z-index: ${(this.getSettings().startZIndex + 4).toString(10)};
+            position: absolute;
+            left: ${rect.left}px;
+            top: ${rect.top}px;
+            width: ${rect.width}px;
+            height: ${rect.height}px;
+            overflow: hidden;
+            pointer-events: none;
+        `;
+        this.growingShadowContainer.style.cssText = containerStyle;
+
+        // Shadow Style: Positioned relative to container (0,0 maps to rect.left, rect.top)
+        // Transform relies on the fact that 'rect.left' and 'rect.top' are subtracted
+        // from global coordinates to map to local container space.
+        const shadowStyle = `
+            display: block;
+            width: ${width}px;
+            height: ${4 * rect.height}px;
+            background: linear-gradient(${direction}, rgba(0, 0, 0, ${startAlpha}), rgba(0, 0, 0, ${endAlpha}));
+            position: absolute;
+            left: 0;
+            top: 0;
+            transform-origin: ${translateX}px ${rect.height}px;
+            transform: translate3d(${shadowPos.x - translateX - rect.left}px, ${shadowPos.y - rect.height - rect.top}px, 0) rotate(${angle}rad);
+        `;
+        
+        this.growingShadow.style.cssText = shadowStyle;
+    }
+
     protected drawFrame(): void {
         this.clear();
 
@@ -340,7 +402,9 @@ export class HTMLRender extends Render {
             this.flippingPage.draw();
         }
 
-        if (this.shadow != null && this.flippingPage !== null) {
+        if (this.shadow != null && this.getSettings().flippingShadow) this.drawGrowingShadow();
+
+        if (this.shadow != null && this.flippingPage !== null && this.getSettings().flippingShadow) {
             if (this.flippingPage.getDrawingDensity() === PageDensity.SOFT) {
                 this.drawOuterShadow();
                 this.drawInnerShadow();
@@ -372,6 +436,9 @@ export class HTMLRender extends Render {
         super.update();
 
         if (this.rightPage !== null) {
+            if (this.getSettings().display === DisplayType.SINGLE)
+            this.rightPage.setOrientation(PageOrientation.LEFT);
+        else
             this.rightPage.setOrientation(PageOrientation.RIGHT);
         }
 

@@ -2,7 +2,7 @@ import { Orientation, Render } from './Render';
 import { PageFlip } from '../PageFlip';
 import { FlipDirection } from '../Flip/Flip';
 import { PageOrientation } from '../Page/Page';
-import { FlipSetting } from '../Settings';
+import { FlipSetting, DisplayType } from '../Settings';
 
 /**
  * Class responsible for rendering the Canvas book
@@ -32,15 +32,21 @@ export class CanvasRender extends Render {
         if (this.orientation !== Orientation.PORTRAIT)
             if (this.leftPage != null) this.leftPage.simpleDraw(PageOrientation.LEFT);
 
-        if (this.rightPage != null) this.rightPage.simpleDraw(PageOrientation.RIGHT);
+        if (this.rightPage != null) {
+            if (this.app.getSettings().display === DisplayType.SINGLE)
+                this.rightPage.simpleDraw(PageOrientation.LEFT);
+            else
+                this.rightPage.simpleDraw(PageOrientation.RIGHT);
+        }
 
         if (this.bottomPage != null) this.bottomPage.draw();
 
         this.drawBookShadow();
+        if (this.shadow != null) this.drawFlippingShadow();
 
         if (this.flippingPage != null) this.flippingPage.draw();
 
-        if (this.shadow != null) {
+        if (this.shadow != null && this.app.getSettings().flippingShadow) {
             this.drawOuterShadow();
             this.drawInnerShadow();
         }
@@ -52,6 +58,48 @@ export class CanvasRender extends Render {
             this.ctx.rect(rect.left + rect.pageWidth, rect.top, rect.width, rect.height);
             this.ctx.clip();
         }
+    }
+
+    private drawFlippingShadow(): void {
+        if (!this.app.getSettings().flippingShadow) return;
+        if (!this.flippingPage) return;
+
+        const rect = this.getRect();
+        const shadow = this.shadow;
+
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(rect.left, rect.top, rect.width, rect.height);
+        this.ctx.clip();
+
+        const shadowPos = this.convertToGlobal({ x: shadow.pos.x, y: shadow.pos.y });
+        this.ctx.translate(shadowPos.x, shadowPos.y);
+        this.ctx.rotate(Math.PI + shadow.angle + Math.PI / 2);
+
+        const progress = shadow.progress / 100;
+        const width = this.app.getSettings().flippingShadowWidthOffset +
+                      shadow.width * this.app.getSettings().flippingShadowWidthScale * progress;
+
+        const opacity = this.app.getSettings().flippingShadowOpacity;
+        const startAlpha = this.app.getSettings().flippingShadowStartAlpha * opacity;
+        const endAlpha = this.app.getSettings().flippingShadowEndAlpha * opacity;
+
+        if (shadow.direction === 0) {                       // BACK
+            this.ctx.translate(-width, -100);
+            const g = this.ctx.createRadialGradient(width, rect.height, 0, width, rect.height, width);
+            g.addColorStop(0, "rgba(0, 0, 0, " + startAlpha + ")");
+            g.addColorStop(1, "rgba(0, 0, 0, " + endAlpha + ")");
+            this.ctx.fillStyle = g;
+        } else {                                              // FORWARD
+            this.ctx.translate(0, -100);
+            const g = this.ctx.createRadialGradient(0, rect.height, 0, 0, rect.height, width);
+            g.addColorStop(0, "rgba(0, 0, 0, " + startAlpha + ")");
+            g.addColorStop(1, "rgba(0, 0, 0, " + endAlpha + ")");
+            this.ctx.fillStyle = g;
+        }
+        
+        this.ctx.fillRect(0, 0, width, 2 * rect.height);
+        this.ctx.restore();
     }
 
     private drawBookShadow(): void {
@@ -68,12 +116,12 @@ export class CanvasRender extends Render {
 
         const outerGradient = this.ctx.createLinearGradient(0, 0, shadowSize, 0);
 
-        outerGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowEndAlpha) + ')');
         outerGradient.addColorStop(0.4, 'rgba(0, 0, 0, 0.2)');
         outerGradient.addColorStop(0.49, 'rgba(0, 0, 0, 0.1)');
         outerGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.5)');
         outerGradient.addColorStop(0.51, 'rgba(0, 0, 0, 0.4)');
-        outerGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowEndAlpha) + ')');
 
         this.ctx.clip();
 
@@ -100,12 +148,12 @@ export class CanvasRender extends Render {
 
         if (this.shadow.direction === FlipDirection.FORWARD) {
             this.ctx.translate(0, -100);
-            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + this.shadow.opacity + ')');
-            outerGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowStartAlpha) + ')');
+            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowEndAlpha) + ')');
         } else {
             this.ctx.translate(-this.shadow.width, -100);
-            outerGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + this.shadow.opacity + ')');
+            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowEndAlpha) + ')');
+            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowStartAlpha) + ')');
         }
 
         this.ctx.clip();

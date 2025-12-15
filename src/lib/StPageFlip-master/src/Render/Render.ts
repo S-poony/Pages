@@ -2,7 +2,7 @@ import { PageFlip } from '../PageFlip';
 import { Point, PageRect, RectPoints } from '../BasicTypes';
 import { FlipDirection } from '../Flip/Flip';
 import { Page, PageOrientation } from '../Page/Page';
-import { FlipSetting, SizeType } from '../Settings';
+import { FlipSetting, SizeType, DisplayType } from '../Settings';
 
 type FrameAction = () => void;
 type AnimationSuccessAction = () => void;
@@ -215,14 +215,14 @@ export abstract class Render {
         let pageWidth = this.setting.width;
         let pageHeight = this.setting.height;
 
-        let left = middlePoint.x - pageWidth;
+        let left = this.app.getSettings().display === DisplayType.SINGLE ? middlePoint.x - pageWidth / 2 : middlePoint.x - pageWidth;
 
         if (this.setting.size === SizeType.STRETCH) {
             if (blockWidth < this.setting.minWidth * 2 && this.app.getSettings().usePortrait)
                 orientation = Orientation.PORTRAIT;
 
             pageWidth =
-                orientation === Orientation.PORTRAIT
+                orientation === Orientation.PORTRAIT || this.app.getSettings().display === DisplayType.SINGLE
                     ? this.getBlockWidth()
                     : this.getBlockWidth() / 2;
 
@@ -234,10 +234,19 @@ export abstract class Render {
                 pageWidth = pageHeight * ratio;
             }
 
-            left =
-                orientation === Orientation.PORTRAIT
-                    ? middlePoint.x - pageWidth / 2 - pageWidth
-                    : middlePoint.x - pageWidth;
+            if (this.app.getSettings().display === DisplayType.SINGLE) {
+                left = middlePoint.x - pageWidth / 2;
+                // In single mode, the book width is just one page width
+                // But we need to trick the system to think it's a spread for flipping?
+                // No, if we set width: pageWidth * 2, it expects two pages.
+                // If we set width: pageWidth, it might behave like portrait.
+                // Let's keep width as pageWidth * 2 for now but center it.
+            } else {
+                left =
+                    orientation === Orientation.PORTRAIT
+                        ? middlePoint.x - pageWidth / 2 - pageWidth
+                        : middlePoint.x - pageWidth;
+            }
         } else {
             if (blockWidth < pageWidth * 2) {
                 if (this.app.getSettings().usePortrait) {
@@ -250,7 +259,7 @@ export abstract class Render {
         this.boundsRect = {
             left,
             top: middlePoint.y - pageHeight / 2,
-            width: pageWidth * 2,
+            width: this.app.getSettings().display === DisplayType.SINGLE ? pageWidth : pageWidth * 2,
             height: pageHeight,
             pageWidth: pageWidth,
         };
@@ -437,10 +446,15 @@ export abstract class Render {
         if (!direction) direction = this.direction;
 
         const rect = this.getRect();
+        let spineOffset = rect.width / 2;
+        if (this.app.getSettings().display === DisplayType.SINGLE) {
+            spineOffset = direction === FlipDirection.FORWARD ? 0 : rect.width;
+        }
+        
         const x =
             direction === FlipDirection.FORWARD
-                ? pos.x - rect.left - rect.width / 2
-                : rect.width / 2 - pos.x + rect.left;
+                ? pos.x - rect.left - spineOffset
+                : spineOffset - pos.x + rect.left;
 
         return {
             x,
@@ -463,10 +477,15 @@ export abstract class Render {
 
         const rect = this.getRect();
 
+        let spineOffset = rect.width / 2;
+        if (this.app.getSettings().display === DisplayType.SINGLE) {
+            spineOffset = direction === FlipDirection.FORWARD ? 0 : rect.width;
+        }
+        
         const x =
             direction === FlipDirection.FORWARD
-                ? pos.x + rect.left + rect.width / 2
-                : rect.width / 2 - pos.x + rect.left;
+                ? pos.x + rect.left + spineOffset
+                : spineOffset - pos.x + rect.left;
 
         return {
             x,

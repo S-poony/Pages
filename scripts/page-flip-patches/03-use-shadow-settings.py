@@ -54,10 +54,17 @@ else:
 # This is multi-line in the file.
 
 # Simplest way: replace the template string content.
-old_outer_grad = "rgba(0, 0, 0, ${\n                this.shadow.opacity\n            }), rgba(0, 0, 0, 0)"
-new_outer_grad = "rgba(0, 0, 0, ${\n                this.shadow.opacity * this.getSettings().flippingShadowStartAlpha\n            }), rgba(0, 0, 0, ${\n                this.shadow.opacity * this.getSettings().flippingShadowEndAlpha\n            })"
+# Simplest way: replace the template string content using REGEX to handle whitespace
+# old_outer_grad matches the pattern in HTMLRender.ts
+# We want to match: rgba(0, 0, 0, ${<whitespace>this.shadow.opacity<whitespace>}), rgba(0, 0, 0, 0));
 
-if old_outer_grad in content:
+outer_grad_pattern = r"rgba\(0, 0, 0, \$\{\s*this\.shadow\.opacity\s*\}\),\s*rgba\(0, 0, 0, 0\)\)"
+outer_grad_replacement = "rgba(0, 0, 0, ${this.shadow.opacity * this.getSettings().flippingShadowStartAlpha}), rgba(0, 0, 0, ${this.shadow.opacity * this.getSettings().flippingShadowEndAlpha})"
+
+if re.search(outer_grad_pattern, content):
+    content = re.sub(outer_grad_pattern, outer_grad_replacement, content)
+    print("  - Patched drawOuterShadow gradient (using regex)")
+elif old_outer_grad in content: # Keep old exact match just in case
     content = content.replace(old_outer_grad, new_outer_grad)
     print("  - Patched drawOuterShadow gradient")
 else:

@@ -7,6 +7,15 @@ export const enum SizeType {
     /** Dimensions are calculated based on the parent element */
     STRETCH = 'stretch',
 }
+/**
+ * Display mode type
+ */
+export const enum DisplayType {
+    /** Show two pages side-by-side (default) */
+    DOUBLE = 'double',
+    /** Show one page at a time */
+    SINGLE = 'single',
+}
 
 /**
  * Configuration object
@@ -41,6 +50,8 @@ export interface FlipSetting {
 
     /** If this value is true, the first and the last pages will be marked as hard and will be shown in single page mode */
     showCover: boolean;
+    /** Display mode: 'single' shows one page at a time, 'double' shows two pages side-by-side */
+    display: DisplayType;
     /** Disable content scrolling when touching a book on mobile devices */
     mobileScrollSupport: boolean;
 
@@ -57,6 +68,22 @@ export interface FlipSetting {
 
     /** if this value is true, flipping by clicking on the whole book will be locked. Only on corners */
     disableFlipByClick: boolean;
+
+    /** Scale factor for other shadows (0-1) */
+    otherShadowOpacityScale: number;
+
+    /** Enable/disable the growing flipping shadow */
+    flippingShadow?: boolean;
+    /** Base width of flipping shadow (px) */
+    flippingShadowWidthOffset: number;
+    /** Width multiplier vs progress */
+    flippingShadowWidthScale: number;
+    /** Base opacity (0-1) */
+    flippingShadowOpacity: number;
+    /** Gradient start alpha (0-1) */
+    flippingShadowStartAlpha: number;
+    /** Gradient end alpha (0-1) */
+    flippingShadowEndAlpha: number;
 }
 
 export class Settings {
@@ -76,12 +103,20 @@ export class Settings {
         autoSize: true,
         maxShadowOpacity: 1,
         showCover: false,
+        display: DisplayType.DOUBLE,
         mobileScrollSupport: true,
         swipeDistance: 30,
         clickEventForward: true,
         useMouseEvents: true,
         showPageCorners: true,
         disableFlipByClick: false,
+        otherShadowOpacityScale: 0.7,
+        flippingShadow: true,
+        flippingShadowWidthOffset: 50,
+        flippingShadowWidthScale: 2,
+        flippingShadowOpacity: 0.5,
+        flippingShadowStartAlpha: 0.7,
+        flippingShadowEndAlpha: 0,
     };
 
     /**
