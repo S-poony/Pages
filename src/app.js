@@ -464,7 +464,7 @@ class FlipbookApp {
     this.modal.classList.remove('hidden');
 
     // Auto-copy
-    this.copyUrl();
+    this.copyUrl(true);
   }
 
   closeModal() {
@@ -487,9 +487,36 @@ class FlipbookApp {
     this.configModal.classList.add('hidden');
   }
 
-  async copyUrl() {
+  async copyUrl(isAuto = false) {
+    const textToCopy = this.publishedUrlInput.value;
+    let success = false;
+
+    // 1. Try Modern Clipboard API
     try {
-      await navigator.clipboard.writeText(this.publishedUrlInput.value);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+        success = true;
+      } else {
+        throw new Error('Clipboard API unavailable');
+      }
+    } catch (err) {
+      // 2. Fallback to execCommand('copy')
+      // Only useful if called from a user event (click), usually fails in async auto-copy
+      try {
+        this.publishedUrlInput.select();
+        // mobile compatibility: also set selection range for iOS
+        this.publishedUrlInput.setSelectionRange(0, 99999);
+        success = document.execCommand('copy');
+        // Clear selection to be less intrusive
+        window.getSelection().removeAllRanges();
+      } catch (fallbackErr) {
+        success = false;
+        if (!isAuto) console.error('Fallback copy failed:', fallbackErr);
+      }
+    }
+
+    // 3. Feedback
+    if (success) {
       const originalText = this.copyUrlBtn.innerText;
       this.copyUrlBtn.innerText = 'Copied!';
       this.copyUrlBtn.classList.add('btn-primary');
@@ -500,11 +527,16 @@ class FlipbookApp {
         this.copyUrlBtn.classList.remove('btn-primary');
         this.copyUrlBtn.classList.add('btn-secondary');
       }, 2000);
-    } catch (err) {
-      // Auto-copy often fails due to browser security (lack of user interaction after await)
-      // We ignore this error for the auto-copy attempt, as the user can still click the button.
-      if (err.name !== 'NotAllowedError' && err.name !== 'SecurityError') {
-        console.warn('Clipboard write failed:', err);
+    } else {
+      // Only alert/log failure if it was a manual user action
+      if (!isAuto) {
+        console.warn('Copy failed');
+        // Visual feedback for failure
+        const originalText = this.copyUrlBtn.innerText;
+        this.copyUrlBtn.innerText = 'Failed';
+        setTimeout(() => {
+          this.copyUrlBtn.innerText = originalText;
+        }, 2000);
       }
     }
   }
