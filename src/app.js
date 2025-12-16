@@ -491,27 +491,25 @@ class FlipbookApp {
     const textToCopy = this.publishedUrlInput.value;
     let success = false;
 
-    // 1. Try Modern Clipboard API
+    // 1. Try Legacy execCommand (Synchronous) FIRST
+    // We do this first because if we wait for the async navigator.clipboard to fail, 
+    // we lose the temporary "user activation" token required for execCommand.
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      this.publishedUrlInput.select();
+      this.publishedUrlInput.setSelectionRange(0, 99999); // iOS
+      success = document.execCommand('copy');
+      window.getSelection().removeAllRanges();
+    } catch (e) {
+      // Ignore
+    }
+
+    // 2. If Legacy failed (or returned false), try Modern Async API
+    if (!success && navigator.clipboard && navigator.clipboard.writeText) {
+      try {
         await navigator.clipboard.writeText(textToCopy);
         success = true;
-      } else {
-        throw new Error('Clipboard API unavailable');
-      }
-    } catch (err) {
-      // 2. Fallback to execCommand('copy')
-      // Only useful if called from a user event (click), usually fails in async auto-copy
-      try {
-        this.publishedUrlInput.select();
-        // mobile compatibility: also set selection range for iOS
-        this.publishedUrlInput.setSelectionRange(0, 99999);
-        success = document.execCommand('copy');
-        // Clear selection to be less intrusive
-        window.getSelection().removeAllRanges();
-      } catch (fallbackErr) {
-        success = false;
-        if (!isAuto) console.error('Fallback copy failed:', fallbackErr);
+      } catch (err) {
+        if (!isAuto) console.error('Clipboard copy failed:', err);
       }
     }
 
