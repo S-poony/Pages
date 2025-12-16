@@ -117,6 +117,24 @@ body {
     font-weight: 300;
 }
 
+.build-container {
+    margin-top: var(--spacing-lg);
+}
+
+.build-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.build-filename {
+    font-weight: 500;
+    color: var(--color-charcoal);
+    width: 100%;
+    text-align: center;
+}
+
 .progress-container {
     margin-top: var(--spacing-lg);
 }
