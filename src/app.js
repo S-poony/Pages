@@ -25,7 +25,10 @@ class FlipbookApp {
 
     this.currentHtml = null;
     this.currentFolderData = null; // { html, assets }
+    this.currentHtml = null;
+    this.currentFolderData = null; // { html, assets }
     this.detectedTitle = ''; // Title auto-detected from PDF/EPUB metadata
+    this.pendingFile = null; // File waiting for build confirmation
   }
 
   /* ----------  UI initialisation  ---------- */
@@ -40,6 +43,11 @@ class FlipbookApp {
     this.progressText = document.getElementById('progress-text');
     this.resultContainer = document.getElementById('result-container');
     this.previewIframe = document.getElementById('preview-iframe');
+
+    // Build Step Elements
+    this.buildContainer = document.getElementById('build-container');
+    this.buildBtn = document.getElementById('build-btn');
+    this.selectedFilename = document.getElementById('selected-filename');
 
     // Buttons
     this.publishBtn = document.getElementById('publish-btn');
@@ -97,6 +105,7 @@ class FlipbookApp {
     this.doubleSpreadToggle.addEventListener('change', () => this.handleDoubleSpreadToggle());
 
     // Button Listeners
+    this.buildBtn.addEventListener('click', () => this.startProcessing());
     this.publishBtn.addEventListener('click', () => this.publishFlipbook());
     this.downloadBtn.addEventListener('click', () => this.downloadFlipbook());
     if (this.downloadZipBtn) this.downloadZipBtn.addEventListener('click', () => this.downloadFlipbookZip());
@@ -136,15 +145,36 @@ class FlipbookApp {
   }
 
   // Routes to PDF or EPUB processor
+  // Routes to PDF or EPUB processor
   routeFileProcessing(file) {
     if (!file) return;
+
+    if ((file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) ||
+      (file.type === 'application/epub+zip' || file.name.toLowerCase().endsWith('.epub'))) {
+
+      // Store file and show build step instead of processing immediately
+      this.pendingFile = file;
+      this.selectedFilename.textContent = file.name;
+
+      this.uploadArea.classList.add('hidden');
+      this.buildContainer.classList.remove('hidden');
+      if (this.configButtonContainer) this.configButtonContainer.classList.remove('hidden'); // Ensure config is accessible
+
+    } else {
+      this.showError('Please drop a valid PDF or EPUB file.');
+    }
+  }
+
+  startProcessing() {
+    if (!this.pendingFile) return;
+
+    const file = this.pendingFile;
+    this.buildContainer.classList.add('hidden');
 
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
       this.processFile(file);
     } else if (file.type === 'application/epub+zip' || file.name.toLowerCase().endsWith('.epub')) {
       this.processEpubFile(file);
-    } else {
-      this.showError('Please drop a valid PDF or EPUB file.');
     }
   }
 
@@ -610,12 +640,14 @@ class FlipbookApp {
   }
   reset() {
     this.uploadArea.classList.remove('hidden');
+    this.buildContainer.classList.add('hidden');
     if (this.configButtonContainer) this.configButtonContainer.classList.remove('hidden');
     [this.progressContainer, this.resultContainer, this.errorMessage].forEach(el => el.classList.add('hidden'));
     this.fileInput.value = '';
     this.currentHtml = null;
     this.currentFolderData = null;
     this.detectedTitle = '';
+    this.pendingFile = null;
   }
   showError(msg) { this.errorMessage.textContent = msg; this.errorMessage.classList.remove('hidden'); }
   hideError() { this.errorMessage.classList.add('hidden'); }
