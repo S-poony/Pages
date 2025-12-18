@@ -78,7 +78,7 @@ export class CanvasRender extends Render {
 
         const progress = shadow.progress / 100;
         const width = this.app.getSettings().flippingShadowWidthOffset +
-                      shadow.width * this.app.getSettings().flippingShadowWidthScale * progress;
+            shadow.width * this.app.getSettings().flippingShadowWidthScale * progress;
 
         const opacity = this.app.getSettings().flippingShadowOpacity;
         const startAlpha = this.app.getSettings().flippingShadowStartAlpha * opacity;
@@ -87,17 +87,17 @@ export class CanvasRender extends Render {
         if (shadow.direction === 0) {                       // BACK
             this.ctx.translate(-width, -100);
             const g = this.ctx.createRadialGradient(width, rect.height, 0, width, rect.height, width);
-            g.addColorStop(0, "rgba(0, 0, 0, " + startAlpha + ")");
-            g.addColorStop(1, "rgba(0, 0, 0, " + endAlpha + ")");
+            g.addColorStop(0, "rgba(0, 0, 0, " + startAlpha.toFixed(5) + ")");
+            g.addColorStop(1, "rgba(0, 0, 0, " + endAlpha.toFixed(5) + ")");
             this.ctx.fillStyle = g;
         } else {                                              // FORWARD
             this.ctx.translate(0, -100);
             const g = this.ctx.createRadialGradient(0, rect.height, 0, 0, rect.height, width);
-            g.addColorStop(0, "rgba(0, 0, 0, " + startAlpha + ")");
-            g.addColorStop(1, "rgba(0, 0, 0, " + endAlpha + ")");
+            g.addColorStop(0, "rgba(0, 0, 0, " + startAlpha.toFixed(5) + ")");
+            g.addColorStop(1, "rgba(0, 0, 0, " + endAlpha.toFixed(5) + ")");
             this.ctx.fillStyle = g;
         }
-        
+
         this.ctx.fillRect(0, 0, width, 2 * rect.height);
         this.ctx.restore();
     }
@@ -148,8 +148,8 @@ export class CanvasRender extends Render {
 
         if (this.shadow.direction === FlipDirection.FORWARD) {
             this.ctx.translate(0, -100);
-            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowStartAlpha) + ')');
-            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowEndAlpha) + ')');
+            outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowStartAlpha).toFixed(5) + ')');
+            outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowEndAlpha).toFixed(5) + ')');
         } else {
             this.ctx.translate(-this.shadow.width, -100);
             outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowEndAlpha) + ')');
@@ -187,16 +187,16 @@ export class CanvasRender extends Render {
         if (this.shadow.direction === FlipDirection.FORWARD) {
             this.ctx.translate(-isw, -100);
 
-            innerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + this.shadow.opacity + ')');
+            innerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + this.shadow.opacity.toFixed(5) + ')');
             innerGradient.addColorStop(0.9, 'rgba(0, 0, 0, 0.05)');
-            innerGradient.addColorStop(0.7, 'rgba(0, 0, 0, ' + this.shadow.opacity + ')');
+            innerGradient.addColorStop(0.7, 'rgba(0, 0, 0, ' + this.shadow.opacity.toFixed(5) + ')');
             innerGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
         } else {
             this.ctx.translate(0, -100);
 
-            innerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + this.shadow.opacity + ')');
+            innerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + this.shadow.opacity.toFixed(5) + ')');
             innerGradient.addColorStop(0.1, 'rgba(0, 0, 0, 0.05)');
-            innerGradient.addColorStop(0.3, 'rgba(0, 0, 0, ' + this.shadow.opacity + ')');
+            innerGradient.addColorStop(0.3, 'rgba(0, 0, 0, ' + this.shadow.opacity.toFixed(5) + ')');
             innerGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
         }
 

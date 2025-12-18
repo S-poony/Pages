@@ -112,8 +112,6 @@
 }
 
 /* Hide common EPUB page number markers */
-[epub\:type="pagebreak"],
-[role="doc-pagebreak"],
 .page-break,
 .pagebreak,
 [id^="page_"],

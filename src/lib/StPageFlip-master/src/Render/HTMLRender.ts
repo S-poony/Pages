@@ -92,7 +92,7 @@ export class HTMLRender extends Render {
             width: ${innerShadowSize}px;
             height: ${rect.height}px;
             background: linear-gradient(to right,
-                rgba(0, 0, 0, ${(this.shadow.opacity * progress) / 100}) 5%,
+                rgba(0, 0, 0, ${((this.shadow.opacity * progress) / 100).toFixed(5)}) 5%,
                 rgba(0, 0, 0, 0) 100%);
             left: ${rect.left + rect.width / 2}px;
             transform-origin: 0 0;
@@ -100,7 +100,7 @@ export class HTMLRender extends Render {
 
         newStyle +=
             (this.getDirection() === FlipDirection.FORWARD && this.shadow.progress > 100) ||
-            (this.getDirection() === FlipDirection.BACK && this.shadow.progress <= 100)
+                (this.getDirection() === FlipDirection.BACK && this.shadow.progress <= 100)
                 ? `transform: translate3d(0, 0, 0);`
                 : `transform: translate3d(0, 0, 0) rotateY(180deg);`;
 
@@ -124,16 +124,15 @@ export class HTMLRender extends Render {
             z-index: ${(this.getSettings().startZIndex + 4).toString(10)};
             width: ${shadowSize}px;
             height: ${rect.height}px;
-            background: linear-gradient(to left, rgba(0, 0, 0, ${
-                this.shadow.opacity
-            }) 5%, rgba(0, 0, 0, 0) 100%);
+            background: linear-gradient(to left, rgba(0, 0, 0, ${(this.shadow.opacity || 0).toFixed(5)}
+            ) 5%, rgba(0, 0, 0, 0) 100%);
             left: ${rect.left + rect.width / 2}px;
             transform-origin: 0 0;
         `;
 
         newStyle +=
             (this.getDirection() === FlipDirection.FORWARD && this.shadow.progress > 100) ||
-            (this.getDirection() === FlipDirection.BACK && this.shadow.progress <= 100)
+                (this.getDirection() === FlipDirection.BACK && this.shadow.progress <= 100)
                 ? `transform: translate3d(0, 0, 0) rotateY(180deg);`
                 : `transform: translate3d(0, 0, 0);`;
 
@@ -168,13 +167,13 @@ export class HTMLRender extends Render {
             let g =
                 this.getDirection() === FlipDirection.BACK
                     ? {
-                          x: -p.x + this.shadow.pos.x,
-                          y: p.y - this.shadow.pos.y,
-                      }
+                        x: -p.x + this.shadow.pos.x,
+                        y: p.y - this.shadow.pos.y,
+                    }
                     : {
-                          x: p.x - this.shadow.pos.x,
-                          y: p.y - this.shadow.pos.y,
-                      };
+                        x: p.x - this.shadow.pos.x,
+                        y: p.y - this.shadow.pos.y,
+                    };
 
             g = Helper.GetRotatedPoint(g, { x: shadowTranslate, y: 100 }, angle);
 
@@ -188,14 +187,13 @@ export class HTMLRender extends Render {
             width: ${innerShadowSize}px;
             height: ${rect.height * 2}px;
             background: linear-gradient(${shadowDirection},
-                rgba(0, 0, 0, ${this.shadow.opacity * this.getSettings().otherShadowOpacityScale}) 5%,
+                rgba(0, 0, 0, ${(this.shadow.opacity * (this.getSettings().otherShadowOpacityScale || 0)).toFixed(5)}) 5%,
                 rgba(0, 0, 0, 0.05) 15%,
-                rgba(0, 0, 0, ${this.shadow.opacity * this.getSettings().otherShadowOpacityScale}) 35%,
+                rgba(0, 0, 0, ${(this.shadow.opacity * (this.getSettings().otherShadowOpacityScale || 0)).toFixed(5)}) 35%,
                 rgba(0, 0, 0, 0) 100%);
             transform-origin: ${shadowTranslate}px 100px;
-            transform: translate3d(${shadowPos.x - shadowTranslate}px, ${
-            shadowPos.y - 100
-        }px, 0) rotate(${angle}rad);
+            transform: translate3d(${shadowPos.x - shadowTranslate}px, ${shadowPos.y - 100
+            }px, 0) rotate(${angle}rad);
             clip-path: ${polygon};
             -webkit-clip-path: ${polygon};
         `;
@@ -230,13 +228,13 @@ export class HTMLRender extends Render {
                 let g =
                     this.getDirection() === FlipDirection.BACK
                         ? {
-                              x: -p.x + this.shadow.pos.x,
-                              y: p.y - this.shadow.pos.y,
-                          }
+                            x: -p.x + this.shadow.pos.x,
+                            y: p.y - this.shadow.pos.y,
+                        }
                         : {
-                              x: p.x - this.shadow.pos.x,
-                              y: p.y - this.shadow.pos.y,
-                          };
+                            x: p.x - this.shadow.pos.x,
+                            y: p.y - this.shadow.pos.y,
+                        };
 
                 g = Helper.GetRotatedPoint(g, { x: shadowTranslate, y: 100 }, angle);
 
@@ -251,11 +249,10 @@ export class HTMLRender extends Render {
             z-index: ${(this.getSettings().startZIndex + 10).toString(10)};
             width: ${this.shadow.width}px;
             height: ${rect.height * 2}px;
-            background: linear-gradient(${shadowDirection}, rgba(0, 0, 0, ${this.shadow.opacity * this.getSettings().flippingShadowStartAlpha}), rgba(0, 0, 0, ${this.shadow.opacity * this.getSettings().flippingShadowEndAlpha});
+            background: linear-gradient(${shadowDirection}, rgba(0, 0, 0, ${(this.shadow.opacity * (this.getSettings().flippingShadowStartAlpha || 0)).toFixed(5)}), rgba(0, 0, 0, ${(this.shadow.opacity * (this.getSettings().flippingShadowEndAlpha || 0)).toFixed(5)}));
             transform-origin: ${shadowTranslate}px 100px;
-            transform: translate3d(${shadowPos.x - shadowTranslate}px, ${
-            shadowPos.y - 100
-        }px, 0) rotate(${angle}rad);
+            transform: translate3d(${shadowPos.x - shadowTranslate}px, ${shadowPos.y - 100
+            }px, 0) rotate(${angle}rad);
             clip-path: ${polygon};
             -webkit-clip-path: ${polygon};
         `;
@@ -304,9 +301,9 @@ export class HTMLRender extends Render {
             this.rightPage.draw(this.flippingPage.getDrawingDensity());
         } else {
             if (this.getSettings().display === DisplayType.SINGLE)
-            this.rightPage.simpleDraw(PageOrientation.LEFT);
-        else
-            this.rightPage.simpleDraw(PageOrientation.RIGHT);
+                this.rightPage.simpleDraw(PageOrientation.LEFT);
+            else
+                this.rightPage.simpleDraw(PageOrientation.RIGHT);
         }
     }
 
@@ -344,7 +341,7 @@ export class HTMLRender extends Render {
         const progress = shadow.progress / 100;
 
         const width = this.getSettings().flippingShadowWidthOffset +
-                      shadow.width * this.getSettings().flippingShadowWidthScale * progress;
+            shadow.width * this.getSettings().flippingShadowWidthScale * progress;
 
         const opacity = this.getSettings().flippingShadowOpacity;
         const startAlpha = this.getSettings().flippingShadowStartAlpha * opacity;
@@ -374,14 +371,14 @@ export class HTMLRender extends Render {
             display: block;
             width: ${width}px;
             height: ${4 * rect.height}px;
-            background: linear-gradient(${direction}, rgba(0, 0, 0, ${startAlpha}), rgba(0, 0, 0, ${endAlpha}));
+            background: linear-gradient(${direction}, rgba(0, 0, 0, ${(startAlpha || 0).toFixed(5)}), rgba(0, 0, 0, ${(endAlpha || 0).toFixed(5)}));
             position: absolute;
             left: 0;
             top: 0;
             transform-origin: ${translateX}px ${rect.height}px;
             transform: translate3d(${shadowPos.x - translateX - rect.left}px, ${shadowPos.y - rect.height - rect.top}px, 0) rotate(${angle}rad);
         `;
-        
+
         this.growingShadow.style.cssText = shadowStyle;
     }
 
@@ -437,9 +434,9 @@ export class HTMLRender extends Render {
 
         if (this.rightPage !== null) {
             if (this.getSettings().display === DisplayType.SINGLE)
-            this.rightPage.setOrientation(PageOrientation.LEFT);
-        else
-            this.rightPage.setOrientation(PageOrientation.RIGHT);
+                this.rightPage.setOrientation(PageOrientation.LEFT);
+            else
+                this.rightPage.setOrientation(PageOrientation.RIGHT);
         }
 
         if (this.leftPage !== null) {
