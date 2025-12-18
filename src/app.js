@@ -145,13 +145,6 @@ class FlipbookApp {
       });
     }
 
-    if (this.configModal) {
-      this.configModal.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          this.closeConfigModal();
-        }
-      });
-    }
   }
 
 
