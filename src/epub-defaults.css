@@ -111,6 +111,17 @@
     height: auto !important;
 }
 
+/* Reset margins for elements at the very top or bottom of a page to prevent double padding */
+.epub-content> :first-child,
+.epub-measure-container> :first-child {
+    margin-top: 0 !important;
+}
+
+.epub-content> :last-child,
+.epub-measure-container> :last-child {
+    margin-bottom: 0 !important;
+}
+
 /* Hide common EPUB page number markers */
 .page-break,
 .pagebreak,

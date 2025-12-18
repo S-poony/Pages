@@ -440,7 +440,7 @@ export async function paginateContent(html, measureContainer, pageHeight) {
 
         // Target height is the fixed page height
         // We subtract the safety margin from the page height
-        const safetyMargin = 100;
+        const safetyMargin = 20;
 
         return currentHeight > (pageHeight - safetyMargin);
     };
