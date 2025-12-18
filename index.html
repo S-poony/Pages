@@ -227,14 +227,14 @@
             </div>
             <div class="modal-body">
                 <div class="config-options">
-                    <div class="config-item">
+                    <div class="config-item" data-config-for="all">
                         <label class="input-label" for="custom-title-input">Custom title</label>
                         <input type="text" id="custom-title-input" class="text-input"
                             placeholder="Auto-detect from document">
                         <p class="config-description">Used for filename and published URL</p>
                     </div>
 
-                    <div class="config-item"
+                    <div class="config-item" data-config-for="pdf"
                         title="For PDFs only. When enabled, each uploaded image spans two pages (like a book spread). Best for scanned book spreads.">
                         <label class="toggle-switch">
                             <input type="checkbox" id="double-spread-toggle">
@@ -244,7 +244,7 @@
                         <p class="config-description">Each image spans two pages (PDFs only)</p>
                     </div>
 
-                    <div class="config-item"
+                    <div class="config-item" data-config-for="all"
                         title="Inserts an empty page before your first page. Useful to ensure the first content page appears on the right, or to add an offset that works with double-spread.">
                         <label class="toggle-switch">
                             <input type="checkbox" id="blank-page-toggle">
@@ -254,7 +254,7 @@
                         <p class="config-description">Insert an empty first page</p>
                     </div>
 
-                    <div class="config-item"
+                    <div class="config-item" data-config-for="pdf"
                         title="For PDFs only. When enabled, pages are rendered at multiple resolutions. This ensures sharp text and images when zooming in, but increases file size and processing time.">
                         <label class="toggle-switch">
                             <input type="checkbox" id="multi-scale-toggle">

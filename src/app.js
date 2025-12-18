@@ -91,6 +91,7 @@ class FlipbookApp {
     this.configDoneBtn = document.getElementById('config-done-btn');
     this.customTitleInput = document.getElementById('custom-title-input');
     this.configButtonContainer = document.querySelector('.config-button-container');
+    this.configItems = document.querySelectorAll('.config-item');
   }
 
   setupEventListeners() {
@@ -167,6 +168,9 @@ class FlipbookApp {
       this.buildContainer.classList.remove('hidden');
       if (this.configButtonContainer) this.configButtonContainer.classList.remove('hidden'); // Ensure config is accessible
 
+      const fileType = (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) ? 'pdf' : 'epub';
+      this.updateConfigVisibility(fileType);
+
     } else {
       this.showError('Please drop a valid PDF or EPUB file.');
     }
@@ -196,6 +200,19 @@ class FlipbookApp {
   handleMultiScaleToggle() {
     const isChecked = this.multiScaleToggle.checked;
     localStorage.setItem('multiScale', isChecked);
+  }
+
+  updateConfigVisibility(fileType) {
+    if (!this.configItems) return;
+
+    this.configItems.forEach(item => {
+      const allowed = item.getAttribute('data-config-for');
+      if (!fileType || allowed === 'all' || allowed === fileType) {
+        item.classList.remove('hidden');
+      } else {
+        item.classList.add('hidden');
+      }
+    });
   }
 
   /* ----------  Title helpers  ---------- */
@@ -666,6 +683,7 @@ class FlipbookApp {
     this.currentFolderData = null;
     this.detectedTitle = '';
     this.pendingFile = null;
+    this.updateConfigVisibility(null);
   }
   showError(msg) { this.errorMessage.textContent = msg; this.errorMessage.classList.remove('hidden'); }
   hideError() { this.errorMessage.classList.add('hidden'); }
