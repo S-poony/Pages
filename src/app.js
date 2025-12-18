@@ -344,7 +344,7 @@ class FlipbookApp {
       const doubleSpread = !!this.doubleSpreadToggle?.checked;
       const addBlankPage = !!this.blankPageToggle?.checked;
 
-      let fontSize = parseInt(this.epubFontSizeInput?.value || '16', 10);
+      let fontSize = parseInt(this.epubFontSizeInput?.value, 10);
       if (isNaN(fontSize)) fontSize = 16;
       // Clamp between 1 and 100
       fontSize = Math.max(1, Math.min(100, fontSize));
