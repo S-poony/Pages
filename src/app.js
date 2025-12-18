@@ -37,6 +37,7 @@ class FlipbookApp {
     this.fileInput = document.getElementById('file-input');
     this.doubleSpreadToggle = document.getElementById('double-spread-toggle');
     this.blankPageToggle = document.getElementById('blank-page-toggle');
+    this.multiScaleToggle = document.getElementById('multi-scale-toggle');
     this.blankPageOption = document.getElementById('blank-page-option');
     this.progressContainer = document.getElementById('progress-container');
     this.progressBar = document.getElementById('progress-bar');
@@ -63,7 +64,12 @@ class FlipbookApp {
     if (savedDoubleSpread !== null) {
       this.doubleSpreadToggle.checked = savedDoubleSpread === 'true';
     }
+    const savedMultiScale = localStorage.getItem('multiScale');
+    if (savedMultiScale !== null) {
+      this.multiScaleToggle.checked = savedMultiScale === 'true';
+    }
     this.handleDoubleSpreadToggle();
+    this.handleMultiScaleToggle();
 
 
     // Modal Elements
@@ -102,7 +108,8 @@ class FlipbookApp {
     ['dragover', 'dragleave', 'drop'].forEach(evt =>
       this.uploadArea.addEventListener(evt, e => this[`handle${evt.charAt(0).toUpperCase() + evt.slice(1)}`](e))
     );
-    this.doubleSpreadToggle.addEventListener('change', () => this.handleDoubleSpreadToggle());
+    if (this.doubleSpreadToggle) this.doubleSpreadToggle.addEventListener('change', () => this.handleDoubleSpreadToggle());
+    if (this.multiScaleToggle) this.multiScaleToggle.addEventListener('change', () => this.handleMultiScaleToggle());
 
     // Button Listeners
     this.buildBtn.addEventListener('click', () => this.startProcessing());
@@ -186,6 +193,11 @@ class FlipbookApp {
     // Blank page option is now always visible (removed visibility toggle)
   }
 
+  handleMultiScaleToggle() {
+    const isChecked = this.multiScaleToggle.checked;
+    localStorage.setItem('multiScale', isChecked);
+  }
+
   /* ----------  Title helpers  ---------- */
   getEffectiveTitle() {
     const customTitle = sanitizeTitle(this.customTitleInput?.value || '');
@@ -210,8 +222,14 @@ class FlipbookApp {
     try {
       const doubleSpread = !!this.doubleSpreadToggle?.checked;
       const addBlankPage = !!this.blankPageToggle?.checked;
+      const multiScale = !!this.multiScaleToggle?.checked;
 
-      const opts = { scales: [1, 2, 3], format: 'image/jpeg', quality: 0.92, doubleSpread };
+      const opts = {
+        scales: multiScale ? [1, 2, 3] : null,
+        format: 'image/jpeg',
+        quality: 0.92,
+        doubleSpread
+      };
 
       const result = await processPdf(file, opts);
       const { pageCount, renderPage, renderPageVariants, tableOfContents } = result;

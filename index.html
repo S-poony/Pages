@@ -53,7 +53,7 @@
 
             <!-- Build Container (Initially Hidden) -->
             <div id="build-container" class="build-container hidden">
-                <div class="build-content">                  
+                <div class="build-content">
                     <p id="selected-filename" class="build-filename"></p>
                     <button id="build-btn" class="btn btn-primary build-btn">
                         Create pages
@@ -252,6 +252,16 @@
                             <span class="label-text">Add blank page at start</span>
                         </label>
                         <p class="config-description">Insert an empty first page</p>
+                    </div>
+
+                    <div class="config-item"
+                        title="For PDFs only. When enabled, pages are rendered at multiple resolutions. This ensures sharp text and images when zooming in, but increases file size and processing time.">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="multi-scale-toggle">
+                            <span class="slider"></span>
+                            <span class="label-text">Multi-scales</span>
+                        </label>
+                        <p class="config-description">Higher zoom quality (PDF only)</p>
                     </div>
                 </div>
             </div>

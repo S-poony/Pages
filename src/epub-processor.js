@@ -12,7 +12,8 @@
 import ePub from 'epubjs';
 import JSZip from 'jszip';
 import { sanitizeEpubHtml } from './sanitizer.js';
-import EPUB_DEFAULTS_CSS_RAW from './epub-defaults.css?raw';
+
+let EPUB_DEFAULTS_CSS = '';
 
 /**
  * Validates and normalizes EPUB processor options
@@ -621,6 +622,16 @@ export function extractTableOfContents(book, linkMap) {
  * @returns {Promise<{pageCount: number, pages: Array, pageHeight: number, linkMap: Object, tableOfContents: Array}>}
  */
 export async function processEpub(input, options = {}) {
+    // Load CSS on demand if in browser
+    if (typeof window !== 'undefined' && !EPUB_DEFAULTS_CSS) {
+        try {
+            const module = await import('./epub-defaults.css?raw');
+            EPUB_DEFAULTS_CSS = module.default;
+        } catch (e) {
+            console.warn('Failed to load epub-defaults.css?raw:', e);
+        }
+    }
+
     const normalizedOptions = normalizeEpubProcessorOptions(options);
 
     let arrayBuffer;
@@ -662,4 +673,3 @@ export async function processEpub(input, options = {}) {
     };
 }
 
-const EPUB_DEFAULTS_CSS = EPUB_DEFAULTS_CSS_RAW;
