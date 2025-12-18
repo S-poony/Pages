@@ -144,6 +144,14 @@ class FlipbookApp {
         e.target.value = e.target.value.replace(/[^0-9]/g, '');
       });
     }
+
+    if (this.configModal) {
+      this.configModal.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          this.closeConfigModal();
+        }
+      });
+    }
   }
 
 
@@ -563,6 +571,29 @@ class FlipbookApp {
 
   openConfigModal() {
     this.configModal.classList.remove('hidden');
+
+    // Setup scroll indicators
+    const modalBody = this.configModal.querySelector('.modal-body');
+    const modalHeader = this.configModal.querySelector('.modal-header');
+    const modalFooter = this.configModal.querySelector('.modal-footer');
+
+    if (modalBody && modalHeader && modalFooter) {
+      const updateIndicators = () => {
+        const isScrolled = modalBody.scrollTop > 5;
+        const canScrollMore = modalBody.scrollHeight > modalBody.clientHeight + modalBody.scrollTop + 5;
+
+        modalHeader.classList.toggle('scrolled', isScrolled);
+        modalFooter.classList.toggle('can-scroll', canScrollMore);
+      };
+
+      modalBody.addEventListener('scroll', updateIndicators);
+      // Run once to initialize
+      setTimeout(updateIndicators, 50);
+
+      // Also listen for resize as it might change scrollability
+      window.addEventListener('resize', updateIndicators);
+      // Store cleanup if needed (though modals here are singleton)
+    }
   }
 
   closeConfigModal() {
