@@ -23,7 +23,8 @@ let EPUB_DEFAULTS_CSS = '';
 export function normalizeEpubProcessorOptions(options = {}) {
     const {
         pageWidth = 600,
-        backgroundColor = '#ffffff'
+        backgroundColor = '#ffffff',
+        fontSize = 16
     } = options;
 
     let { pageHeight } = options;
@@ -39,7 +40,7 @@ export function normalizeEpubProcessorOptions(options = {}) {
         throw new Error('pageHeight must be a positive number');
     }
 
-    return { pageWidth, pageHeight, backgroundColor };
+    return { pageWidth, pageHeight, backgroundColor, fontSize };
 }
 
 /**
@@ -69,7 +70,7 @@ export async function loadEpubDocument(arrayBuffer) {
  * @returns {Promise<{pages: Array<{backgroundImage: string, enrichmentHtml: string}>, linkMap: Object}>}
  */
 export async function createEnrichedPages(book, zip, options) {
-    const { pageWidth, pageHeight, backgroundColor } = options;
+    const { pageWidth, pageHeight, backgroundColor, fontSize } = options;
     const pages = [];
     const linkMap = {}; // Global map of "path/to/chapter.xhtml#anchor" -> globalPageIndex
     let globalPageIndex = 0;
@@ -79,20 +80,32 @@ export async function createEnrichedPages(book, zip, options) {
     const opfPath = book.packageUrl || ''; // e.g. "OEBPS/content.opf"
     const basePath = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
 
-    console.log('=== EPUB PATH DEBUG ===');
-    console.log('Package URL:', opfPath);
-    console.log('Calculated Base Path:', basePath);
-
     const PAGE_STYLES = {
         padding: '40px',
         boxSizing: 'border-box',
         overflow: 'hidden',
         fontFamily: 'Georgia, serif',
-        fontSize: '16px',
+        fontSize: `${fontSize}px`,
         lineHeight: '1.6',
         color: '#000000',
         textAlign: 'justify'
     };
+
+    // Inject Font Size Override into the main document (mostly for measurement)
+    let styleOverride = document.getElementById('epub-font-size-override');
+    if (!styleOverride) {
+        styleOverride = document.createElement('style');
+        styleOverride.id = 'epub-font-size-override';
+        document.head.appendChild(styleOverride);
+    }
+    styleOverride.textContent = `
+        .epub-staging-container, .epub-measure-container, .epub-content {
+            font-size: ${fontSize}px !important;
+        }
+        .epub-staging-container *, .epub-measure-container *, .epub-content * {
+            font-size: 1em !important; /* Force children to inherit or use em/rem relative to parent */
+        }
+    `;
 
     // Use a single measure container for the entire process
     let measureContainer = document.querySelector('.epub-measure-container');

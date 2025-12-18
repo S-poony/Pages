@@ -38,6 +38,7 @@ class FlipbookApp {
     this.doubleSpreadToggle = document.getElementById('double-spread-toggle');
     this.blankPageToggle = document.getElementById('blank-page-toggle');
     this.multiScaleToggle = document.getElementById('multi-scale-toggle');
+    this.epubFontSizeInput = document.getElementById('epub-font-size-input');
     this.blankPageOption = document.getElementById('blank-page-option');
     this.progressContainer = document.getElementById('progress-container');
     this.progressBar = document.getElementById('progress-bar');
@@ -136,6 +137,13 @@ class FlipbookApp {
     if (this.configDoneBtn) this.configDoneBtn.addEventListener('click', () => this.closeConfigModal());
 
     if (this.removeFileBtn) this.removeFileBtn.addEventListener('click', () => this.reset());
+
+    if (this.epubFontSizeInput) {
+      this.epubFontSizeInput.addEventListener('input', (e) => {
+        // Strip non-numeric characters proactively
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+      });
+    }
   }
 
 
@@ -336,10 +344,16 @@ class FlipbookApp {
       const doubleSpread = !!this.doubleSpreadToggle?.checked;
       const addBlankPage = !!this.blankPageToggle?.checked;
 
+      let fontSize = parseInt(this.epubFontSizeInput?.value || '16', 10);
+      if (isNaN(fontSize)) fontSize = 16;
+      // Clamp between 1 and 100
+      fontSize = Math.max(1, Math.min(100, fontSize));
+
       // Use processEpub, then pass results to generateFlipbookHtml
       const epubResult = await processEpub(file, {
         pageWidth: 800,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        fontSize: fontSize
       });
 
       // Store detected title from EPUB metadata
