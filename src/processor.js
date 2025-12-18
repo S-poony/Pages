@@ -106,11 +106,30 @@ async function getPdfJsLib() {
 }
 
 /**
- * Default canvas API implementation using DOM
+ * Default canvas API implementation using DOM with pooling support
  */
 export const defaultCanvasAPI = {
+    _pool: [],
+
     createCanvas() {
+        if (this._pool.length > 0) {
+            const canvas = this._pool.pop();
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                // Clear the canvas for reuse
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.width = 1; // Resource optimization: reset size
+                canvas.height = 1;
+            }
+            return canvas;
+        }
         return document.createElement('canvas');
+    },
+
+    releaseCanvas(canvas) {
+        if (canvas) {
+            this._pool.push(canvas);
+        }
     },
 
     canvasToDataURL(canvas, format, quality) {
@@ -226,7 +245,14 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
         }).promise;
         const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
 
-        fullCanvasCache.set(cacheKey, canvas);
+        // NOTE: We used to cache this fullCanvas in fullCanvasCache, 
+        // but for mobile optimization, we should probably ONLY cache it 
+        // if we are in double-spread mode to avoid dual rendering.
+        // For standard single-page rendering, it's better to NOT cache 
+        // and release immediately.
+        if (options.doubleSpread) {
+            fullCanvasCache.set(cacheKey, canvas);
+        }
 
         try {
             if (typeof window !== 'undefined') {
@@ -263,6 +289,11 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
         const t0 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
         const canvas = await renderPageToCanvas(pageNumber, renderScale);
         const data = await renderCanvasToDataUrl(canvas);
+
+        // RELEASE CANVAS if not cached (only cached in doubleSpread)
+        if (!options.doubleSpread && canvasAPI.releaseCanvas) {
+            canvasAPI.releaseCanvas(canvas);
+        }
         const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
 
         try {
@@ -321,6 +352,9 @@ export function createPageRenderer(pdf, options, canvasAPI = defaultCanvasAPI) {
 
         const data = canvasAPI.canvasToDataURL(c, format, quality);
         const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+
+        // POOLING: Release the half-page canvas
+        if (canvasAPI.releaseCanvas) canvasAPI.releaseCanvas(c);
 
         try {
             if (typeof window !== 'undefined') {
@@ -438,6 +472,9 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
             const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
 
             const dataUrl = canvasAPI.canvasToDataURL(canvas, format, quality);
+
+            // RELEASE CANVAS back to pool
+            if (canvasAPI.releaseCanvas) canvasAPI.releaseCanvas(canvas);
 
             try {
                 if (typeof window !== 'undefined') {

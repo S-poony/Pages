@@ -94,23 +94,28 @@ export async function createEnrichedPages(book, zip, options) {
         textAlign: 'justify'
     };
 
-    const measureContainer = document.createElement('div');
-    measureContainer.className = 'epub-content epub-measure-container'; // Match final class for exact styling
-    measureContainer.style.position = 'absolute';
-    measureContainer.style.left = '-9999px';
-    measureContainer.style.top = '-9999px';
+    // Use a single measure container for the entire process
+    let measureContainer = document.querySelector('.epub-measure-container');
+    if (!measureContainer) {
+        measureContainer = document.createElement('div');
+        measureContainer.className = 'epub-content epub-measure-container';
+        measureContainer.style.position = 'absolute';
+        measureContainer.style.left = '-9999px';
+        measureContainer.style.top = '-9999px';
+        measureContainer.style.visibility = 'hidden';
+        document.body.appendChild(measureContainer);
+    }
     measureContainer.style.width = `${pageWidth}px`;
-    measureContainer.style.height = 'auto'; // Allow container to grow to measure content
+    measureContainer.style.height = 'auto';
     Object.assign(measureContainer.style, PAGE_STYLES);
-    measureContainer.style.visibility = 'hidden';
 
-    // Inject default styles to ensure measurement matches final output
-    // We append to document.head to ensure it persists even when measureContainer.innerHTML is cleared
-    const styleEl = document.createElement('style');
-    styleEl.textContent = EPUB_DEFAULTS_CSS;
-    document.head.appendChild(styleEl);
-
-    document.body.appendChild(measureContainer);
+    // Inject default styles once
+    if (!document.getElementById('epub-default-styles')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'epub-default-styles';
+        styleEl.textContent = EPUB_DEFAULTS_CSS;
+        document.head.appendChild(styleEl);
+    }
 
     // Helper to find a file in the zip case-insensitively or with URL decoding
     const findFileInZip = (path) => {
@@ -295,17 +300,22 @@ export async function createEnrichedPages(book, zip, options) {
                 }
 
                 // 4. Pre-render to calculate image dimensions
-                const stagingContainer = document.createElement('div');
-                stagingContainer.style.position = 'absolute';
-                stagingContainer.style.left = '-9999px';
-                stagingContainer.style.top = '-9999px';
+                // 4. Pre-render to calculate image dimensions using a pooled staging container
+                let stagingContainer = document.querySelector('.epub-staging-container');
+                if (!stagingContainer) {
+                    stagingContainer = document.createElement('div');
+                    stagingContainer.className = 'epub-staging-container';
+                    stagingContainer.style.position = 'absolute';
+                    stagingContainer.style.left = '-9999px';
+                    stagingContainer.style.top = '-9999px';
+                    stagingContainer.style.opacity = '0';
+                    stagingContainer.style.pointerEvents = 'none';
+                    document.body.appendChild(stagingContainer);
+                }
                 stagingContainer.style.width = `${pageWidth}px`;
-                stagingContainer.style.opacity = '0'; // Visible to browser, invisible to user
-                stagingContainer.style.pointerEvents = 'none';
                 Object.assign(stagingContainer.style, PAGE_STYLES);
-
+                stagingContainer.innerHTML = '';
                 stagingContainer.appendChild(tempDiv);
-                document.body.appendChild(stagingContainer);
 
                 // Force layout/reflow
                 stagingContainer.offsetHeight;
@@ -338,7 +348,7 @@ export async function createEnrichedPages(book, zip, options) {
 
                 // 5. Sanitize and Paginate
                 const sanitizedHtml = sanitizeEpubHtml(tempDiv.innerHTML);
-                document.body.removeChild(stagingContainer);
+                stagingContainer.innerHTML = ''; // Fast clear
 
                 // Paginate and get anchors
                 const { pages: contentPages, anchors: pageAnchors } = await paginateContent(sanitizedHtml, measureContainer, pageHeight);
@@ -393,12 +403,8 @@ export async function createEnrichedPages(book, zip, options) {
             }
         }
     } finally {
-        if (measureContainer.parentNode) {
-            measureContainer.parentNode.removeChild(measureContainer);
-        }
-        if (styleEl && styleEl.parentNode) {
-            styleEl.parentNode.removeChild(styleEl);
-        }
+        // We keep the containers in the DOM for subsequent chapters/calls (pooling)
+        if (measureContainer) measureContainer.innerHTML = '';
     }
 
     return { pages, linkMap };
@@ -463,13 +469,13 @@ export async function paginateContent(html, measureContainer, pageHeight) {
 
         targetParent.removeChild(deepClone);
 
-        // FIX: Don't treat text nodes as atomic - split them instead
         const isAtomic = node.nodeType === Node.ELEMENT_NODE &&
             ['IMG', 'BR', 'HR', 'VIDEO', 'AUDIO', 'INPUT', 'TABLE'].includes(node.tagName);
 
         if (isAtomic) {
             startNewPage();
             let currentNewParent = currentPageDiv;
+            // Create only necessary clones for the ancestor bridge
             for (const ancestor of ancestors) {
                 const ancestorClone = ancestor.cloneNode(false);
                 currentNewParent.appendChild(ancestorClone);
@@ -482,29 +488,45 @@ export async function paginateContent(html, measureContainer, pageHeight) {
         // Handle text nodes by splitting at word boundaries
         if (node.nodeType === Node.TEXT_NODE) {
             const text = node.textContent || '';
-            const words = text.split(/(\s+)/); // Split preserving spaces
+            if (!text.trim()) {
+                targetParent.appendChild(deepClone);
+                return;
+            }
 
+            const words = text.split(/(\s+)/); // Split preserving spaces
             let currentParent = targetParent;
             let hasBrokenPage = false;
+
+            // POOLING: Use a single text node and update its content
+            let activeTextNode = document.createTextNode('');
+            currentParent.appendChild(activeTextNode);
+
+            let accumulatedText = '';
 
             for (let i = 0; i < words.length; i++) {
                 const word = words[i];
                 if (!word) continue;
 
-                const textNode = document.createTextNode(word);
-                currentParent.appendChild(textNode);
+                const prevText = accumulatedText;
+                accumulatedText += word;
+                activeTextNode.textContent = accumulatedText;
 
                 // Check fit with precise overflow
                 if (checkOverflow()) {
-                    textNode.remove();
+                    // Revert to last fitting text
+                    activeTextNode.textContent = prevText;
 
-                    // If the page is empty, we MUST accept the word to avoid infinite loop
-                    if (currentParent.childNodes.length === 0) {
-                        currentParent.appendChild(textNode);
+                    // If even the first word doesn't fit and page is NOT empty, we MUST break
+                    // But if page IS empty, we must at least accept one word to prevent infinite loops
+                    const isPageEmpty = currentParent.childNodes.length <= 1 &&
+                        (!currentParent.previousSibling || currentParent.previousSibling.childNodes.length === 0);
+
+                    if (prevText === '' && isPageEmpty) {
+                        activeTextNode.textContent = accumulatedText;
                         continue;
                     }
 
-                    // Page is not empty, so break page
+                    // Break page
                     startNewPage();
                     hasBrokenPage = true;
 
@@ -517,7 +539,9 @@ export async function paginateContent(html, measureContainer, pageHeight) {
                     }
 
                     currentParent = newParent;
-                    currentParent.appendChild(textNode);
+                    activeTextNode = document.createTextNode(word);
+                    currentParent.appendChild(activeTextNode);
+                    accumulatedText = word;
                 }
             }
 
