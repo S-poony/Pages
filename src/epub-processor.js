@@ -109,12 +109,15 @@ export async function createEnrichedPages(book, zip, options) {
     measureContainer.style.height = 'auto';
     Object.assign(measureContainer.style, PAGE_STYLES);
 
-    // Inject default styles once
-    if (!document.getElementById('epub-default-styles')) {
-        const styleEl = document.createElement('style');
+    // Inject default styles once (ensure they are updated if we have new CSS)
+    let styleEl = document.getElementById('epub-default-styles');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
         styleEl.id = 'epub-default-styles';
-        styleEl.textContent = EPUB_DEFAULTS_CSS;
         document.head.appendChild(styleEl);
+    }
+    if (EPUB_DEFAULTS_CSS && styleEl.textContent !== EPUB_DEFAULTS_CSS) {
+        styleEl.textContent = EPUB_DEFAULTS_CSS;
     }
 
     // Helper to find a file in the zip case-insensitively or with URL decoding
@@ -363,6 +366,7 @@ export async function createEnrichedPages(book, zip, options) {
                     linkMap[fullKey] = globalPageIndex + localPageIndex + 1; // 1-based index
                 }
 
+
                 // 6. Create Page Objects
                 for (const pageContent of contentPages) {
                     const commonStyles = Object.entries(PAGE_STYLES)
@@ -460,10 +464,16 @@ export async function paginateContent(html, measureContainer, pageHeight) {
             anchors[node.id] = pages.length; // Current page index
         }
 
-        // FIX: Use precise overflow check
         const fits = !checkOverflow();
 
         if (fits) {
+            // Register any nested IDs in the fitting node
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                const elementsWithId = deepClone.querySelectorAll('[id]');
+                for (const el of elementsWithId) {
+                    anchors[el.id] = pages.length;
+                }
+            }
             return;
         }
 
