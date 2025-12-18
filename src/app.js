@@ -48,6 +48,7 @@ class FlipbookApp {
     // Build Step Elements
     this.buildContainer = document.getElementById('build-container');
     this.buildBtn = document.getElementById('build-btn');
+    this.removeFileBtn = document.getElementById('remove-file-btn');
     this.selectedFilename = document.getElementById('selected-filename');
 
     // Buttons
@@ -133,6 +134,8 @@ class FlipbookApp {
     if (this.configBtn) this.configBtn.addEventListener('click', () => this.openConfigModal());
     if (this.configCloseBtn) this.configCloseBtn.addEventListener('click', () => this.closeConfigModal());
     if (this.configDoneBtn) this.configDoneBtn.addEventListener('click', () => this.closeConfigModal());
+
+    if (this.removeFileBtn) this.removeFileBtn.addEventListener('click', () => this.reset());
   }
 
 

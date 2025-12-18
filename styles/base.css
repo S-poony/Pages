@@ -1,0 +1,101 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --color-cream: #FDFBF8;
+    --color-warm-gray: #E8E4D9;
+    --color-charcoal: #2A2A2A;
+    --color-terracotta: #C9785B;
+    --color-terracotta-hover: #B8684F;
+    --color-shadow: rgba(0, 0, 0, 0.04);
+    --color-shadow-strong: rgba(0, 0, 0, 0.08);
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 2rem;
+    --spacing-lg: 3rem;
+    --spacing-xl: 5rem;
+    --transition-fast: 0.15s;
+    --transition-normal: 0.35s;
+    --transition-slow: 0.55s;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-weight: 300;
+    background: var(--color-cream);
+    color: var(--color-charcoal);
+    line-height: 1.7;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md);
+    letter-spacing: -0.01em;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.title {
+    font-family: 'Crimson Text', 'Georgia', serif;
+    font-size: 3.5rem;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--color-charcoal);
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.02em;
+}
+
+.subtitle {
+    font-size: 1.125rem;
+    color: #6B6B6B;
+    font-weight: 300;
+    letter-spacing: 0.01em;
+}
+
+.main-content {
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 2px 40px var(--color-shadow);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-md);
+}
+
+.footer {
+    text-align: center;
+    color: #A8A8A8;
+    font-size: 0.8125rem;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: var(--spacing-sm);
+    }
+
+    .title {
+        font-size: 2.5rem;
+    }
+
+    .main-content {
+        padding: var(--spacing-md);
+    }
+}

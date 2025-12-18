@@ -10,7 +10,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/base.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/config.css">
     <link rel="icon" href="assets/icons/icon_Pages.jpg" type="image/jpeg">
 </head>
 
@@ -54,7 +56,10 @@
             <!-- Build Container (Initially Hidden) -->
             <div id="build-container" class="build-container hidden">
                 <div class="build-content">
-                    <p id="selected-filename" class="build-filename"></p>
+                    <div class="filename-container">
+                        <p id="selected-filename" class="build-filename"></p>
+                        <button id="remove-file-btn" class="remove-file-btn" title="Remove file">&times;</button>
+                    </div>
                     <button id="build-btn" class="btn btn-primary build-btn">
                         Create pages
                     </button>
