@@ -435,14 +435,9 @@ export async function paginateContent(html, measureContainer, pageHeight) {
 
     const checkOverflow = () => {
         // Use offsetHeight of the container which includes padding and content
-        // Since measureContainer has height: auto, it grows with content
         const currentHeight = measureContainer.offsetHeight;
-
-        // Target height is the fixed page height
-        // We subtract the safety margin from the page height
-        const safetyMargin = 20;
-
-        return currentHeight > (pageHeight - safetyMargin);
+        // Target height is the fixed page height. No safety margin needed with precision splitting.
+        return currentHeight > pageHeight;
     };
 
     const startNewPage = () => {
@@ -450,7 +445,7 @@ export async function paginateContent(html, measureContainer, pageHeight) {
             pages.push(currentPageDiv.innerHTML);
         }
         currentPageDiv = document.createElement('div');
-        currentPageDiv.style.display = 'flow-root'; // Contain child margins
+        currentPageDiv.style.display = 'flow-root';
         measureContainer.innerHTML = '';
         measureContainer.appendChild(currentPageDiv);
     };
@@ -459,15 +454,11 @@ export async function paginateContent(html, measureContainer, pageHeight) {
         const deepClone = node.cloneNode(true);
         targetParent.appendChild(deepClone);
 
-        // Track ID if present
         if (node.nodeType === Node.ELEMENT_NODE && node.id) {
-            anchors[node.id] = pages.length; // Current page index
+            anchors[node.id] = pages.length;
         }
 
-        const fits = !checkOverflow();
-
-        if (fits) {
-            // Register any nested IDs in the fitting node
+        if (!checkOverflow()) {
             if (node.nodeType === Node.ELEMENT_NODE) {
                 const elementsWithId = deepClone.querySelectorAll('[id]');
                 for (const el of elementsWithId) {
@@ -485,7 +476,6 @@ export async function paginateContent(html, measureContainer, pageHeight) {
         if (isAtomic) {
             startNewPage();
             let currentNewParent = currentPageDiv;
-            // Create only necessary clones for the ancestor bridge
             for (const ancestor of ancestors) {
                 const ancestorClone = ancestor.cloneNode(false);
                 currentNewParent.appendChild(ancestorClone);
@@ -495,67 +485,59 @@ export async function paginateContent(html, measureContainer, pageHeight) {
             return { pageBroken: true };
         }
 
-        // Handle text nodes by splitting at word boundaries
         if (node.nodeType === Node.TEXT_NODE) {
-            const text = node.textContent || '';
-            if (!text.trim()) {
-                targetParent.appendChild(deepClone);
-                return;
-            }
+            const fullText = node.textContent || '';
+            if (!fullText.trim()) return;
 
-            const words = text.split(/(\s+)/); // Split preserving spaces
-            let currentParent = targetParent;
-            let hasBrokenPage = false;
+            let low = 0;
+            let high = fullText.length;
+            let bestSplit = 0;
 
-            // POOLING: Use a single text node and update its content
-            let activeTextNode = document.createTextNode('');
-            currentParent.appendChild(activeTextNode);
+            // Manual binary search for best character split point
+            const probeNode = document.createTextNode('');
+            targetParent.appendChild(probeNode);
 
-            let accumulatedText = '';
+            while (low <= high) {
+                const mid = Math.floor((low + high) / 2);
+                probeNode.textContent = fullText.substring(0, mid);
 
-            for (let i = 0; i < words.length; i++) {
-                const word = words[i];
-                if (!word) continue;
-
-                const prevText = accumulatedText;
-                accumulatedText += word;
-                activeTextNode.textContent = accumulatedText;
-
-                // Check fit with precise overflow
                 if (checkOverflow()) {
-                    // Revert to last fitting text
-                    activeTextNode.textContent = prevText;
-
-                    // If even the first word doesn't fit and page is NOT empty, we MUST break
-                    // But if page IS empty, we must at least accept one word to prevent infinite loops
-                    const isPageEmpty = currentParent.childNodes.length <= 1 &&
-                        (!currentParent.previousSibling || currentParent.previousSibling.childNodes.length === 0);
-
-                    if (prevText === '' && isPageEmpty) {
-                        activeTextNode.textContent = accumulatedText;
-                        continue;
-                    }
-
-                    // Break page
-                    startNewPage();
-                    hasBrokenPage = true;
-
-                    // Recreate ancestor path on new page
-                    let newParent = currentPageDiv;
-                    for (const ancestor of ancestors) {
-                        const clone = ancestor.cloneNode(false);
-                        newParent.appendChild(clone);
-                        newParent = clone;
-                    }
-
-                    currentParent = newParent;
-                    activeTextNode = document.createTextNode(word);
-                    currentParent.appendChild(activeTextNode);
-                    accumulatedText = word;
+                    high = mid - 1;
+                } else {
+                    bestSplit = mid;
+                    low = mid + 1;
                 }
             }
 
-            if (hasBrokenPage) {
+            // If even the first character doesn't fit and the page is empty, we must accept it to prevent infinite loops
+            if (bestSplit === 0 && targetParent.childNodes.length === 1 && !ancestors.some(a => a.previousSibling)) {
+                bestSplit = 1;
+            }
+
+            // Find nearest space before bestSplit to avoid cutting words
+            let splitPoint = bestSplit;
+            if (splitPoint < fullText.length && splitPoint > 0) {
+                const lastSpace = fullText.lastIndexOf(' ', splitPoint);
+                if (lastSpace > 0) {
+                    splitPoint = lastSpace + 1; // Include the space on this page
+                }
+            }
+
+            // Apply split to current page
+            probeNode.textContent = fullText.substring(0, splitPoint);
+
+            // Handle remainder
+            const remainder = fullText.substring(splitPoint).trimStart();
+            if (remainder) {
+                startNewPage();
+                let currentNewParent = currentPageDiv;
+                for (const ancestor of ancestors) {
+                    const ancestorClone = ancestor.cloneNode(false);
+                    currentNewParent.appendChild(ancestorClone);
+                    currentNewParent = ancestorClone;
+                }
+                const remainderNode = document.createTextNode(remainder);
+                currentNewParent.appendChild(remainderNode);
                 return { pageBroken: true };
             }
             return;
@@ -572,6 +554,7 @@ export async function paginateContent(html, measureContainer, pageHeight) {
             if (result && result.pageBroken) {
                 let pointer = currentPageDiv;
                 for (const ancestor of childAncestors) {
+                    // Navigate to the deepest nested clone on the new page
                     if (pointer.lastElementChild) {
                         pointer = pointer.lastElementChild;
                     } else {
