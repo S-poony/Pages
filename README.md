@@ -346,7 +346,16 @@ The test suite covers:
 
 ### EPUB Processing
 
-This section has not been written yet. It uses DOM pooling, a pagination algorithm, and other cool stuff.
+The EPUB processing engine uses a sophisticated pipeline to transform reflowable text into fixed-layout flipbook pages while preserving interactivity:
+
+1.  **Asset Extraction**: Uses [JSZip](https://stuk.github.io/jszip/) to extract images and CSS directly from the EPUB container.
+2.  **DOM Pooling & Measurement**: Uses a dedicated, hidden measurement container in the DOM to pre-render and calculate the dimensions of elements before placement.
+3.  **Recursive Pagination**: Employs a custom recursive DOM walker algorithm that splits content across pages. This ensure that:
+    - Text is never cut in half.
+    - Images and atomic elements are kept whole or moved to the next page.
+    - Formatting (headers, lists, etc.) is preserved across page breaks.
+4.  **Styling**: Injects `src/epub-defaults.css` to ensure consistent typography and layout across different EPUB source files. It also automatically hides common EPUB artifacts like hardcoded page numbers.
+5.  **Interactivity**: Preserves internal chapter links and external URLs by mapping them to the generated page numbers.
 
 ### PDF Processing
 
@@ -368,17 +377,10 @@ The application uses [pdf.js](https://mozilla.github.io/pdf.js/), Mozilla's PDF 
 
   
 
-The generator creates a complete, standalone HTML file containing:
+The generator (in `src/generator.js`) creates flipbooks in two primary formats:
 
-  
-
-- **Embedded CSS**: All styling is inlined within `<style>` tags
-
-- **Embedded JavaScript**: All interactivity is inlined within `<script>` tags
-
-- **Base64-encoded Images**: All pages are embedded as data URLs
-
-- **Result**: Single `.html` file - completely self-contained!
+- **Single HTML (Standalone)**: Creates a single `.html` file where all CSS, JavaScript, and images (as Base64 data URLs) are embedded. This is perfect for sharing as a single file.
+- **Zip HTML (Folder Mode)**: Creates a ZIP file containing an `index.html` and an `images/` folder. This mode is more efficient for very large books as it uses external image files instead of heavy Base64 strings, making the final site load faster and easier to index if it is published online. **When you publish the book using the publish button, the ZIP HTML mode is used.**
 
   
 
@@ -508,17 +510,17 @@ The project uses the following main dependencies:
 
 ### Production
 
-  
-
 - **pdfjs-dist** (^5.4.296): Mozilla's PDF rendering library
-
-  
+- **epubjs** (^0.3.93): EPUB parsing and rendering
+- **jszip** (^3.10.1): ZIP file handling for EPUB assets
+- **dompurify** (^3.3.0): Sanitizing HTML content
+- **html2canvas** (^1.4.1): Creating page previews
+- **page-flip** (local): Custom build of the StPageFlip library
 
 ### Development
 
-  
-
 - **vite** (^7.1.12): Build tool and development server
+- **patch-package** (^8.0.1): Managing custom library patches
 
   
 
@@ -674,4 +676,4 @@ Built with:
 
 - Vanilla JavaScript - No frameworks, just pure JS
 
-- [StPageFlip](https://nodlik.github.io/StPageFlip/) has been the base for the page turning code
+- [StPageFlip](https://nodlik.github.io/StPageFlip/) - The core page-turning engine. Pages uses a highly customized local version located in `src/lib/StPageFlip-master` to support specific features like enhanced shadows and performance optimizations.
