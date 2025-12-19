@@ -108,7 +108,7 @@ export class Settings {
         swipeDistance: 30,
         clickEventForward: true,
         useMouseEvents: true,
-        showPageCorners: true,
+        showPageCorners: false,
         disableFlipByClick: false,
         otherShadowOpacityScale: 0.7,
         flippingShadow: true,

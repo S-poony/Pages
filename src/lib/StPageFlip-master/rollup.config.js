@@ -8,7 +8,7 @@ export default [
         output: [{ file: 'dist/js/page-flip.browser.js', format: 'umd', name: 'St' }],
         plugins: [
             postcss(),
-            typescript({ tsconfig: 'tsconfig.json', useTsconfigDeclarationDir: true }),
+            typescript({ tsconfig: 'tsconfig.json', useTsconfigDeclarationDir: true, clean: true }),
             terser(),
         ],
     },
@@ -17,7 +17,7 @@ export default [
         output: [{ file: 'dist/js/page-flip.module.js', format: 'es' }],
         plugins: [
             postcss(),
-            typescript({ tsconfig: 'tsconfig.json', useTsconfigDeclarationDir: true }),
+            typescript({ tsconfig: 'tsconfig.json', useTsconfigDeclarationDir: true, clean: true }),
             terser(),
         ],
     },

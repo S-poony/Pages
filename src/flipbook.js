@@ -796,24 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
     });
 
-    // Hack: Disable automatic corner peeling (hover effect)
-    // We block mouse/pointer move events unless the mouse is down.
-    // This prevents StPageFlip from seeing the mouse hover over corners.
-    let isMouseDownOnBook = false;
-    flipbookEl.addEventListener('mousedown', () => { isMouseDownOnBook = true; });
-    flipbookEl.addEventListener('touchstart', () => { isMouseDownOnBook = true; }); // For mobile
-    window.addEventListener('mouseup', () => { isMouseDownOnBook = false; });
-    window.addEventListener('touchend', () => { isMouseDownOnBook = false; });
 
-    const blockHover = (e) => {
-        if (!isMouseDownOnBook) {
-            e.stopPropagation();
-        }
-    };
-
-    ['mousemove', 'pointermove'].forEach(evt => {
-        flipbookEl.addEventListener(evt, blockHover, { capture: true });
-    });
 
     // Handle URL hash changes (e.g., browser back/forward, manual URL edit)
     window.addEventListener('hashchange', () => {
