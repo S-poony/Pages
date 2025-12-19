@@ -77,12 +77,6 @@ By creating an eBook with Pages, you have the source code. This means several th
 
   
 
-### Browser Compatibility
-
-This application works on all modern browsers, and is optimized for mobile too.
-
-  
-
 ## Quick Start
 
 ### Step 1: Install Dependencies
@@ -384,7 +378,7 @@ The generator (in `src/generator.js`) creates flipbooks in two primary formats:
 
   
 
-### Lazy Loading & Performance
+### Performance
 
   
 
@@ -392,15 +386,13 @@ To handle large PDF files gracefully, the application uses:
 
   
 
-- **Progressive Loading**: Pages load on-demand as you navigate
-
 - **Pre-loading**: Anticipates page turns and preloads adjacent pages
 
 - **Image Caching**: Loaded pages are cached to prevent re-downloads
 
 - **Smooth Transitions**: Loading placeholders keep animations fluid
 
-- **Efficient Rendering**: Only renders what's needed, when it's needed
+- **Lazy Loading**: Only renders what's needed, when it's needed
 
   
 
@@ -484,22 +476,6 @@ PORT=3000 npm start
 
   
 
-### The Generated File is Too Large
-
-  
-
-Large PDFs with many pages create large HTML files. This is normal because all pages are embedded. The application optimizes loading:
-
-  
-
-- Only visible pages load initially
-
-- Remaining pages load progressively
-
-- Images are compressed (quality: 92%)
-
-  
-
 ## Dependencies
 
   
@@ -544,51 +520,19 @@ To deploy this application:
 
 2. **Deploy the `dist/` folder** to any static hosting service:
 
-   - GitHub Pages
+  - GitHub Pages
 
-   - Netlify
+  - Netlify
 
-   - Vercel
+  - Vercel
 
-   - AWS S3
+  - AWS S3
 
-   - Any web server
+  - Any web server
 
   
 
 3. That's it! The `dist/` folder contains everything needed.
-
-  
-
-## Tips for Best Results
-
-  
-
-1. **Use High-Quality PDFs**: Better source PDFs = better flipbooks
-
-2. **Keep PDFs Under 50 Pages**: Larger PDFs take longer to process
-
-3. **Test with Small Files First**: Start with a 5-10 page PDF to verify everything works
-
-4. **Check File Size**: Large PDFs create large HTML files (this is normal)
-
-5. **Share via Cloud Storage**: Generated HTML files can be shared via Dropbox, Google Drive, etc.
-
-  
-
-## Privacy & Security
-
-  
-
-- **100% Client-Side**: All processing happens in your browser - nothing is uploaded to any server
-
-- **No Internet Required**: After initial page load, everything works offline
-
-- **Self-Contained Output**: Generated HTML files work completely offline
-
-- **No Tracking**: No analytics, no tracking, no data collection
-
-- **No Build Process Required for Users**: End-users don't need npm - they just open the generated HTML file
 
   
 
@@ -666,14 +610,12 @@ MIT License - feel free to use this in your own projects.
 
 ## Credits
 
-  
+Pages is built with the following open-source libraries:
 
-Built with:
+- **[StPageFlip](https://nodlik.github.io/StPageFlip/)**: The core page-turning engine. Pages uses a highly customized local version maintained in `src/lib/StPageFlip-master` to support specific features like enhanced shadows and performance optimizations.
+- **[pdf.js](https://mozilla.github.io/pdf.js/)**: Mozilla's powerful PDF rendering engine.
+- **[epubjs](https://github.com/futurepress/epub.js)**: The foundation for EPUB parsing and manipulation.
+- **[JSZip](https://stuk.github.io/jszip/)**: Used for high-speed asset extraction from compressed formats.
+- **[Vite](https://vitejs.dev/)**: Next-generation frontend tooling and build system.
+- **Vanilla JavaScript**: Built with pure JS to ensure maximum performance and zero framework overhead.
 
-- [pdf.js](https://mozilla.github.io/pdf.js/) v5.4.296 - Mozilla's PDF rendering engine
-
-- [Vite](https://vitejs.dev/) v7.1.12 - Next generation frontend tooling
-
-- Vanilla JavaScript - No frameworks, just pure JS
-
-- [StPageFlip](https://nodlik.github.io/StPageFlip/) - The core page-turning engine. Pages uses a highly customized local version located in `src/lib/StPageFlip-master` to support specific features like enhanced shadows and performance optimizations.
