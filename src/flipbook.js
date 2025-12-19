@@ -1,4 +1,5 @@
 /**
+ * Core logic for the flipbook page turning and navigation
  * StPageFlip Implementation
  * Uses #flipbook-container for zoom/pan transforms
  */

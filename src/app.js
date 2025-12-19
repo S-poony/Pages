@@ -165,7 +165,6 @@ class FlipbookApp {
   }
 
   // Routes to PDF or EPUB processor
-  // Routes to PDF or EPUB processor
   routeFileProcessing(file) {
     if (!file) return;
 
