@@ -417,6 +417,35 @@
     text-decoration: underline;
 }
 
+/* Legal Modal Styles */
+.legal-content h4 {
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #444;
+    margin-top: 32px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+    font-weight: 600;
+}
+
+.legal-content h4:first-child {
+    margin-top: 0;
+}
+
+.legal-content ul {
+    padding-left: 20px;
+    margin-bottom: 16px;
+}
+
+.legal-content li {
+    margin-bottom: 8px;
+    color: #555;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
 /* Configuration Button */
 .config-button-container {
     margin: 0 auto 20px;
