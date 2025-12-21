@@ -576,10 +576,6 @@ class FlipbookApp {
     // Setup scroll indicators for Legal Modal
     const modalBody = this.legalModal.querySelector('.modal-body');
     const modalHeader = this.legalModal.querySelector('.modal-header');
-    // Legal modal doesn't have a footer button currently, but we might want shadows if we add one or just at the bottom
-    // The CSS .modal-footer logic relies on specific class structure. 
-    // The legal modal has body content. 
-    // Let's check logic for header shadow.
 
     if (modalBody && modalHeader) {
       modalBody.scrollTop = 0; // Reset scroll position to top
