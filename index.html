@@ -13,7 +13,9 @@
     <link rel="stylesheet" href="styles/base.css">
     <link rel="stylesheet" href="styles/components.css">
     <link rel="stylesheet" href="styles/config.css">
+    <link rel="stylesheet" href="styles/stripe-banner.css">
     <link rel="icon" href="assets/icons/icon_Pages.jpg" type="image/jpeg">
+    <script async src="https://js.stripe.com/v3/buy-button.js"></script>
 </head>
 
 <body>
@@ -136,6 +138,38 @@
                 </div>
             </div>
         </main>
+
+        <!-- Stripe Donation Banner -->
+        <section class="donation-banner">
+            <div class="donation-content">
+                <p class="donation-message">
+                    <span class="donation-heart">❤</span>
+                    <strong>Pages</strong> is a free service with no ads that allows you to upload documents of any size
+                    and store them at the highest quality possible. Please consider donating to make this project
+                    sustainable.
+                </p>
+
+                <div class="donation-options">
+                    <!-- Monthly Subscription -->
+                    <a href="https://buy.stripe.com/7sYcMY95P9P016o1x3e3e00" target="_blank"
+                        class="donation-btn-monthly">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                        Donate 1€ / month
+                    </a>
+
+                    <span class="donation-divider">or</span>
+
+                    <!-- Custom Amount (Stripe Component) -->
+                    <div class="donation-custom-container">
+                        <stripe-buy-button buy-button-id="buy_btn_1SgpdD4IGtyKJRezMBdsZKwI"
+                            publishable-key="pk_live_51SgnyE4IGtyKJRezMpv8yIInIIhsIOrVFr5MxKHAs3WRusItkaWnNlDc9Be8xNTPQV7Vp1AKrp3ybDQsJ63VTrPa007tHXnP30">
+                        </stripe-buy-button>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <footer class="footer">
             <p>Digital objects you own</p>
