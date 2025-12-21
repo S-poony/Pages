@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.stripe.com https://*.stripe.network; img-src 'self' data: blob: https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com list-style-image; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; connect-src 'self' https://*.stripe.com https://*.stripe.network;">
     <title>Pages</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -159,7 +161,7 @@
                         Donate 1€ / month
                     </a>
 
-                    <span class="donation-divider">or</span>
+                    <span class="donation-divider">or donate a one-time custom amount here</span>
 
                     <!-- Custom Amount (Stripe Component) -->
                     <div class="donation-custom-container">
