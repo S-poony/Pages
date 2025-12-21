@@ -151,7 +151,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
         let imgTag;
         if (isLegacyFormat) {
             const src = mode === 'folder' ? `images/page-${pageNum}.jpg` : escapeAttr(pageData);
-            imgTag = `<img class="page-image" src="${src}" alt="Page ${pageNum}" loading="eager" />`;
+            imgTag = `<img class="page-image" src="${src}" alt="" loading="eager" />`;
         } else {
             const variants = pageData;
             if (!Array.isArray(variants) || variants.length === 0) {
@@ -170,7 +170,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
             const sizes = generateSizes(doubleSpread);
             const objectPosition = doubleSpread ? (pageNum % 2 === 0 ? 'left' : 'right') : 'center';
 
-            imgTag = `<img class="page-image" src="${src}" srcset="${srcset}" sizes="${sizes}" alt="Page ${pageNum}" loading="eager" style="object-position: ${objectPosition} center;" />`;
+            imgTag = `<img class="page-image" src="${src}" srcset="${srcset}" sizes="${sizes}" alt="" loading="eager" style="object-position: ${objectPosition} center;" />`;
         }
 
         return `
@@ -288,9 +288,11 @@ export async function generateFlipbookHtml(pageImages, options = {},
         overflow: hidden;
         }
         /* --- END UTILITIES --- */
-
+        </style>
+        <style>
         ${baseCss}
-        
+        </style>
+        <style>
         /* --- EXTRA CSS --- */
         ${extraCss}
         </style>
