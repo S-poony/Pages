@@ -138,7 +138,10 @@
     }
 
     .donation-divider {
-        display: none;
+        display: block;
+        margin: 0.5rem 0;
+        color: #8B8B8B;
+        font-size: 0.85rem;
     }
 
     .donation-btn-monthly {
