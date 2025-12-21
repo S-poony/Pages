@@ -47,7 +47,7 @@ export default {
         }
 
         // --- SECURITY HEADERS ---
-        headers.set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.stripe.com https://*.stripe.network; img-src * data: blob: https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com list-style-image; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; connect-src 'self' https://*.stripe.com https://*.stripe.network; object-src 'none'; base-uri 'none';");
+        headers.set("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.stripe.com https://*.stripe.network; img-src * data: blob: https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com list-style-image; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; connect-src 'self' https://*.stripe.com https://*.stripe.network blob:; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.stripe.com https://*.stripe.network blob:; object-src 'none'; base-uri 'none';");
         headers.set("X-Content-Type-Options", "nosniff");
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
         headers.set("Access-Control-Allow-Origin", "*"); // Allow CORS for assets
