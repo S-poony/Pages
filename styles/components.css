@@ -324,7 +324,17 @@
 }
 
 /* Info Modal Styles */
-.info-btn {
+/* Header Actions */
+.header-actions {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 12px;
+    z-index: 10;
+}
+
+.header-btn {
     background: none;
     border: none;
     color: #888;
@@ -332,9 +342,6 @@
     padding: 8px 16px;
     border-radius: 20px;
     transition: all 0.2s;
-    position: absolute;
-    right: 20px;
-    top: 20px;
     font-size: 0.9rem;
     font-weight: 500;
     display: flex;
@@ -342,7 +349,7 @@
     justify-content: center;
 }
 
-.info-btn:hover {
+.header-btn:hover {
     background: rgba(0, 0, 0, 0.05);
     color: var(--color-charcoal);
 }
@@ -455,6 +462,12 @@
     .btn {
         width: 100%;
         justify-content: center;
+    }
+
+    .header-actions {
+        top: 10px;
+        right: 10px;
+        gap: 8px;
     }
 
     .info-grid {

@@ -86,6 +86,11 @@ class FlipbookApp {
     this.infoModal = document.getElementById('info-modal');
     this.infoCloseBtn = document.getElementById('info-close-btn');
 
+    // Legal Modal Elements
+    this.legalBtn = document.getElementById('legal-btn');
+    this.legalModal = document.getElementById('legal-modal');
+    this.legalCloseBtn = document.getElementById('legal-close-btn');
+
     // Config Modal Elements
     this.configBtn = document.getElementById('config-btn');
     this.configModal = document.getElementById('config-modal');
@@ -130,6 +135,10 @@ class FlipbookApp {
     // Info Modal Listeners
     if (this.infoBtn) this.infoBtn.addEventListener('click', () => this.openInfoModal());
     if (this.infoCloseBtn) this.infoCloseBtn.addEventListener('click', () => this.closeInfoModal());
+
+    // Legal Modal Listeners
+    if (this.legalBtn) this.legalBtn.addEventListener('click', () => this.openLegalModal());
+    if (this.legalCloseBtn) this.legalCloseBtn.addEventListener('click', () => this.closeLegalModal());
 
     // Config Modal Listeners
     if (this.configBtn) this.configBtn.addEventListener('click', () => this.openConfigModal());
@@ -559,6 +568,36 @@ class FlipbookApp {
 
   closeInfoModal() {
     this.infoModal.classList.add('hidden');
+  }
+
+  openLegalModal() {
+    this.legalModal.classList.remove('hidden');
+
+    // Setup scroll indicators for Legal Modal
+    const modalBody = this.legalModal.querySelector('.modal-body');
+    const modalHeader = this.legalModal.querySelector('.modal-header');
+    // Legal modal doesn't have a footer button currently, but we might want shadows if we add one or just at the bottom
+    // The CSS .modal-footer logic relies on specific class structure. 
+    // The legal modal has body content. 
+    // Let's check logic for header shadow.
+
+    if (modalBody && modalHeader) {
+      modalBody.scrollTop = 0; // Reset scroll position to top
+
+      const updateIndicators = () => {
+        const isScrolled = modalBody.scrollTop > 5;
+        modalHeader.classList.toggle('scrolled', isScrolled);
+      };
+
+      modalBody.addEventListener('scroll', updateIndicators);
+      // Run once to initialize
+      setTimeout(updateIndicators, 50);
+      window.addEventListener('resize', updateIndicators);
+    }
+  }
+
+  closeLegalModal() {
+    this.legalModal.classList.add('hidden');
   }
 
   openConfigModal() {
