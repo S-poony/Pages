@@ -2,7 +2,7 @@
 
 Pages allows you to create static websites from PDF or EPUB.
 
-![Pages](./assets/pages logo.png)
+![Pages](./assets/pages_logo.png)
 
 ## Features
 
