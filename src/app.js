@@ -11,6 +11,8 @@ import pageFlipJs from 'page-flip/dist/js/page-flip.browser.js?raw';
 import flipbookCss from './flipbook.css?raw';
 import flipbookJs from './flipbook.js?raw';
 import JSZip from 'jszip';
+import legalEn from '../assets/legal/en.html?raw';
+import legalFr from '../assets/legal/fr.html?raw';
 
 // --- CONFIGURATION ---
 const WORKER_URL = 'https://content.lojkine.art'; // Your Cloudflare Worker Domain
@@ -29,6 +31,7 @@ class FlipbookApp {
     this.currentFolderData = null; // { html, assets }
     this.detectedTitle = ''; // Title auto-detected from PDF/EPUB metadata
     this.pendingFile = null; // File waiting for build confirmation
+    this.currentLegalLang = 'en';
   }
 
   /* ----------  UI initialisation  ---------- */
@@ -90,6 +93,9 @@ class FlipbookApp {
     this.legalBtn = document.getElementById('legal-btn');
     this.legalModal = document.getElementById('legal-modal');
     this.legalCloseBtn = document.getElementById('legal-close-btn');
+    this.legalLangEn = document.getElementById('legal-lang-en');
+    this.legalLangFr = document.getElementById('legal-lang-fr');
+    this.legalContent = document.getElementById('legal-content');
 
     // Config Modal Elements
     this.configBtn = document.getElementById('config-btn');
@@ -139,6 +145,8 @@ class FlipbookApp {
     // Legal Modal Listeners
     if (this.legalBtn) this.legalBtn.addEventListener('click', () => this.openLegalModal());
     if (this.legalCloseBtn) this.legalCloseBtn.addEventListener('click', () => this.closeLegalModal());
+    if (this.legalLangEn) this.legalLangEn.addEventListener('click', () => this.switchLegalLanguage('en'));
+    if (this.legalLangFr) this.legalLangFr.addEventListener('click', () => this.switchLegalLanguage('fr'));
 
     // Config Modal Listeners
     if (this.configBtn) this.configBtn.addEventListener('click', () => this.openConfigModal());
@@ -572,6 +580,7 @@ class FlipbookApp {
 
   openLegalModal() {
     this.legalModal.classList.remove('hidden');
+    this.switchLegalLanguage(this.currentLegalLang);
 
     // Setup scroll indicators for Legal Modal
     const modalBody = this.legalModal.querySelector('.modal-body');
@@ -594,6 +603,18 @@ class FlipbookApp {
 
   closeLegalModal() {
     this.legalModal.classList.add('hidden');
+  }
+
+  async switchLegalLanguage(lang) {
+    this.currentLegalLang = lang;
+
+    // Update buttons
+    if (this.legalLangEn) this.legalLangEn.classList.toggle('active', lang === 'en');
+    if (this.legalLangFr) this.legalLangFr.classList.toggle('active', lang === 'fr');
+
+    // Use imported content
+    const content = lang === 'fr' ? legalFr : legalEn;
+    this.legalContent.innerHTML = content;
   }
 
   openConfigModal() {
