@@ -97,6 +97,12 @@ document.addEventListener('DOMContentLoaded', () => {
         pageFlip.loadFromHTML(document.querySelectorAll('.page-container'));
         window.pageFlip = pageFlip;
 
+        // Initialize UI and Links AFTER pageFlip is ready
+        setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topControlsPanel, fullscreenBtn, wrapper, tocBtn, tableOfContents, tocModal, tocList, tocCloseBtn, tocOverlay, prevPageBtn, nextPageBtn);
+        if (typeof setupLinks === 'function') {
+            setupLinks(pageFlip, config);
+        }
+
         pageFlip.on('flip', (e) => {
             const pageNum = e.data + 1;
             if (pageInput) pageInput.value = pageNum;
@@ -148,9 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('flipbook-container').appendChild(blocker);
     }
 
-    // Initialize UI
-    setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topControlsPanel, fullscreenBtn, wrapper, tocBtn, tableOfContents, tocModal, tocList, tocCloseBtn, tocOverlay, prevPageBtn, nextPageBtn);
-
     // Initial setup
     updateTransform();
 
@@ -201,25 +204,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!window.location.hash && initialPage === null) {
         setPageInHash(1);
     }
-
-    // Handle EPUB Internal Links
-    document.addEventListener('click', (e) => {
-        const link = e.target.closest('a[data-epub-href]');
-        if (link) {
-            e.preventDefault();
-            const targetPath = link.getAttribute('data-epub-href');
-            const linkMap = config.linkMap || {};
-            if (linkMap[targetPath]) {
-                const targetPage = linkMap[targetPath];
-                if (pageFlip) pageFlip.flip(targetPage - 1);
-            } else {
-                const matchingKeys = Object.keys(linkMap).filter(key =>
-                    key.includes(targetPath) || targetPath.includes(key)
-                );
-                if (matchingKeys.length > 0) {
-                    // Could potentially flip to the first match
-                }
-            }
-        }
-    });
 });

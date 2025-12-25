@@ -16,11 +16,12 @@ import scalingJs from './js/flipbook/scaling.js?raw';
 import zoomJs from './js/flipbook/zoom.js?raw';
 import pageflipJsMod from './js/flipbook/pageflip.js?raw';
 import uiJs from './js/flipbook/ui.js?raw';
+import linksJs from './js/flipbook/links.js?raw';
 import mainJs from './js/flipbook/main.js?raw';
 
 const flipbookJs = [
   utilsJs, stateJs, navigationJs, scalingJs,
-  zoomJs, pageflipJsMod, uiJs, mainJs
+  zoomJs, pageflipJsMod, uiJs, linksJs, mainJs
 ].join('\n');
 
 import JSZip from 'jszip';
@@ -290,7 +291,7 @@ class FlipbookApp {
       };
 
       const result = await processPdf(file, opts);
-      const { pageCount, renderPage, renderPageVariants, tableOfContents } = result;
+      const { pageCount, renderPage, renderPageVariants, tableOfContents, pageLinks } = result;
 
       // Store detected title from PDF metadata
       this.detectedTitle = result.title || file.name.replace(/\.pdf$/i, '');
@@ -338,7 +339,7 @@ class FlipbookApp {
         loadCss: async () => flipbookCss,
         loadJs: async () => flipbookJs,
         loadPageFlipJs: async () => pageFlipJs
-      });
+      }, [], pageLinks);
 
       // Generate Folder Version (for ZIP download and publishing)
       const folderData = await generateFlipbookHtml(pageImages, {
@@ -351,7 +352,7 @@ class FlipbookApp {
         loadCss: async () => flipbookCss,
         loadJs: async () => flipbookJs,
         loadPageFlipJs: async () => pageFlipJs
-      });
+      }, [], pageLinks);
 
       this.currentHtml = htmlSingle;
       this.currentFolderData = folderData;

@@ -135,14 +135,37 @@ function generateSizes(doubleSpread) {
 }
 
 /**
+ * Renders PDF link annotations as absolute positioned <a> tags
+ * @param {Array} links - Array of normalized links
+ * @returns {string} HTML string of links
+ */
+function renderPdfLinks(links) {
+    if (!links || links.length === 0) return '';
+
+    return links.map(link => {
+        const style = `top: ${link.top}; left: ${link.left}; width: ${link.width}; height: ${link.height}; position: absolute;`;
+
+        let attr = '';
+        if (link.url) {
+            attr = `href="${escapeAttr(link.url)}" target="_blank" rel="noopener noreferrer"`;
+        } else if (link.pageNumber) {
+            attr = `href="javascript:void(0)" data-target-page="${link.pageNumber}"`;
+        }
+
+        return `<a class="pdf-link" style="${style}" ${attr} title="${escapeAttr(link.title || '')}"></a>`;
+    }).join('');
+}
+
+/**
  * Generates HTML for individual pages with enrichment support
  * @param {Array<string|Array<RenderVariant>>} pageImages - Array of either data URLs or variant arrays
  * @param {boolean} doubleSpread - Whether in double spread mode
  * @param {'single'|'folder'} mode - Generation mode
  * @param {Array<string>} [enrichmentHtmlList] - Array of raw HTML strings for each page's enrichment layer
+ * @param {Array<Object>} [pdfPageLinks] - Array of link collections for each page (PDF only)
  * @returns {string} HTML string for all pages
  */
-export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'single', enrichmentHtmlList = []) {
+export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'single', enrichmentHtmlList = [], pdfPageLinks = []) {
     if (!Array.isArray(pageImages)) {
         throw new Error('pageImages must be an array');
     }
@@ -188,6 +211,7 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
   ${imgTag}
   <div class="enrichment-layer">
     ${pageEnrichmentHtml}
+    ${renderPdfLinks(pdfPageLinks?.[i]?.links)}
   </div>
 </div>
 <!-- PAGE ${pageNum} END -->
@@ -203,10 +227,11 @@ export function generatePagesHtml(pageImages, doubleSpread = false, mode = 'sing
  * @param {GeneratorOptions} options - Generator options
  * @param {AssetLoader} assetLoader - Asset loader (optional, defaults to file loader)
  * @param {Array<string>} [enrichmentHtmlList] - Optional array of HTML strings for enrichment layers
+ * @param {Array<Object>} [pdfPageLinks] - Optional PDF link data
  * @returns {Promise<string|{html: string, assets: Array}>} Complete HTML document or object with assets
  */
 export async function generateFlipbookHtml(pageImages, options = {},
-    assetLoader = defaultAssetLoader, enrichmentHtmlList = []) {
+    assetLoader = defaultAssetLoader, enrichmentHtmlList = [], pdfPageLinks = []) {
     if (!Array.isArray(pageImages)) {
         throw new Error('pageImages must be an array');
     }
@@ -234,7 +259,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
 
     // Add content pages - FIXED: Pass enrichmentHtmlList
     pagesArray.push(
-        generatePagesHtml(pageImages, doubleSpread, mode, enrichmentHtmlList)
+        generatePagesHtml(pageImages, doubleSpread, mode, enrichmentHtmlList, pdfPageLinks)
     );
 
     // Add blank page at end if odd number of pages
@@ -292,6 +317,16 @@ export async function generateFlipbookHtml(pageImages, options = {},
         pointer-events: auto;
         z-index: 10;
         overflow: hidden;
+        }
+
+        .pdf-link {
+        display: block;
+        cursor: pointer;
+        z-index: 15;
+        }
+
+        .pdf-link:hover {
+        background-color: rgba(255, 255, 0, 0.2);
         }
         /* --- END UTILITIES --- */
         </style>
