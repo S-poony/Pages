@@ -256,7 +256,16 @@ export async function createEnrichedPages(book, zip, options, epubDefaultsCss = 
                 // 5. Sanitize and Paginate
                 const sanitizedHtml = sanitizeEpubHtml(tempDiv.innerHTML);
                 stagingContainer.innerHTML = '';
-                const { pages: contentPages, anchors: pageAnchors } = await paginateContent(sanitizedHtml, measureContainer, pageHeight);
+
+                // Chapter-start selectors to force a new page
+                const forceBreakSelector = 'h1, h2, h3, .chapter, [style*="page-break-before: always"]';
+
+                const { pages: contentPages, anchors: pageAnchors } = await paginateContent(
+                    sanitizedHtml,
+                    measureContainer,
+                    pageHeight,
+                    forceBreakSelector
+                );
 
                 linkMap[decodeURIComponent(item.href)] = globalPageIndex + 1;
                 for (const [anchorId, localPageIndex] of Object.entries(pageAnchors)) {

@@ -10,9 +10,10 @@
  * @param {string} html - HTML content to paginate
  * @param {HTMLElement} measureContainer - Hidden container for measuring
  * @param {number} pageHeight - Target height for each page
+ * @param {string} [forceBreakSelector] - Optional CSS selector to force a new page
  * @returns {Promise<{pages: Array<string>, anchors: Object}>} Array of HTML strings for each page and anchor map
  */
-export async function paginateContent(html, measureContainer, pageHeight) {
+export async function paginateContent(html, measureContainer, pageHeight, forceBreakSelector = null) {
     const pages = [];
     const anchors = {}; // Map of anchorId -> pageIndex (0-based within this chapter)
     const sourceDiv = document.createElement('div');
@@ -41,6 +42,25 @@ export async function paginateContent(html, measureContainer, pageHeight) {
     };
 
     const processNodeRecursive = (node, targetParent, ancestors) => {
+        // Handle forced page breaks
+        if (forceBreakSelector && node.nodeType === Node.ELEMENT_NODE && node.matches(forceBreakSelector)) {
+            // Only force break if we are NOT at the very start of a fresh page
+            const isAtStartOfPage = currentPageDiv.childNodes.length === 0;
+            if (!isAtStartOfPage) {
+                console.log('Forcing page break for selector:', forceBreakSelector, node.tagName);
+                startNewPage();
+                // After starting a new page, the targetParent for this node should be set to the newly created currentPageDiv context
+                // However, we need to reconstruct the ancestor path on the new page first
+                let currentNewParent = currentPageDiv;
+                for (const ancestor of ancestors) {
+                    const ancestorClone = ancestor.cloneNode(false);
+                    currentNewParent.appendChild(ancestorClone);
+                    currentNewParent = ancestorClone;
+                }
+                targetParent = currentNewParent;
+            }
+        }
+
         const deepClone = node.cloneNode(true);
         targetParent.appendChild(deepClone);
 
