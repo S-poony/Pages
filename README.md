@@ -23,19 +23,19 @@ Pages allows you to create static websites from PDF or EPUB.
 7. Full screen and portrait mode for mobile
 
 8. Discreet control panel to navigate to a specific page/zoom
-
-9. Dynamic table of contents automatically generated from the document's structure
-
-10. The page number is in the URL
+9. **Page Links List**: A dedicated UI button that dynamically appears to list all internal and external links found on the current visible page(s).
+10. Dynamic table of contents automatically generated from the document's structure
+11. The page number is in the URL
 	1. Ability to share/save a specific page
 	2. Reloading the page doesn’t make you come back to the beginning of the book
 	3. If your book has 30 pages and you published it on the internet, there’s a 30 times more chance that the gods of the algorithm will make you rich and famous
 
-### PDF
 - enable "Multi-scales" to scan the pdf document at multiple resolutions for extremely high quality
 - "Double-spread" mode to cut each page into 2 (Use if your PDF is a scan of a book with two pages of the book per pdf page)
+- **Automatic Link Extraction**: Internal links (bookmarks, cross-references) and external URLs are automatically detected and functional.
 ### EPUB
 - edit font size
+- **Chapter Page Breaks**: Chapters always start at the top of a new page for a professional layout.
 - internal links to specific pages work
 - external links to URLs also work
 
@@ -360,12 +360,10 @@ The application uses [pdf.js](https://mozilla.github.io/pdf.js/), Mozilla's PDF 
   
 
 1. **Load PDF**: The PDF file is loaded from disk into browser memory
-
-2. **Render Pages**: Each page is rendered to an HTML canvas element using pdf.js
-
-3. **Convert to Images**: Canvas content is converted to JPEG images (base64-encoded)
-
-4. **Store**: All images are stored in memory for instant access
+2. **Extract Links**: Annotations are scanned to identify internal navigation and external URLs.
+3. **Render Pages**: Each page is rendered to an HTML canvas element using pdf.js
+4. **Convert to Images**: Canvas content is converted to JPEG images (base64-encoded)
+5. **Store**: All images are stored in memory for instant access
 
   
 
@@ -421,6 +419,16 @@ The flipbook engine is responsible for the interactive 3D turning experience and
 - `navigation.js`: URL hash synchronization.
 - `state.js`: Centralized reactive state.
 - `utils.js`: Shared performance helpers (debounce, etc.).
+
+### Builder Application (`src/app.js` & `src/js/app/`)
+The builder UI is a modular application that coordinates the document processing and publishing workflow.
+
+- `app.js`: Main application entry point and orchestration.
+- `config.js`: Centralized configuration constants.
+- `ui/modals.js`: Management of UI modals (Info, Legal, Config, Success).
+- `services/publish.js`: Cloudflare Worker integration for one-click publishing.
+- `services/download.js`: Local HTML and ZIP generation.
+- `core/processor-ui.js`: Orchestrates the rendering loops and progress updates.
 
 ## Troubleshooting
 
