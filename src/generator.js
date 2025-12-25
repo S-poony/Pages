@@ -49,11 +49,17 @@ export const defaultAssetLoader = {
     },
 
     async loadJs() {
+        const modules = [
+            'utils.js', 'state.js', 'navigation.js', 'scaling.js',
+            'zoom.js', 'pageflip.js', 'ui.js', 'main.js'
+        ];
         try {
-            const response = await fetch('./src/flipbook.js');
-            return await response.text();
+            const contents = await Promise.all(
+                modules.map(m => fetch(`./src/js/flipbook/${m}`).then(r => r.text()))
+            );
+            return contents.join('\n');
         } catch (error) {
-            console.warn('Could not load JS file, using fallback');
+            console.warn('Could not load modular JS files, using fallback');
             return '';
         }
     }

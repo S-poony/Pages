@@ -9,7 +9,20 @@ import { generateFlipbookHtml } from './generator.js';
 import { sanitizeTitle, slugifyTitle } from './sanitizer.js';
 import pageFlipJs from 'page-flip/dist/js/page-flip.browser.js?raw';
 import flipbookCss from './flipbook.css?raw';
-import flipbookJs from './flipbook.js?raw';
+import utilsJs from './js/flipbook/utils.js?raw';
+import stateJs from './js/flipbook/state.js?raw';
+import navigationJs from './js/flipbook/navigation.js?raw';
+import scalingJs from './js/flipbook/scaling.js?raw';
+import zoomJs from './js/flipbook/zoom.js?raw';
+import pageflipJsMod from './js/flipbook/pageflip.js?raw';
+import uiJs from './js/flipbook/ui.js?raw';
+import mainJs from './js/flipbook/main.js?raw';
+
+const flipbookJs = [
+  utilsJs, stateJs, navigationJs, scalingJs,
+  zoomJs, pageflipJsMod, uiJs, mainJs
+].join('\n');
+
 import JSZip from 'jszip';
 import legalEn from '../assets/legal/en.html?raw';
 import legalFr from '../assets/legal/fr.html?raw';
