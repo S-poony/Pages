@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.pageFlip = pageFlip;
 
         // Initialize UI and Links AFTER pageFlip is ready
-        setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topControlsPanel, fullscreenBtn, wrapper, tocBtn, tableOfContents, tocModal, tocList, tocCloseBtn, tocOverlay, prevPageBtn, nextPageBtn);
+        setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topControlsPanel, fullscreenBtn, wrapper, tocBtn, tableOfContents, tocModal, tocList, tocCloseBtn, tocOverlay, prevPageBtn, nextPageBtn, pageLinksBtn, linksModal, linksList, linksCloseBtn);
         if (typeof setupLinks === 'function') {
             setupLinks(pageFlip, config);
         }
@@ -112,6 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
             updateImageSizes();
             updateEpubContentScale();
             preloadNextSpread(e.data);
+
+            if (typeof updateLinksButtonVisibility === 'function') {
+                updateLinksButtonVisibility();
+            }
         });
 
         pageFlip.on('init', () => {
@@ -138,6 +142,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const tocCloseBtn = document.getElementById('toc-close-btn');
     const tocOverlay = document.querySelector('.toc-overlay');
     const tableOfContents = config.tableOfContents || [];
+
+    // Page Links Elements
+    const pageLinksBtn = document.getElementById('page-links-btn');
+    const linksModal = document.getElementById('links-modal');
+    const linksList = document.getElementById('links-list');
+    const linksCloseBtn = document.getElementById('links-close-btn');
 
     // Create Zoom Blocker
     let blocker = document.getElementById('zoom-blocker');

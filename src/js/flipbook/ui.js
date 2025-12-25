@@ -2,7 +2,7 @@
  * Flipbook UI Module
  * Manages all UI event listeners, controls (zoom, full-screen, TOC), and user input handling.
  */
-function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topControlsPanel, fullscreenBtn, wrapper, tocBtn, tableOfContents, tocModal, tocList, tocCloseBtn, tocOverlay, prevPageBtn, nextPageBtn) {
+function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topControlsPanel, fullscreenBtn, wrapper, tocBtn, tableOfContents, tocModal, tocList, tocCloseBtn, tocOverlay, prevPageBtn, nextPageBtn, pageLinksBtn, linksModal, linksList, linksCloseBtn) {
     // Mobile-friendly control panel activation (both panels share state)
     let controlsPanelTimeout = null;
     let isUsingSlider = false;
@@ -160,6 +160,111 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                 closeTOC();
             }
         });
+    }
+
+    // Page Links List
+    if (pageLinksBtn && linksModal && linksList) {
+        const isExternalUrl = (url) => url && (url.startsWith('http') || url.startsWith('mailto:') || url.startsWith('tel:'));
+
+        const getLinksFromVisiblePages = () => {
+            if (!pageFlip) return [];
+            const activeIndex = pageFlip.getCurrentPageIndex();
+            const display = pageFlip.getOrientation() === 'landscape' ? 'double' : 'single';
+
+            const pageContainers = document.querySelectorAll('.page-container');
+            const indices = [activeIndex];
+            if (display === 'double') indices.push(activeIndex + 1);
+
+            const links = [];
+            indices.forEach(idx => {
+                const page = pageContainers[idx];
+                if (!page) return;
+
+                // Query all links in the enrichment layer
+                const pageLinks = page.querySelectorAll('.enrichment-layer a');
+                pageLinks.forEach(a => {
+                    const epubHref = a.getAttribute('data-epub-href');
+                    let targetPage = a.getAttribute('data-target-page');
+
+                    // Resolve EPUB link for the list title/target if possible
+                    if (epubHref) {
+                        const linkMap = (window.FLIPBOOK_CONFIG && window.FLIPBOOK_CONFIG.linkMap) || {};
+                        targetPage = linkMap[epubHref];
+                    }
+
+                    const href = a.getAttribute('href');
+                    const isExternal = isExternalUrl(href);
+
+                    links.push({
+                        title: a.getAttribute('title') || a.textContent.trim() || (isExternal ? 'External Link' : 'Internal Link'),
+                        url: isExternal ? href : null,
+                        targetPage: targetPage,
+                        epubHref: epubHref
+                    });
+                });
+            });
+            return links;
+        };
+
+        const updateLinksButtonVisibility = () => {
+            const links = getLinksFromVisiblePages();
+            if (links.length > 0) {
+                pageLinksBtn.style.display = 'flex';
+            } else {
+                pageLinksBtn.style.display = 'none';
+                closeLinks();
+            }
+        };
+
+        const renderLinks = (links) => {
+            linksList.innerHTML = '';
+            links.forEach(link => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'toc-item';
+
+                let targetText = '';
+                if (link.url) {
+                    targetText = link.url.length > 30 ? link.url.substring(0, 27) + '...' : link.url;
+                } else if (link.targetPage) {
+                    targetText = `Page ${link.targetPage}`;
+                }
+
+                itemEl.innerHTML = `<span class="toc-item-title">${link.title}</span><span class="toc-item-page">${targetText}</span>`;
+
+                itemEl.addEventListener('click', () => {
+                    if (link.url) {
+                        window.open(link.url, '_blank');
+                    } else if (link.targetPage) {
+                        const pageNum = parseInt(link.targetPage, 10);
+                        if (!isNaN(pageNum)) {
+                            console.log('Links Modal: Flipping to page', pageNum);
+                            pageFlip.flip(pageNum - 1);
+                        }
+                    }
+                    closeLinks();
+                });
+                linksList.appendChild(itemEl);
+            });
+        };
+
+        const openLinks = () => {
+            const links = getLinksFromVisiblePages();
+            renderLinks(links);
+            linksModal.classList.remove('hidden');
+        };
+        const closeLinks = () => linksModal.classList.add('hidden');
+
+        pageLinksBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openLinks();
+        });
+        if (linksCloseBtn) linksCloseBtn.addEventListener('click', closeLinks);
+
+        // Expose to window for main.js to call
+        window.updateLinksButtonVisibility = updateLinksButtonVisibility;
+
+        // Initial check
+        setTimeout(updateLinksButtonVisibility, 500);
     }
 
     // Keyboard navigation

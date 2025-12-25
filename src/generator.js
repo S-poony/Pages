@@ -384,7 +384,12 @@ ENRICHMENT GUIDE:
                 </button>
             </div>
             
-            <div style="width: 40px;"></div> <!-- Spacer -->
+            <button id="page-links-btn" class="icon-btn" aria-label="Page Links" style="display: none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+            </button>
         </div>
 
         <div id="toc-modal" class="toc-modal hidden">
@@ -401,6 +406,21 @@ ENRICHMENT GUIDE:
                 <div id="toc-list" class="toc-list"></div>
             </div>
         </div>
+
+        <div id="links-modal" class="toc-modal hidden">
+            <div class="toc-overlay"></div>
+            <div class="toc-content">
+                <div class="toc-header">
+                    <h2>Page Links</h2>
+                    <button id="links-close-btn" aria-label="Close">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div id="links-list" class="toc-list"></div>
+            </div>
+        </div>
     </div>
     <script>
         // Flipbook Configuration
@@ -411,7 +431,8 @@ ENRICHMENT GUIDE:
             doubleSpread: ${doubleSpread},
             pageAspectRatio: ${aspectRatio},
             linkMap: ${JSON.stringify(options.linkMap || {})},
-            tableOfContents: ${JSON.stringify(options.tableOfContents || [])}
+            tableOfContents: ${JSON.stringify(options.tableOfContents || [])},
+            pageLinks: ${JSON.stringify(options.pageLinks || [])}
         };
     </script>
     <script>${pageFlipJs}</script>

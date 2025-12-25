@@ -26,6 +26,7 @@ function setupLinks(pageFlip, config) {
         const epubHref = link.getAttribute('data-epub-href');
         if (epubHref) {
             e.preventDefault();
+            e.stopPropagation(); // Prevent StPageFlip from seeing the click
             const linkMap = config.linkMap || {};
 
             // Try direct match
@@ -42,10 +43,10 @@ function setupLinks(pageFlip, config) {
             }
 
             if (targetPage && pageFlip) {
-                console.log('Flipping to EPUB page:', targetPage);
+                console.log('EPUB Link clicked (capture): Target Page =', targetPage);
                 pageFlip.flip(targetPage - 1);
             } else {
-                console.warn('Could not resolve EPUB link:', epubHref);
+                console.warn('EPUB Link click: Could not resolve target', { epubHref, hasLinkMap: !!linkMap.length });
             }
             return;
         }
@@ -54,10 +55,14 @@ function setupLinks(pageFlip, config) {
         const targetPage = link.getAttribute('data-target-page');
         if (targetPage) {
             e.preventDefault();
+            e.stopPropagation(); // Prevent StPageFlip from seeing the click
+
             const pageNum = parseInt(targetPage, 10);
             if (!isNaN(pageNum) && pageFlip) {
-                console.log('Flipping to PDF page:', pageNum);
+                console.log('PDF Link clicked (capture): Target Page =', pageNum);
                 pageFlip.flip(pageNum - 1);
+            } else {
+                console.warn('PDF Link click: Could not navigate', { pageNum, hasPageFlip: !!pageFlip });
             }
             return;
         }
