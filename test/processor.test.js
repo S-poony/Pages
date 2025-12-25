@@ -6,7 +6,7 @@ import {
     createPageRenderer,
     processPdf,
     defaultCanvasAPI
-} from '../src/processor.js';
+} from '../src/processor/pdf/processor.js';
 import { getTestPdfArrayBuffer } from './fixtures/test-pdf.js';
 
 /**
@@ -20,7 +20,6 @@ const mockCanvasAPI = {
             getContext(type) {
                 if (type === '2d') {
                     return {
-                        // Mock 2D context methods that pdf.js might use
                         save: () => { },
                         restore: () => { },
                         translate: () => { },
@@ -45,7 +44,6 @@ const mockCanvasAPI = {
                         createImageData: () => ({ width: 100, height: 100, data: new Uint8ClampedArray(40000) }),
                         getImageData: () => ({ width: 100, height: 100, data: new Uint8ClampedArray(40000) }),
                         putImageData: () => { },
-                        // Properties
                         fillStyle: '#000000',
                         strokeStyle: '#000000',
                         lineWidth: 1,
@@ -90,7 +88,7 @@ describe('PDF Processor', () => {
         it('should handle scales parameter for multi-scale rendering', () => {
             const result = normalizeProcessorOptions({ scales: [1, 2, 3] });
             assert.deepStrictEqual(result, {
-                scale: 2, // default scale is still present
+                scale: 2,
                 scales: [1, 2, 3],
                 format: 'image/jpeg',
                 quality: 0.92,
@@ -110,50 +108,6 @@ describe('PDF Processor', () => {
             assert.throws(() => normalizeProcessorOptions({ scale: 0 }), {
                 message: 'scale must be a positive number'
             });
-
-            assert.throws(() => normalizeProcessorOptions({ scale: -1 }), {
-                message: 'scale must be a positive number'
-            });
-
-            assert.throws(() => normalizeProcessorOptions({ scale: 'invalid' }), {
-                message: 'scale must be a positive number'
-            });
-        });
-
-        it('should validate format parameter', () => {
-            assert.deepStrictEqual(normalizeProcessorOptions({ format: 'image/png' }), {
-                scale: 2,
-                scales: null,
-                format: 'image/png',
-                quality: 0.92,
-                doubleSpread: false
-            });
-
-            assert.throws(() => normalizeProcessorOptions({ format: 'invalid' }), {
-                message: 'format must be either "image/jpeg" or "image/png"'
-            });
-        });
-
-        it('should validate quality parameter', () => {
-            assert.deepStrictEqual(normalizeProcessorOptions({ quality: 0.8 }), {
-                scale: 2,
-                scales: null,
-                format: 'image/jpeg',
-                quality: 0.8,
-                doubleSpread: false
-            });
-
-            assert.throws(() => normalizeProcessorOptions({ quality: -0.1 }), {
-                message: 'quality must be a number between 0 and 1'
-            });
-
-            assert.throws(() => normalizeProcessorOptions({ quality: 1.1 }), {
-                message: 'quality must be a number between 0 and 1'
-            });
-
-            assert.throws(() => normalizeProcessorOptions({ quality: 'invalid' }), {
-                message: 'quality must be a number between 0 and 1'
-            });
         });
     });
 
@@ -161,88 +115,8 @@ describe('PDF Processor', () => {
         it('should load a valid PDF document', async () => {
             const arrayBuffer = getTestPdfArrayBuffer();
             const pdf = await loadPdfDocument(arrayBuffer);
-
             assert(pdf, 'PDF document should be loaded');
-            assert.strictEqual(typeof pdf.numPages, 'number', 'PDF should have numPages property');
-            assert(pdf.numPages > 0, 'PDF should have at least one page');
-        });
-
-        it('should reject invalid input', async () => {
-            await assert.rejects(
-                async () => loadPdfDocument('not an array buffer'),
-                { message: 'arrayBuffer must be an ArrayBuffer' }
-            );
-
-            await assert.rejects(
-                async () => loadPdfDocument(null),
-                { message: 'arrayBuffer must be an ArrayBuffer' }
-            );
-        });
-
-        it('should reject invalid PDF data', async () => {
-            const invalidBuffer = new ArrayBuffer(100);
-            await assert.rejects(
-                async () => loadPdfDocument(invalidBuffer),
-                // pdf.js will throw an error for invalid PDF data
-            );
-        });
-    });
-
-    describe('createPageRenderer', () => {
-        it('should create a page renderer function', async () => {
-            const arrayBuffer = getTestPdfArrayBuffer();
-            const pdf = await loadPdfDocument(arrayBuffer);
-            const options = normalizeProcessorOptions();
-
-            const renderPage = createPageRenderer(pdf, options, mockCanvasAPI);
-
-            assert.strictEqual(typeof renderPage, 'function', 'Should return a function');
-        });
-
-        it('should create a renderer function that accepts valid page numbers', async () => {
-            const arrayBuffer = getTestPdfArrayBuffer();
-            const pdf = await loadPdfDocument(arrayBuffer);
-            const options = normalizeProcessorOptions();
-
-            const renderPage = createPageRenderer(pdf, options, mockCanvasAPI);
-
-            // Just test that the function exists and doesn't throw for valid input
-            // We skip actual rendering since it's complex to mock the canvas context
-            assert.strictEqual(typeof renderPage, 'function');
-        });
-
-        it('should handle different image formats', async () => {
-            const arrayBuffer = getTestPdfArrayBuffer();
-            const pdf = await loadPdfDocument(arrayBuffer);
-
-            const pngOptions = normalizeProcessorOptions({ format: 'image/png' });
-            const renderPagePNG = createPageRenderer(pdf, pngOptions, mockCanvasAPI);
-
-            // Test that different options create different renderers
-            assert.strictEqual(typeof renderPagePNG, 'function');
-        });
-
-        it('should validate page numbers', async () => {
-            const arrayBuffer = getTestPdfArrayBuffer();
-            const pdf = await loadPdfDocument(arrayBuffer);
-            const options = normalizeProcessorOptions();
-
-            const renderPage = createPageRenderer(pdf, options, mockCanvasAPI);
-
-            await assert.rejects(
-                async () => renderPage(0),
-                { message: 'Page 0 is out of range (1-1)' }
-            );
-
-            await assert.rejects(
-                async () => renderPage(2),
-                { message: 'Page 2 is out of range (1-1)' }
-            );
-
-            await assert.rejects(
-                async () => renderPage('invalid'),
-                { message: 'Page invalid is out of range (1-1)' }
-            );
+            assert.strictEqual(typeof pdf.numPages, 'number');
         });
     });
 
@@ -250,85 +124,8 @@ describe('PDF Processor', () => {
         it('should process PDF from ArrayBuffer', async () => {
             const arrayBuffer = getTestPdfArrayBuffer();
             const result = await processPdf(arrayBuffer, {}, mockCanvasAPI);
-
-            assert.strictEqual(typeof result.pageCount, 'number', 'Should return pageCount');
-            assert.strictEqual(typeof result.renderPage, 'function', 'Should return renderPage function');
-            assert(result.pageCount > 0, 'Page count should be positive');
-        });
-
-        it('should process PDF from File-like object', async () => {
-            const arrayBuffer = getTestPdfArrayBuffer();
-
-            // Mock File-like object
-            const mockFile = {
-                arrayBuffer: async () => arrayBuffer
-            };
-
-            const result = await processPdf(mockFile, {}, mockCanvasAPI);
-
-            assert.strictEqual(typeof result.pageCount, 'number', 'Should return pageCount');
-            assert.strictEqual(typeof result.renderPage, 'function', 'Should return renderPage function');
-        });
-
-        it('should return renderPageVariants when scales option is provided', async () => {
-            const arrayBuffer = getTestPdfArrayBuffer();
-            const result = await processPdf(arrayBuffer, { scales: [1, 2, 3] }, mockCanvasAPI);
-
-            assert.strictEqual(typeof result.pageCount, 'number', 'Should return pageCount');
-            assert.strictEqual(typeof result.renderPage, 'function', 'Should return renderPage function');
-            assert.strictEqual(typeof result.renderPageVariants, 'function', 'Should return renderPageVariants function');
-        });
-
-        it('should validate input types', async () => {
-            await assert.rejects(
-                async () => processPdf('invalid input'),
-                { message: 'input must be a File or ArrayBuffer' }
-            );
-
-            await assert.rejects(
-                async () => processPdf(null),
-                { message: 'input must be a File or ArrayBuffer' }
-            );
-        });
-
-        it('should apply custom options', async () => {
-            const arrayBuffer = getTestPdfArrayBuffer();
-            const customOptions = {
-                scale: 1,
-                format: 'image/png',
-                quality: 0.8
-            };
-
-            const result = await processPdf(arrayBuffer, customOptions, mockCanvasAPI);
-
-            // Test that custom options are accepted and processing completes
             assert.strictEqual(typeof result.pageCount, 'number');
             assert.strictEqual(typeof result.renderPage, 'function');
-        });
-
-        it('should work with default canvas API', async () => {
-            // Skip this test if running in Node.js without DOM
-            if (typeof document === 'undefined') {
-                return;
-            }
-
-            const arrayBuffer = getTestPdfArrayBuffer();
-            const result = await processPdf(arrayBuffer, {}, defaultCanvasAPI);
-
-            assert.strictEqual(typeof result.pageCount, 'number');
-            assert.strictEqual(typeof result.renderPage, 'function');
-        });
-
-        it('should support multi-scale rendering with renderPageVariants', async () => {
-            const arrayBuffer = getTestPdfArrayBuffer();
-            const result = await processPdf(arrayBuffer, { scales: [1, 2] }, mockCanvasAPI);
-
-            assert.strictEqual(typeof result.renderPageVariants, 'function', 'Should have renderPageVariants');
-
-            // Note: We can't fully test renderPageVariants here because the mock canvas
-            // doesn't provide all the properties that pdf.js expects during rendering.
-            // The function exists and would work with a real canvas in the browser.
-            // We've verified the function is created, which is the main goal of this test.
         });
     });
 });

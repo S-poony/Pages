@@ -4,7 +4,7 @@ import {
     normalizeEpubProcessorOptions,
     loadEpubDocument,
     processEpub
-} from '../src/epub-processor.js';
+} from '../src/processor/epub/processor.js';
 
 describe('EPUB Processor', () => {
     describe('normalizeEpubProcessorOptions', () => {

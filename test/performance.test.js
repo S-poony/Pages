@@ -1,9 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { processPdf, defaultCanvasAPI, normalizeProcessorOptions } from '../src/processor.js';
+import { processPdf, defaultCanvasAPI, normalizeProcessorOptions, createPageRenderer } from '../src/processor/pdf/processor.js';
 import { getTestPdfArrayBuffer } from './fixtures/test-pdf.js';
 
-// Reuse comprehensive mock canvas API used in processor tests
 const mockCanvasAPI = {
     createCanvas() {
         const canvas = {
@@ -12,30 +11,30 @@ const mockCanvasAPI = {
             getContext(type) {
                 if (type === '2d') {
                     return {
-                        save: () => {},
-                        restore: () => {},
-                        translate: () => {},
-                        scale: () => {},
-                        transform: () => {},
-                        setTransform: () => {},
-                        clearRect: () => {},
-                        fillRect: () => {},
-                        strokeRect: () => {},
-                        beginPath: () => {},
-                        closePath: () => {},
-                        moveTo: () => {},
-                        lineTo: () => {},
-                        bezierCurveTo: () => {},
-                        quadraticCurveTo: () => {},
-                        arc: () => {},
-                        rect: () => {},
-                        fill: () => {},
-                        stroke: () => {},
-                        clip: () => {},
-                        drawImage: () => {},
+                        save: () => { },
+                        restore: () => { },
+                        translate: () => { },
+                        scale: () => { },
+                        transform: () => { },
+                        setTransform: () => { },
+                        clearRect: () => { },
+                        fillRect: () => { },
+                        strokeRect: () => { },
+                        beginPath: () => { },
+                        closePath: () => { },
+                        moveTo: () => { },
+                        lineTo: () => { },
+                        bezierCurveTo: () => { },
+                        quadraticCurveTo: () => { },
+                        arc: () => { },
+                        rect: () => { },
+                        fill: () => { },
+                        stroke: () => { },
+                        clip: () => { },
+                        drawImage: () => { },
                         createImageData: () => ({ width: 100, height: 100, data: new Uint8ClampedArray(40000) }),
                         getImageData: () => ({ width: 100, height: 100, data: new Uint8ClampedArray(40000) }),
-                        putImageData: () => {},
+                        putImageData: () => { },
                         fillStyle: '#000000',
                         strokeStyle: '#000000',
                         lineWidth: 1,
@@ -66,9 +65,6 @@ const mockCanvasAPI = {
 
 describe('Performance', () => {
     it('renderPage should complete within 2000ms', async () => {
-        // Use a lightweight fake PDF object to avoid pdf.js internals in this
-        // perf test. This simulates a PDF page render without invoking heavy
-        // CanvasGraphics logic.
         const fakePdf = {
             numPages: 1,
             getPage: async () => ({
@@ -78,8 +74,6 @@ describe('Performance', () => {
         };
 
         const options = normalizeProcessorOptions();
-        // Import createPageRenderer directly from processor module
-        const { createPageRenderer } = await import('../src/processor.js');
         const renderPage = createPageRenderer(fakePdf, options, mockCanvasAPI);
 
         const start = Date.now();

@@ -27,7 +27,7 @@
 // Lazy initialization of pdf.js to handle different environments
 let pdfjsLibPromise = null;
 
-import { extractBookmarks } from './pdf-bookmarks.js';
+import { extractBookmarks } from './bookmarks.js';
 
 async function getPdfJsLib() {
     if (!pdfjsLibPromise) {

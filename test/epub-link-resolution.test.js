@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { paginateContent, createEnrichedPages } from '../src/epub-processor.js';
+import { paginateContent, createEnrichedPages } from '../src/processor/epub/processor.js';
 
 // Mock DOM environment for Node.js
 import { JSDOM } from 'jsdom';
@@ -25,27 +25,15 @@ describe('EPUB Link Resolution', () => {
             const measureContainer = document.createElement('div');
             document.body.appendChild(measureContainer);
 
-            // Mock offsetHeight to force splits
-            // We need to override offsetHeight on the created elements inside paginateContent
-            // Since we can't easily do that without proxying document.createElement,
-            // we'll rely on the logic that splits based on height.
-            // But wait, paginateContent uses measureContainer.offsetHeight.
-            // In JSDOM, offsetHeight is always 0 unless we do layout.
-            // We can mock Object.defineProperty(HTMLElement.prototype, 'offsetHeight', ...)
-
             let currentHeight = 0;
             Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
                 get: function () {
-                    // Simple mock: assume each div adds 100px, except the big one
                     if (this.innerHTML.includes('Page 2 Content')) return 2000;
                     if (this.childNodes.length > 0) return currentHeight;
                     return 0;
-                }
+                },
+                configurable: true
             });
-
-            // We need to control the height accumulation manually or use a simpler test
-            // where we just check if IDs are captured, regardless of pagination.
-            // If we set pageHeight huge, everything fits on page 1.
 
             const pageHeight = 5000;
             const { pages, anchors } = await paginateContent(html, measureContainer, pageHeight);
@@ -61,7 +49,6 @@ describe('EPUB Link Resolution', () => {
 
     describe('createEnrichedPages', () => {
         it('should build linkMap and rewrite internal links', async () => {
-            // Mock Book Object
             const mockBook = {
                 spine: {
                     spineItems: [
@@ -91,10 +78,9 @@ describe('EPUB Link Resolution', () => {
                     ]
                 },
                 packageUrl: 'OEBPS/content.opf',
-                load: async () => '' // Mock CSS load
+                load: async () => ''
             };
 
-            // Mock Zip Object
             const mockZip = {
                 files: {},
                 file: () => null
@@ -106,40 +92,16 @@ describe('EPUB Link Resolution', () => {
                 backgroundColor: '#fff'
             };
 
-            // We need to mock paginateContent to return predictable anchors
-            // But we are importing the real one.
-            // Since we can't easily mock the imported function in ES modules without a loader,
-            // we will rely on the real paginateContent working with our JSDOM setup.
-            // We ensure pageHeight is large enough to avoid splitting for simplicity.
-
             const { pages, linkMap } = await createEnrichedPages(mockBook, mockZip, options);
 
-            // Check Link Map
-            // Chapter 1 is page 1 (index 0 + 1)
             assert.strictEqual(linkMap['Text/chapter1.xhtml'], 1);
-            // Anchor in Chapter 1
             assert.strictEqual(linkMap['Text/chapter1.xhtml#intro'], 1);
-
-            // Chapter 2 is page 2 (index 1 + 1)
             assert.strictEqual(linkMap['Text/chapter2.xhtml'], 2);
-            // Anchor in Chapter 2
             assert.strictEqual(linkMap['Text/chapter2.xhtml#section1'], 2);
 
-            // Check Link Rewriting in Page 1
             const page1Html = pages[0].enrichmentHtml;
-
-            // Link to chapter2.xhtml#section1
-            // Base: Text/chapter1.xhtml -> Text/
-            // Target: Text/chapter2.xhtml#section1
-            // Key: Text/chapter2.xhtml#section1
             assert(page1Html.includes('data-epub-href="Text/chapter2.xhtml#section1"'));
-
-            // Link to #intro (same page)
-            // Base: Text/chapter1.xhtml
-            // Target: Text/chapter1.xhtml#intro
             assert(page1Html.includes('data-epub-href="Text/chapter1.xhtml#intro"'));
-
-            // External link should be untouched (except target=_blank)
             assert(page1Html.includes('href="http://google.com"'));
             assert(page1Html.includes('target="_blank"'));
         });

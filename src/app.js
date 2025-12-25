@@ -3,10 +3,10 @@
  * Orchestrates PDF processing, flipbook generation, UI management, and Cloudflare Publishing
  */
 
-import { processPdf } from './processor.js';
-import { processEpub } from './epub-processor.js';
+import { processPdf } from './processor/pdf/processor.js';
+import { processEpub } from './processor/epub/processor.js';
 import { generateFlipbookHtml } from './generator.js';
-import { sanitizeTitle, slugifyTitle } from './sanitizer.js';
+import { sanitizeTitle, slugifyTitle } from './processor/common/sanitizer.js';
 import pageFlipJs from 'page-flip/dist/js/page-flip.browser.js?raw';
 import flipbookCss from './flipbook.css?raw';
 import utilsJs from './js/flipbook/utils.js?raw';

@@ -11,7 +11,7 @@
 
 import ePub from 'epubjs';
 import JSZip from 'jszip';
-import { sanitizeEpubHtml } from './sanitizer.js';
+import { sanitizeEpubHtml } from '../common/sanitizer.js';
 
 let EPUB_DEFAULTS_CSS = '';
 
@@ -655,7 +655,7 @@ export async function processEpub(input, options = {}) {
     // Load CSS on demand if in browser
     if (typeof window !== 'undefined' && !EPUB_DEFAULTS_CSS) {
         try {
-            const module = await import('./epub-defaults.css?raw');
+            const module = await import('./defaults.css?raw');
             EPUB_DEFAULTS_CSS = module.default;
         } catch (e) {
             console.warn('Failed to load epub-defaults.css?raw:', e);

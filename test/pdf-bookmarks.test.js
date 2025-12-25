@@ -1,4 +1,4 @@
-import { extractBookmarks } from '../src/pdf-bookmarks.js';
+import { extractBookmarks } from '../src/processor/pdf/bookmarks.js';
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 
