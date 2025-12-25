@@ -1,5 +1,7 @@
 /**
  * EPUB Pagination Module
+ * Implements a recursive DOM walker that splits reflowable HTML content into
+ * discrete pages based on height constraints, while avoiding cutting text or images.
  */
 
 /**

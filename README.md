@@ -382,21 +382,45 @@ The generator (in `src/generator.js`) creates flipbooks in two primary formats:
 
 ### Performance
 
-  
-
 To handle large PDF files gracefully, the application uses:
 
-  
-
 - **Pre-loading**: Anticipates page turns and preloads adjacent pages
-
 - **Image Caching**: Loaded pages are cached to prevent re-downloads
-
 - **Smooth Transitions**: Loading placeholders keep animations fluid
-
 - **Lazy Loading**: Only renders what's needed, when it's needed
 
-  
+## Architecture & Modules
+
+The project is structured into two main decoupled systems: the **Processors** (which prepare the document) and the **Flipbook** (which displays it).
+
+### Processors (`src/processor/`)
+Processors handle the heavy lifting of parsing documents and generating flipbook-ready content.
+
+- **EPUB Processor (`src/processor/epub/`)**:
+  - `loader.js`: Initializes epub.js and loads the file.
+  - `pagination.js`: Handles recursive DOM-based pagination to ensure perfect page breaks.
+  - `enrichment.js`: Resolves internal assets (images, CSS) and maps interactive elements.
+  - `toc.js`: Extracts the Table of Contents.
+  - `defaults.css`: Baseline styles for rendered EPUB content.
+- **PDF Processor (`src/processor/pdf/`)**:
+  - `loader.js`: Initializes pdf.js and handles worker setup.
+  - `renderer.js`: Manages high-resolution rendering and double-spread logic.
+  - `canvas.js`: Implements canvas pooling to minimize memory footprint.
+  - `bookmarks.js`: Extracts PDF bookmarks for the Table of Contents.
+- **Common (`src/processor/common/`)**:
+  - `sanitizer.js`: Shared HTML sanitization utilities.
+
+### Flipbook Engine (`src/js/flipbook/`)
+The flipbook engine is responsible for the interactive 3D turning experience and UI controls.
+
+- `main.js`: The application orchestrator.
+- `pageflip.js`: Low-level integration with the StPageFlip library.
+- `zoom.js`: Logic for physical high-res zoom and panning.
+- `scaling.js`: Dynamic resizing of images and EPUB content.
+- `ui.js`: Management of all buttons, overlays, and event listeners.
+- `navigation.js`: URL hash synchronization.
+- `state.js`: Centralized reactive state.
+- `utils.js`: Shared performance helpers (debounce, etc.).
 
 ## Troubleshooting
 

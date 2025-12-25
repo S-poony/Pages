@@ -1,5 +1,7 @@
 /**
  * EPUB Loader Module
+ * responsible for initializing the epub.js library and loading the binary data
+ * from the source file into a traversable book object.
  */
 
 import ePub from 'epubjs';

@@ -1,3 +1,7 @@
+/**
+ * Flipbook State Module
+ * Central repository for the flipbook's reactive state (page numbers, zoom levels, sizes, etc.).
+ */
 // Global state
 let zoom = 1;
 window.currentZoom = 1;

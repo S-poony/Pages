@@ -1,5 +1,7 @@
 /**
  * EPUB Enrichment Module
+ * Heavily modifies the raw EPUB content by resolving internal asset paths (images, CSS),
+ * sanitizing HTML, and mapping internal chapter links to the generated flipbook pages.
  */
 
 import { sanitizeEpubHtml } from '../common/sanitizer.js';

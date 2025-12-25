@@ -1,6 +1,7 @@
 /**
- * PDF Bookmarks/Outline Extraction Module
- * Extracts table of contents from PDF bookmarks
+ * PDF Bookmarks Extraction Module
+ * Recursively traverses the PDF's internal outline/bookmarks structure to build
+ * a hierarchical and page-mapped Table of Contents.
  */
 
 /**

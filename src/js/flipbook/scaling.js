@@ -1,4 +1,8 @@
 /**
+ * Flipbook Scaling Module
+ * Handles dynamic image source updates (srcset) and EPUB content scaling for responsive layouts.
+ */
+/**
  * Update img sizes attribute based on zoom level for currently visible pages
  */
 function updateImageSizes() {
@@ -36,29 +40,33 @@ const debouncedUpdateImageSizes = debounce(updateImageSizes, 200);
  * This ensures fixed-dimension content (from pagination) fits the responsive page
  */
 function updateEpubContentScale() {
-    const epubContents = document.querySelectorAll('.epub-content');
-    epubContents.forEach(content => {
-        const parent = content.closest('.page-container');
-        if (!parent) return;
+    // Use requestAnimationFrame to ensure StPageFlip has finished resizing its elements
+    // and the browser has recalculated the layout before we measure clientWidth/Height.
+    requestAnimationFrame(() => {
+        const epubContents = document.querySelectorAll('.epub-content');
+        epubContents.forEach(content => {
+            const parent = content.closest('.page-container');
+            if (!parent) return;
 
-        // Get fixed dimensions from inline styles
-        const fixedWidth = parseFloat(content.style.width);
-        const fixedHeight = parseFloat(content.style.height);
+            // Get fixed dimensions from inline styles (set during pagination)
+            const fixedWidth = parseFloat(content.style.width);
+            const fixedHeight = parseFloat(content.style.height);
 
-        if (!fixedWidth || !fixedHeight) return;
+            if (!fixedWidth || !fixedHeight) return;
 
-        const parentWidth = parent.clientWidth;
-        const parentHeight = parent.clientHeight;
+            const parentWidth = parent.clientWidth;
+            const parentHeight = parent.clientHeight;
 
-        if (parentWidth === 0 || parentHeight === 0) return;
+            if (parentWidth === 0 || parentHeight === 0) return;
 
-        const scaleX = parentWidth / fixedWidth;
-        const scaleY = parentHeight / fixedHeight;
+            const scaleX = parentWidth / fixedWidth;
+            const scaleY = parentHeight / fixedHeight;
 
-        // Use the smaller scale to ensure it fits
-        const scale = Math.min(scaleX, scaleY);
+            // Use the smaller scale to ensure it fits without cropping
+            const scale = Math.min(scaleX, scaleY);
 
-        content.style.transform = `scale(${scale})`;
-        content.style.transformOrigin = 'top left';
+            content.style.transform = `scale(${scale})`;
+            content.style.transformOrigin = 'top left';
+        });
     });
 }

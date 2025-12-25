@@ -1,6 +1,7 @@
 /**
  * EPUB Processor Module
- * Orchestrates EPUB parsing, enrichment, and pagination
+ * The main orchestration engine for EPUB documents. It coordinates the loading,
+ * asset enrichment (resolving images/CSS), and recursive pagination into fixed-layout pages.
  */
 
 import JSZip from 'jszip';

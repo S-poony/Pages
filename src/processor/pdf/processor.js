@@ -1,6 +1,7 @@
 /**
  * PDF Processor Module
- * Orchestrates PDF parsing and rendering
+ * The main entry point for PDF documents. It orchestrates the pdf.js library
+ * to render pages into high-quality images and handle double-spread layout splitting.
  */
 
 import { extractBookmarks } from './bookmarks.js';

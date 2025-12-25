@@ -1,4 +1,8 @@
 /**
+ * Flipbook Utilities Module
+ * Contains general-purpose helper functions like debounce for performance optimization.
+ */
+/**
  * Utility: Debounce
  * @param {Function} func - Function to debounce
  * @param {number} wait - Wait time in milliseconds

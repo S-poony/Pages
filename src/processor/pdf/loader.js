@@ -1,5 +1,7 @@
 /**
  * PDF Loader Module
+ * Handles the lazy-loading of the pdf.js library and the strategic configuration
+ * of its worker scripts for various environments (Browser, CDNs, etc.).
  */
 
 let pdfjsLibPromise = null;

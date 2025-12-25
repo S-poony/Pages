@@ -1,3 +1,7 @@
+/**
+ * Flipbook Main Entry Point
+ * Coordinates the initialization of all modular components and handles the primary application flow.
+ */
 // Initialize StPageFlip and all controls
 document.addEventListener('DOMContentLoaded', () => {
     const config = window.FLIPBOOK_CONFIG || {};

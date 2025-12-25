@@ -1,3 +1,9 @@
+/*
+ * EPUB Default Page Styles
+ * Baseline CSS injected into all EPUB pages to ensure consistent typography
+ * and to hide common EPUB artifacts like hardcoded page numbers.
+ */
+
 /* Enforce consistent content styling between measurement and playback */
 .epub-content,
 .epub-measure-container {

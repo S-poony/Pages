@@ -1,7 +1,7 @@
 /**
- * HTML Sanitization Module
- * Uses DOMPurify to sanitize HTML content from EPUB files
- * Prevents XSS attacks by removing scripts and unsafe attributes
+ * Shared Sanitization Module
+ * Centralizes HTML and CSS cleaning logic using DOMPurify. Ensures that content
+ * extracted from documents is safe to render and free from malicious scripts.
  */
 
 import DOMPurify from 'dompurify';

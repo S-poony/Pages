@@ -1,5 +1,7 @@
 /**
  * PDF Renderer Module
+ * Implements the core rendering logic using pdf.js. It handles the conversion of
+ * PDF pages to scaled images and performs canvas-based cropping for double-spread layouts.
  */
 
 import { defaultCanvasAPI } from './canvas.js';

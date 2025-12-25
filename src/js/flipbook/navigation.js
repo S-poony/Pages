@@ -1,4 +1,8 @@
 /**
+ * Flipbook Navigation Module
+ * Manages URL hash-based navigation to allow sharing specific pages and history support.
+ */
+/**
  * URL Helper Functions for Page Navigation
  */
 

@@ -1,5 +1,7 @@
 /**
  * PDF Processor Options Module
+ * Normalizes and validates configuration for the PDF engine, including render quality,
+ * scaling factors, and optional double-spread split settings.
  */
 
 // Global toggle for double-spread behavior (default false)

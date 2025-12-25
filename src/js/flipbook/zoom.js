@@ -1,4 +1,8 @@
 /**
+ * Flipbook Zoom Module
+ * Implements high-resolution physical zoom and panning logic with viewport boundary enforcement.
+ */
+/**
  * Apply zoom and pan transforms to the container
  */
 function updateTransform() {

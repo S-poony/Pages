@@ -1,5 +1,7 @@
 /**
  * EPUB Processor Options Module
+ * Handles normalization and validation of configuration settings for EPUB processing,
+ * such as target page dimensions, font sizes, and background colors.
  */
 
 /**

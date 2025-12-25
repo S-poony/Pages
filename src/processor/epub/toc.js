@@ -1,5 +1,7 @@
 /**
  * EPUB TOC Extraction Module
+ * Extracts the Table of Contents structure from the EPUB metadata and resolves
+ * their targets (chapter/anchors) to the final physical page numbers in the flipbook.
  */
 
 /**

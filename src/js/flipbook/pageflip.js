@@ -1,4 +1,8 @@
 /**
+ * Flipbook PageFlip Module
+ * Controls the low-level StPageFlip integration, page preloading, and dimension calculations.
+ */
+/**
  * Preload images for the next spread to ensure smooth flipping
  * @param {number} currentIndex - Current page index (0-based)
  */

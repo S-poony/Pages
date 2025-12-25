@@ -1,3 +1,7 @@
+/**
+ * Flipbook UI Module
+ * Manages all UI event listeners, controls (zoom, full-screen, TOC), and user input handling.
+ */
 function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topControlsPanel, fullscreenBtn, wrapper, tocBtn, tableOfContents, tocModal, tocList, tocCloseBtn, tocOverlay, prevPageBtn, nextPageBtn) {
     // Mobile-friendly control panel activation (both panels share state)
     let controlsPanelTimeout = null;

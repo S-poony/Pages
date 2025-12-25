@@ -1,5 +1,7 @@
 /**
  * PDF Canvas API Module
+ * Provides a specialized interface for canvas operations, including an internal
+ * pooling mechanism to drastically reduce memory churn during heavy rendering tasks.
  */
 
 /**
