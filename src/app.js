@@ -268,7 +268,14 @@ class FlipbookApp {
   }
 
   download() { if (this.currentHtml) downloadHtml(this.currentHtml, `${this.getFilenameBase()}.html`); }
-  async downloadZip() { if (this.currentFolderData) await downloadZip(this.currentFolderData, `${this.getFilenameBase()}.zip`); }
+  downloadZip() { if (this.currentFolderData) downloadZip(this.currentFolderData, `${this.getFilenameBase()}.zip`); }
+
+  openInNewTab() {
+    if (!this.currentHtml) return;
+    const blob = new Blob([this.currentHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  }
 
   switchLegalLanguage(lang) {
     this.currentLegalLang = lang;
