@@ -199,7 +199,14 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                         title: a.getAttribute('title') || a.textContent.trim() || (isExternal ? 'External Link' : 'Internal Link'),
                         url: isExternal ? href : null,
                         targetPage: targetPage,
-                        epubHref: epubHref
+                        epubHref: epubHref,
+                        sourceArea: {
+                            top: parseFloat(a.getAttribute('data-source-top')),
+                            left: parseFloat(a.getAttribute('data-source-left')),
+                            width: parseFloat(a.getAttribute('data-source-width')),
+                            height: parseFloat(a.getAttribute('data-source-height'))
+                        },
+                        sourcePageIndex: idx
                     });
                 });
             });
@@ -229,7 +236,62 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                     targetText = `Page ${link.targetPage}`;
                 }
 
-                itemEl.innerHTML = `<span class="toc-item-title">${link.title}</span><span class="toc-item-page">${targetText}</span>`;
+                // let previewHtml = ''; // This line is replaced by the new logic
+                if (link.sourceArea && !isNaN(link.sourceArea.top)) {
+                    const pageContainers = document.querySelectorAll('.page-container');
+                    const sourcePageEl = pageContainers[link.sourcePageIndex];
+                    if (sourcePageEl) {
+                        const sourceImg = sourcePageEl.querySelector('img.page-image');
+                        if (sourceImg) {
+                            const { top, left, width, height } = link.sourceArea;
+                            // Calculate zoom: fill the preview box as much as possible but cap resolution
+                            // Preview box is ~100x60 (1.66 aspect)
+                            // We want to center the link.
+                            const centerX = left + width / 2;
+                            const centerY = top + height / 2;
+
+                            // To avoid blurriness, we cap the background-size.
+                            // Container is 100x60. We use a zoom factor.
+                            const zoom = Math.min(800, Math.max(200, 100 / Math.max(width / 100, height * 1.66 / 100)));
+                            const zoomFactor = zoom / 100;
+
+                            const aspect = sourceImg.naturalWidth / sourceImg.naturalHeight || 0.707;
+                            const imgW = 100 * zoomFactor;
+                            const imgH = imgW / aspect;
+
+                            // Calculate pixel offset to center the link in the 100x60 box
+                            const posX = 50 - (centerX / 100) * imgW;
+                            const posY = 30 - (centerY / 100) * imgH;
+
+                            const highlightWidth = width * (zoomFactor);
+                            const highlightHeight = height * (zoomFactor);
+
+                            previewHtml = `
+                                <div class="link-preview-container">
+                                    <div class="link-preview-viewport" style="
+                                        background-image: url('${sourceImg.src}');
+                                        background-position: ${posX}px ${posY}px;
+                                        background-size: ${imgW}px ${imgH}px;
+                                    "></div>
+                                    <div class="link-preview-highlight" style="
+                                        width: ${highlightWidth}px;
+                                        height: ${highlightHeight}px;
+                                        left: calc(50% - ${highlightWidth / 2}px);
+                                        top: calc(50% - ${highlightHeight / 2}px);
+                                    "></div>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+
+                itemEl.innerHTML = `
+                    ${previewHtml}
+                    <div class="toc-item-text">
+                        <span class="toc-item-title">${link.title}</span>
+                        <span class="toc-item-page">${targetText}</span>
+                    </div>
+                `;
 
                 itemEl.addEventListener('click', () => {
                     if (link.url) {

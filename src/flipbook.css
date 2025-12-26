@@ -19,7 +19,8 @@ body {
 
 #flipbook-wrapper {
     width: 100vw;
-    height: 100vh; /* fallback */
+    height: 100vh;
+    /* fallback */
     height: 100dvh;
     display: flex;
     justify-content: center;
@@ -124,6 +125,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
     font-size: 14px;
     /* Hide spinners */
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 #page-input::-webkit-outer-spin-button,
@@ -160,6 +162,61 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .page-nav-btn:hover {
     background-color: rgba(0, 0, 0, 0.05);
     color: var(--color-terracotta);
+}
+
+/* Link Source Previews in Modal */
+.link-preview-container {
+    width: 100px;
+    height: 60px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-right: 12px;
+    border: 1px solid var(--color-warm-gray);
+    flex-shrink: 0;
+    background: #fcfcfc;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: relative;
+}
+
+.link-preview-highlight {
+    position: absolute;
+    background-color: rgba(255, 255, 0, 0.2);
+    pointer-events: none;
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+.link-preview-viewport {
+    width: 100%;
+    height: 100%;
+    background-repeat: no-repeat;
+}
+
+.toc-item-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 2px;
+}
+
+.toc-item-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+}
+
+.toc-item-page {
+    font-size: 11px;
+    color: #888;
+}
+
+.toc-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    transition: background 0.2s;
 }
 
 /* Top Controls Panel */

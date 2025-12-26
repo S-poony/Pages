@@ -66,7 +66,7 @@ Pages allows you to create static websites from PDF or EPUB.
 
 This project uses Node.js's built-in test runner for testing. Tests are written using the native `node:test` module and assertions.
 
-  
+Tests in the browser are performed by the human user.
 
 ### Running Tests
 

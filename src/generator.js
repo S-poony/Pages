@@ -152,7 +152,7 @@ function renderPdfLinks(links) {
             attr = `href="javascript:void(0)" data-target-page="${link.pageNumber}"`;
         }
 
-        return `<a class="pdf-link" style="${style}" ${attr} title="${escapeAttr(link.title || '')}"></a>`;
+        return `<a class="pdf-link" style="${style}" ${attr} title="${escapeAttr(link.title || '')}" data-source-top="${link.top}" data-source-left="${link.left}" data-source-width="${link.width}" data-source-height="${link.height}"></a>`;
     }).join('');
 }
 
