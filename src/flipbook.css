@@ -350,7 +350,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
     color: var(--color-charcoal);
 }
 
-#toc-close-btn {
+#toc-close-btn,
+#links-close-btn {
     background: none;
     border: none;
     cursor: pointer;
@@ -359,7 +360,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
     border-radius: 4px;
 }
 
-#toc-close-btn:hover {
+#toc-close-btn:hover,
+#links-close-btn:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
 

@@ -193,7 +193,10 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                     }
 
                     const href = a.getAttribute('href');
-                    const isExternal = isExternalUrl(href);
+                    const isExternal = href && (href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:'));
+
+                    // Skip links that have no destination
+                    if (!isExternal && !targetPage) return;
 
                     links.push({
                         title: a.getAttribute('title') || a.textContent.trim() || (isExternal ? 'External Link' : 'Internal Link'),
