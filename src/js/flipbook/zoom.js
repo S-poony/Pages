@@ -8,7 +8,6 @@
 function updateTransform() {
     const wrapper = document.getElementById('flipbook-wrapper');
     const container = document.getElementById('flipbook-container');
-    const blocker = document.getElementById('zoom-blocker');
 
     if (!wrapper || !container) return;
 
@@ -41,15 +40,23 @@ function updateTransform() {
     window.isProgrammaticResize = false;
 
     // Update cursor and disable/enable flipping
-    const flipbookEl = document.getElementById('flipbook');
     if (isZoomed()) {
         wrapper.style.cursor = 'grab';
-        if (blocker) blocker.style.display = 'block';
-        if (flipbookEl) flipbookEl.style.pointerEvents = 'none';
+
+        // Native library locks (supported after our custom lib build)
+        if (window.pageFlip) {
+            const settings = window.pageFlip.getSettings();
+            settings.useMouseEvents = false;
+            settings.showPageCorners = false;
+        }
     } else {
         wrapper.style.cursor = 'default';
-        if (blocker) blocker.style.display = 'none';
-        if (flipbookEl) flipbookEl.style.pointerEvents = 'auto';
+
+        if (window.pageFlip) {
+            const settings = window.pageFlip.getSettings();
+            settings.useMouseEvents = true;
+            settings.showPageCorners = true;
+        }
     }
 
     window.currentZoom = zoom;

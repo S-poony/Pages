@@ -149,20 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const linksList = document.getElementById('links-list');
     const linksCloseBtn = document.getElementById('links-close-btn');
 
-    // Create Zoom Blocker
-    let blocker = document.getElementById('zoom-blocker');
-    if (!blocker) {
-        blocker = document.createElement('div');
-        blocker.id = 'zoom-blocker';
-        blocker.style.position = 'absolute';
-        blocker.style.top = '0';
-        blocker.style.left = '0';
-        blocker.style.width = '100%';
-        blocker.style.height = '100%';
-        blocker.style.zIndex = '40'; // Above StPageFlip but below links (51)
-        blocker.style.display = 'none';
-        document.getElementById('flipbook-container').appendChild(blocker);
-    }
 
     // Initial setup
     updateTransform();

@@ -300,30 +300,33 @@ export async function generateFlipbookHtml(pageImages, options = {},
         <style>
         /* --- ENRICHMENT UTILITIES --- */
         .page-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        }
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 1500;
+}
 
-        .page-image {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        }
+.page-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+}
 
-        .enrichment-layer {
-        position: absolute;
-        inset: 0;
-        pointer-events: auto;
-        z-index: 50;
-        overflow: hidden;
-        }
+.enrichment-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: auto;
+    z-index: 1510;
+    overflow: hidden;
+}
 
-        .pdf-link {
-        display: block;
-        cursor: pointer;
-        z-index: 51;
-        }
+.pdf-link {
+    display: block;
+    cursor: pointer;
+    z-index: 1520;
+    pointer-events: auto;
+}
 
         .pdf-link:hover {
         background-color: rgba(255, 255, 0, 0.2);

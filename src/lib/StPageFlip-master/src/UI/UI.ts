@@ -177,6 +177,7 @@ export abstract class UI {
     }
 
     private onMouseDown = (e: MouseEvent): void => {
+        if (!this.app.getSettings().useMouseEvents) return;
         if (this.checkTarget(e.target)) {
             const pos = this.getMousePos(e.clientX, e.clientY);
 
@@ -187,6 +188,7 @@ export abstract class UI {
     };
 
     private onTouchStart = (e: TouchEvent): void => {
+        if (!this.app.getSettings().useMouseEvents) return;
         if (this.checkTarget(e.target)) {
             if (e.changedTouches.length > 0) {
                 const t = e.changedTouches[0];

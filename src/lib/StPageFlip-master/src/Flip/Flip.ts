@@ -63,6 +63,7 @@ export class Flip {
      * @param globalPos - Touch Point Coordinates (relative window)
      */
     public fold(globalPos: Point): void {
+        if (!this.app.getSettings().useMouseEvents) return;
         this.setState(FlippingState.USER_FOLD);
 
         // If the process has not started yet
@@ -77,6 +78,7 @@ export class Flip {
      * @param globalPos - Touch Point Coordinates (relative window)
      */
     public flip(globalPos: Point): void {
+        if (!this.app.getSettings().useMouseEvents) return;
         if (this.app.getSettings().disableFlipByClick && !this.isPointOnCorners(globalPos)) return;
 
         // the flipiing process is already running
@@ -281,6 +283,7 @@ export class Flip {
      * @param globalPos
      */
     public showCorner(globalPos: Point): void {
+        if (!this.app.getSettings().showPageCorners) return;
         if (!this.checkState(FlippingState.READ, FlippingState.FOLD_CORNER)) return;
 
         const rect = this.getBoundsRect();
