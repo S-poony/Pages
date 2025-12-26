@@ -234,7 +234,7 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
 
                 let targetText = '';
                 if (link.url) {
-                    targetText = link.url.length > 30 ? link.url.substring(0, 27) + '...' : link.url;
+                    targetText = link.url.length > 60 ? link.url.substring(0, 57) + '...' : link.url;
                 } else if (link.targetPage) {
                     targetText = `Page ${link.targetPage}`;
                 }
