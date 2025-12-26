@@ -75,7 +75,6 @@ body {
 
     opacity: 0.3;
     transition: opacity 0.3s ease, transform 0.3s ease;
-    backdrop-filter: blur(8px);
 
     /* Ensure panel doesn't overflow viewport on small screens */
     max-width: calc(100vw - 32px);
@@ -183,7 +182,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
     opacity: 0.3;
     transition: opacity 0.3s ease, transform 0.3s ease;
-    backdrop-filter: blur(8px);
 }
 
 #top-controls-panel:hover,
@@ -238,7 +236,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
 }
 
 .toc-content {
@@ -252,7 +249,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: modalSlideUp 0.3s ease-out;
 }
 
 @keyframes modalSlideUp {
