@@ -236,7 +236,7 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                     targetText = `Page ${link.targetPage}`;
                 }
 
-                // let previewHtml = ''; // This line is replaced by the new logic
+                let previewHtml = '';
                 if (link.sourceArea && !isNaN(link.sourceArea.top)) {
                     const pageContainers = document.querySelectorAll('.page-container');
                     const sourcePageEl = pageContainers[link.sourcePageIndex];
