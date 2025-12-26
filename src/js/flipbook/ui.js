@@ -244,24 +244,32 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                         const sourceImg = sourcePageEl.querySelector('img.page-image');
                         if (sourceImg) {
                             const { top, left, width, height } = link.sourceArea;
-                            // Calculate zoom: fill the preview box as much as possible but cap resolution
-                            // Preview box is ~100x60 (1.66 aspect)
-                            // We want to center the link.
+                            // Replicate CSS logic for preview dimensions to ensure JS math matches exactly
+                            let previewW = Math.min(window.innerWidth * 0.25, 180); // max-width: 180px
+                            let previewH = previewW * 0.6;
+
+                            // Check media query equivalent (max-height: 600px)
+                            if (window.innerHeight <= 600) {
+                                previewH = Math.min(window.innerHeight * 0.15, 108); // max-height: 108px
+                                previewW = previewH * 1.666;
+                            }
+
+                            const previewAspect = previewW / previewH;
                             const centerX = left + width / 2;
                             const centerY = top + height / 2;
 
+                            // Calculate zoom: fill the preview box as much as possible but cap resolution
                             // To avoid blurriness, we cap the background-size.
-                            // Container is 100x60. We use a zoom factor.
-                            const zoom = Math.min(800, Math.max(200, 100 / Math.max(width / 100, height * 1.66 / 100)));
+                            const zoom = Math.min(800, Math.max(200, 100 / Math.max(width / 100, height * previewAspect / 100)));
                             const zoomFactor = zoom / 100;
 
                             const aspect = sourceImg.naturalWidth / sourceImg.naturalHeight || 0.707;
-                            const imgW = 100 * zoomFactor;
+                            const imgW = previewW * zoomFactor;
                             const imgH = imgW / aspect;
 
-                            // Calculate pixel offset to center the link in the 100x60 box
-                            const posX = 50 - (centerX / 100) * imgW;
-                            const posY = 30 - (centerY / 100) * imgH;
+                            // Calculate pixel offset to center the link in the box
+                            const posX = (previewW / 2) - (centerX / 100) * imgW;
+                            const posY = (previewH / 2) - (centerY / 100) * imgH;
 
                             const highlightWidth = width * (zoomFactor);
                             const highlightHeight = height * (zoomFactor);

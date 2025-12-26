@@ -165,9 +165,23 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 /* Link Source Previews in Modal */
+:root {
+    --link-preview-width: 25vw;
+    --link-preview-height: calc(var(--link-preview-width) * 0.6);
+}
+
+@media (max-height: 600px) {
+    :root {
+        --link-preview-height: 15dvh;
+        --link-preview-width: calc(var(--link-preview-height) * 1.666);
+    }
+}
+
 .link-preview-container {
-    width: 100px;
-    height: 60px;
+    width: var(--link-preview-width);
+    height: var(--link-preview-height);
+    max-width: 180px;
+    max-height: 108px;
     border-radius: 6px;
     overflow: hidden;
     margin-right: 12px;
@@ -298,9 +312,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .toc-content {
     position: relative;
     background: white;
-    width: 90%;
+    width: 90vw;
     max-width: 400px;
-    max-height: 80vh;
+    max-height: 85dvh;
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     display: flex;
@@ -353,6 +367,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
     padding: 10px 0;
     overflow-y: auto;
     flex: 1;
+}
+
+#links-modal .toc-content {
+    max-width: 550px;
 }
 
 .toc-item {
