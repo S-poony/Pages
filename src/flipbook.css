@@ -69,8 +69,10 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(0, 0, 0, 0.05);
 
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
+    justify-items: center;
     gap: 16px;
     z-index: 2000;
 
@@ -79,6 +81,15 @@ body {
 
     /* Ensure panel doesn't overflow viewport on small screens */
     max-width: calc(100vw - 32px);
+    min-width: 180px;
+}
+
+#toc-btn {
+    justify-self: start;
+}
+
+#page-links-btn {
+    justify-self: end;
 }
 
 #controls-panel:hover,
