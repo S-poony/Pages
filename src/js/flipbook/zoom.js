@@ -41,12 +41,15 @@ function updateTransform() {
     window.isProgrammaticResize = false;
 
     // Update cursor and disable/enable flipping
+    const flipbookEl = document.getElementById('flipbook');
     if (zoom > 1) {
         wrapper.style.cursor = 'grab';
         if (blocker) blocker.style.display = 'block';
+        if (flipbookEl) flipbookEl.style.pointerEvents = 'none';
     } else {
         wrapper.style.cursor = 'default';
         if (blocker) blocker.style.display = 'none';
+        if (flipbookEl) flipbookEl.style.pointerEvents = 'auto';
     }
 
     window.currentZoom = zoom;

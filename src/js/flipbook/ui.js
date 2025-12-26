@@ -415,9 +415,17 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
     });
 
     // Panning helper
+    let isActuallyPanning = false;
+    let mouseDownX = 0;
+    let mouseDownY = 0;
+    const PAN_THRESHOLD = 5;
+
     const onStart = (clientX, clientY) => {
         if (zoom > 1) {
             isPanning = true;
+            isActuallyPanning = false;
+            mouseDownX = clientX;
+            mouseDownY = clientY;
             startX = clientX - panX;
             startY = clientY - panY;
             wrapper.style.cursor = 'grabbing';
@@ -425,13 +433,21 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
     };
     const onMove = (clientX, clientY) => {
         if (isPanning && zoom > 1) {
-            panX = clientX - startX;
-            panY = clientY - startY;
-            updateTransform();
+            const dist = Math.sqrt(Math.pow(clientX - mouseDownX, 2) + Math.pow(clientY - mouseDownY, 2));
+            if (!isActuallyPanning && dist > PAN_THRESHOLD) {
+                isActuallyPanning = true;
+            }
+
+            if (isActuallyPanning) {
+                panX = clientX - startX;
+                panY = clientY - startY;
+                updateTransform();
+            }
         }
     };
     const onEnd = () => {
         isPanning = false;
+        isActuallyPanning = false;
         if (zoom > 1) wrapper.style.cursor = 'grab';
     };
 
@@ -441,7 +457,9 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
     });
     window.addEventListener('mousemove', (e) => {
         if (isPanning) {
-            e.preventDefault();
+            if (isActuallyPanning) {
+                e.preventDefault();
+            }
             onMove(e.clientX, e.clientY);
         }
     });
@@ -452,7 +470,9 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
     }, { passive: true });
     window.addEventListener('touchmove', (e) => {
         if (isPanning && e.touches.length === 1) {
-            if (e.cancelable) e.preventDefault();
+            if (isActuallyPanning && e.cancelable) {
+                e.preventDefault();
+            }
             onMove(e.touches[0].clientX, e.touches[0].clientY);
         }
     }, { passive: false });
