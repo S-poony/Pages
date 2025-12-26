@@ -18,7 +18,7 @@ function updateTransform() {
     }
 
     // Constrain pan
-    if (zoom > 1) {
+    if (isZoomed()) {
         // Add a small buffer (e.g. 50px) to allow reaching the edges easily
         const buffer = 50;
         const maxPanX = Math.max(0, (BOOK_WIDTH_AT_1X * zoom - wrapper.clientWidth) / 2) + buffer;
@@ -42,7 +42,7 @@ function updateTransform() {
 
     // Update cursor and disable/enable flipping
     const flipbookEl = document.getElementById('flipbook');
-    if (zoom > 1) {
+    if (isZoomed()) {
         wrapper.style.cursor = 'grab';
         if (blocker) blocker.style.display = 'block';
         if (flipbookEl) flipbookEl.style.pointerEvents = 'none';

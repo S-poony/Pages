@@ -51,7 +51,7 @@ export const defaultAssetLoader = {
     async loadJs() {
         const modules = [
             'utils.js', 'state.js', 'navigation.js', 'scaling.js',
-            'zoom.js', 'pageflip.js', 'ui.js', 'main.js'
+            'zoom.js', 'pageflip.js', 'ui.js', 'links.js', 'main.js'
         ];
         try {
             const contents = await Promise.all(

@@ -104,32 +104,12 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
     // Page navigation buttons
     if (prevPageBtn) {
         prevPageBtn.addEventListener('click', () => {
-            if (typeof zoom !== 'undefined' && zoom > 1) {
-                zoom = 1;
-                panX = 0;
-                panY = 0;
-                if (zoomSlider) zoomSlider.value = 1;
-                if (zoomText) zoomText.textContent = '1x';
-                if (typeof updateTransform === 'function') updateTransform();
-                setTimeout(() => pageFlip.flipPrev(), 150);
-            } else {
-                pageFlip.flipPrev();
-            }
+            handleZoomNavigation(() => pageFlip.flipPrev());
         });
     }
     if (nextPageBtn) {
         nextPageBtn.addEventListener('click', () => {
-            if (typeof zoom !== 'undefined' && zoom > 1) {
-                zoom = 1;
-                panX = 0;
-                panY = 0;
-                if (zoomSlider) zoomSlider.value = 1;
-                if (zoomText) zoomText.textContent = '1x';
-                if (typeof updateTransform === 'function') updateTransform();
-                setTimeout(() => pageFlip.flipNext(), 150);
-            } else {
-                pageFlip.flipNext();
-            }
+            handleZoomNavigation(() => pageFlip.flipNext());
         });
     }
 
@@ -138,17 +118,7 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
         pageInput.addEventListener('change', e => {
             const targetPage = parseInt(e.target.value);
             if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= pageCount) {
-                if (typeof zoom !== 'undefined' && zoom > 1) {
-                    zoom = 1;
-                    panX = 0;
-                    panY = 0;
-                    if (zoomSlider) zoomSlider.value = 1;
-                    if (zoomText) zoomText.textContent = '1x';
-                    if (typeof updateTransform === 'function') updateTransform();
-                    setTimeout(() => pageFlip.flip(targetPage - 1), 150);
-                } else {
-                    pageFlip.flip(targetPage - 1);
-                }
+                handleZoomNavigation(() => pageFlip.flip(targetPage - 1));
             }
         });
     }
@@ -163,26 +133,10 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                 itemEl.innerHTML = `<span class="toc-item-title">${item.title}</span><span class="toc-item-page">${item.page}</span>`;
                 itemEl.addEventListener('click', () => {
                     if (pageFlip) {
-                        // Zoom out before jumping if needed
-                        if (typeof zoom !== 'undefined' && zoom > 1) {
-                            zoom = 1;
-                            panX = 0;
-                            panY = 0;
-                            const slider = document.getElementById('zoom-slider');
-                            if (slider) slider.value = 1;
-                            const zoomText = document.getElementById('zoom-level');
-                            if (zoomText) zoomText.textContent = '1x';
-                            if (typeof updateTransform === 'function') updateTransform();
-
-                            // Small delay to allow zoom-out animation to start
-                            setTimeout(() => {
-                                pageFlip.flip(item.page - 1);
-                                closeTOC();
-                            }, 150);
-                        } else {
+                        handleZoomNavigation(() => {
                             pageFlip.flip(item.page - 1);
                             closeTOC();
-                        }
+                        });
                     }
                 });
                 container.appendChild(itemEl);
@@ -356,23 +310,7 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                         const pageNum = parseInt(link.targetPage, 10);
                         if (!isNaN(pageNum)) {
                             console.log('Links Modal: Flipping to page', pageNum);
-
-                            // Zoom out before jumping if needed
-                            if (typeof zoom !== 'undefined' && zoom > 1) {
-                                zoom = 1;
-                                panX = 0;
-                                panY = 0;
-                                const slider = document.getElementById('zoom-slider');
-                                if (slider) slider.value = 1;
-                                const zoomText = document.getElementById('zoom-level');
-                                if (zoomText) zoomText.textContent = '1x';
-                                if (typeof updateTransform === 'function') updateTransform();
-
-                                // Small delay to allow zoom-out animation to start
-                                setTimeout(() => pageFlip.flip(pageNum - 1), 150);
-                            } else {
-                                pageFlip.flip(pageNum - 1);
-                            }
+                            handleZoomNavigation(() => pageFlip.flip(pageNum - 1));
                         }
                     }
                     closeLinks();
@@ -404,7 +342,7 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
     // Keyboard navigation
     document.addEventListener('keydown', e => {
         if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-        if (zoom > 1) {
+        if (isZoomed()) {
             if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) e.preventDefault();
             return;
         }
@@ -421,7 +359,7 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
     const PAN_THRESHOLD = 5;
 
     const onStart = (clientX, clientY) => {
-        if (zoom > 1) {
+        if (isZoomed()) {
             isPanning = true;
             isActuallyPanning = false;
             mouseDownX = clientX;
@@ -432,8 +370,8 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
         }
     };
     const onMove = (clientX, clientY) => {
-        if (isPanning && zoom > 1) {
-            const dist = Math.sqrt(Math.pow(clientX - mouseDownX, 2) + Math.pow(clientY - mouseDownY, 2));
+        if (isPanning && isZoomed()) {
+            const dist = getDistance(mouseDownX, mouseDownY, clientX, clientY);
             if (!isActuallyPanning && dist > PAN_THRESHOLD) {
                 isActuallyPanning = true;
             }
@@ -448,7 +386,7 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
     const onEnd = () => {
         isPanning = false;
         isActuallyPanning = false;
-        if (zoom > 1) wrapper.style.cursor = 'grab';
+        if (isZoomed()) wrapper.style.cursor = 'grab';
     };
 
     wrapper.addEventListener('mousedown', (e) => {

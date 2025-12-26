@@ -199,15 +199,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle URL hash changes
     window.addEventListener('hashchange', () => {
-        if (zoom > 1) return;
-        const targetPage = getPageFromHash(pageCount);
-        if (targetPage !== null && pageFlip) {
-            isUpdatingFromHash = true;
-            pageFlip.flip(targetPage - 1);
-            setTimeout(() => {
-                isUpdatingFromHash = false;
-            }, 100);
-        }
+        handleZoomNavigation(() => {
+            const targetPage = getPageFromHash(pageCount);
+            if (targetPage !== null && pageFlip) {
+                isUpdatingFromHash = true;
+                pageFlip.flip(targetPage - 1);
+                setTimeout(() => {
+                    isUpdatingFromHash = false;
+                }, 100);
+            }
+        });
     });
 
     // Set initial URL hash if not present

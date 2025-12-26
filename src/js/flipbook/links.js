@@ -44,22 +44,7 @@ function setupLinks(pageFlip, config) {
 
             if (targetPage && pageFlip) {
                 console.log('EPUB Link clicked (capture): Target Page =', targetPage);
-                // Zoom out before jumping if needed
-                if (typeof zoom !== 'undefined' && zoom > 1) {
-                    zoom = 1;
-                    panX = 0;
-                    panY = 0;
-                    const slider = document.getElementById('zoom-slider');
-                    if (slider) slider.value = 1;
-                    const zoomText = document.getElementById('zoom-level');
-                    if (zoomText) zoomText.textContent = '1x';
-                    if (typeof updateTransform === 'function') updateTransform();
-
-                    // Small delay to allow zoom-out animation to start
-                    setTimeout(() => pageFlip.flip(targetPage - 1), 150);
-                } else {
-                    pageFlip.flip(targetPage - 1);
-                }
+                handleZoomNavigation(() => pageFlip.flip(targetPage - 1));
             } else {
                 console.warn('EPUB Link click: Could not resolve target', { epubHref, hasLinkMap: !!linkMap.length });
             }
@@ -75,22 +60,7 @@ function setupLinks(pageFlip, config) {
             const pageNum = parseInt(targetPage, 10);
             if (!isNaN(pageNum) && pageFlip) {
                 console.log('PDF Link clicked (capture): Target Page =', pageNum);
-                // Zoom out before jumping if needed
-                if (typeof zoom !== 'undefined' && zoom > 1) {
-                    zoom = 1;
-                    panX = 0;
-                    panY = 0;
-                    const slider = document.getElementById('zoom-slider');
-                    if (slider) slider.value = 1;
-                    const zoomText = document.getElementById('zoom-level');
-                    if (zoomText) zoomText.textContent = '1x';
-                    if (typeof updateTransform === 'function') updateTransform();
-
-                    // Small delay to allow zoom-out animation to start
-                    setTimeout(() => pageFlip.flip(pageNum - 1), 150);
-                } else {
-                    pageFlip.flip(pageNum - 1);
-                }
+                handleZoomNavigation(() => pageFlip.flip(pageNum - 1));
             } else {
                 console.warn('PDF Link click: Could not navigate', { pageNum, hasPageFlip: !!pageFlip });
             }
