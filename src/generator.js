@@ -315,14 +315,14 @@ export async function generateFlipbookHtml(pageImages, options = {},
         position: absolute;
         inset: 0;
         pointer-events: auto;
-        z-index: 10;
+        z-index: 50;
         overflow: hidden;
         }
 
         .pdf-link {
         display: block;
         cursor: pointer;
-        z-index: 15;
+        z-index: 51;
         }
 
         .pdf-link:hover {

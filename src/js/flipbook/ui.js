@@ -104,24 +104,51 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
     // Page navigation buttons
     if (prevPageBtn) {
         prevPageBtn.addEventListener('click', () => {
-            if (zoom > 1) return;
-            pageFlip.flipPrev();
+            if (typeof zoom !== 'undefined' && zoom > 1) {
+                zoom = 1;
+                panX = 0;
+                panY = 0;
+                if (zoomSlider) zoomSlider.value = 1;
+                if (zoomText) zoomText.textContent = '1x';
+                if (typeof updateTransform === 'function') updateTransform();
+                setTimeout(() => pageFlip.flipPrev(), 150);
+            } else {
+                pageFlip.flipPrev();
+            }
         });
     }
     if (nextPageBtn) {
         nextPageBtn.addEventListener('click', () => {
-            if (zoom > 1) return;
-            pageFlip.flipNext();
+            if (typeof zoom !== 'undefined' && zoom > 1) {
+                zoom = 1;
+                panX = 0;
+                panY = 0;
+                if (zoomSlider) zoomSlider.value = 1;
+                if (zoomText) zoomText.textContent = '1x';
+                if (typeof updateTransform === 'function') updateTransform();
+                setTimeout(() => pageFlip.flipNext(), 150);
+            } else {
+                pageFlip.flipNext();
+            }
         });
     }
 
-    // Page input handler (REMAINS CORRECTLY IMPLEMENTED AS REQUESTED)
+    // Page input handler
     if (pageInput) {
         pageInput.addEventListener('change', e => {
-            if (zoom > 1) return;
             const targetPage = parseInt(e.target.value);
             if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= pageCount) {
-                pageFlip.flip(targetPage - 1);
+                if (typeof zoom !== 'undefined' && zoom > 1) {
+                    zoom = 1;
+                    panX = 0;
+                    panY = 0;
+                    if (zoomSlider) zoomSlider.value = 1;
+                    if (zoomText) zoomText.textContent = '1x';
+                    if (typeof updateTransform === 'function') updateTransform();
+                    setTimeout(() => pageFlip.flip(targetPage - 1), 150);
+                } else {
+                    pageFlip.flip(targetPage - 1);
+                }
             }
         });
     }
@@ -136,8 +163,26 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                 itemEl.innerHTML = `<span class="toc-item-title">${item.title}</span><span class="toc-item-page">${item.page}</span>`;
                 itemEl.addEventListener('click', () => {
                     if (pageFlip) {
-                        pageFlip.flip(item.page - 1);
-                        closeTOC();
+                        // Zoom out before jumping if needed
+                        if (typeof zoom !== 'undefined' && zoom > 1) {
+                            zoom = 1;
+                            panX = 0;
+                            panY = 0;
+                            const slider = document.getElementById('zoom-slider');
+                            if (slider) slider.value = 1;
+                            const zoomText = document.getElementById('zoom-level');
+                            if (zoomText) zoomText.textContent = '1x';
+                            if (typeof updateTransform === 'function') updateTransform();
+
+                            // Small delay to allow zoom-out animation to start
+                            setTimeout(() => {
+                                pageFlip.flip(item.page - 1);
+                                closeTOC();
+                            }, 150);
+                        } else {
+                            pageFlip.flip(item.page - 1);
+                            closeTOC();
+                        }
                     }
                 });
                 container.appendChild(itemEl);
@@ -311,7 +356,23 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                         const pageNum = parseInt(link.targetPage, 10);
                         if (!isNaN(pageNum)) {
                             console.log('Links Modal: Flipping to page', pageNum);
-                            pageFlip.flip(pageNum - 1);
+
+                            // Zoom out before jumping if needed
+                            if (typeof zoom !== 'undefined' && zoom > 1) {
+                                zoom = 1;
+                                panX = 0;
+                                panY = 0;
+                                const slider = document.getElementById('zoom-slider');
+                                if (slider) slider.value = 1;
+                                const zoomText = document.getElementById('zoom-level');
+                                if (zoomText) zoomText.textContent = '1x';
+                                if (typeof updateTransform === 'function') updateTransform();
+
+                                // Small delay to allow zoom-out animation to start
+                                setTimeout(() => pageFlip.flip(pageNum - 1), 150);
+                            } else {
+                                pageFlip.flip(pageNum - 1);
+                            }
                         }
                     }
                     closeLinks();

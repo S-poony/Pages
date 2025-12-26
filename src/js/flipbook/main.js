@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         blocker.style.left = '0';
         blocker.style.width = '100%';
         blocker.style.height = '100%';
-        blocker.style.zIndex = '9999'; // Above StPageFlip
+        blocker.style.zIndex = '40'; // Above StPageFlip but below links (51)
         blocker.style.display = 'none';
         document.getElementById('flipbook-container').appendChild(blocker);
     }
