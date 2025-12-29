@@ -168,7 +168,7 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
         const getLinksFromVisiblePages = () => {
             if (!pageFlip) return [];
             const activeIndex = pageFlip.getCurrentPageIndex();
-            const display = pageFlip.getOrientation() === 'landscape' ? 'double' : 'single';
+            const display = (pageFlip.getSettings() && pageFlip.getSettings().display) || 'double';
 
             const pageContainers = document.querySelectorAll('.page-container');
             const indices = [activeIndex];
