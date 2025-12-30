@@ -116,6 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof updateLinksButtonVisibility === 'function') {
                 updateLinksButtonVisibility();
             }
+            if (typeof window.updateActiveTOC === 'function') {
+                window.updateActiveTOC(pageNum);
+            }
         });
 
         pageFlip.on('init', () => {

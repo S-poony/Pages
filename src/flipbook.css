@@ -399,8 +399,16 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .toc-item:hover {
-    background-color: var(--color-warm-gray);
     color: var(--color-terracotta);
+}
+
+.toc-item.active {
+    background-color: rgba(201, 120, 91, 0.1);
+    color: var(--color-terracotta);
+    font-weight: 600;
+    border-left: 3px solid var(--color-terracotta);
+    padding-left: 17px;
+    /* Adjust padding to account for border */
 }
 
 .toc-item-page {

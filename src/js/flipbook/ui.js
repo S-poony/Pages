@@ -130,6 +130,9 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
             items.forEach(item => {
                 const itemEl = document.createElement('div');
                 itemEl.className = `toc-item toc-level-${level}`;
+                // Add data-page attribute for Active TOC logic
+                itemEl.setAttribute('data-page', item.page);
+
                 itemEl.innerHTML = `<span class="toc-item-title">${item.title}</span><span class="toc-item-page">${item.page}</span>`;
                 itemEl.addEventListener('click', () => {
                     if (pageFlip) {
@@ -146,7 +149,36 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
             });
         }
         renderTOC(tableOfContents, tocList);
-        const openTOC = () => tocModal.classList.remove('hidden');
+
+        // Active TOC Logic
+        window.updateActiveTOC = (currentPage) => {
+            const items = tocList.querySelectorAll('.toc-item');
+            let activeItem = null;
+
+            items.forEach(item => {
+                item.classList.remove('active');
+                const itemPage = parseInt(item.getAttribute('data-page'), 10);
+                if (itemPage <= currentPage) {
+                    activeItem = item;
+                }
+            });
+
+            if (activeItem) {
+                activeItem.classList.add('active');
+                // Only scroll if TOC is visible to avoid unnecessary layout calculations
+                if (!tocModal.classList.contains('hidden')) {
+                    activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        };
+
+        const openTOC = () => {
+            tocModal.classList.remove('hidden');
+            // Update active item when opening just in case
+            if (window.pageFlip) {
+                window.updateActiveTOC(window.pageFlip.getCurrentPageIndex() + 1);
+            }
+        };
         const closeTOC = () => tocModal.classList.add('hidden');
         tocBtn.addEventListener('click', (e) => {
             e.stopPropagation();
