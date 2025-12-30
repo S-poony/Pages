@@ -132,9 +132,13 @@
                 <div class="preview-wrapper">
                     <iframe id="preview-iframe" class="preview-iframe" frameborder="0"></iframe>
                 </div>
+                <br>
                 <div id="error-message" class="error-message hidden"></div>
                 <div class="footer">
-                    <br>
+                    <!-- Check Config Button -->
+                    <button id="check-config-btn" class="btn btn-text btn-sm">
+                        Check configuration
+                    </button>
                     <button id="reset-btn" class="btn btn-ghost">
                         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
@@ -364,6 +368,24 @@
     </div>
 
     <script type="module" src="src/app.js"></script>
+
+    <!-- Check Configuration Modal -->
+    <div id="check-config-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title">Current Configuration</h3>
+                <button id="check-config-close-btn" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <ul id="check-config-list" class="config-summary-list">
+                    <!-- Dynamic content will be inserted here -->
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button id="check-config-done-btn" class="btn btn-primary">Done</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

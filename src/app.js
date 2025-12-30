@@ -117,6 +117,13 @@ class FlipbookApp {
     this.customTitleInput = document.getElementById('custom-title-input');
     this.configButtonContainer = document.querySelector('.config-button-container');
     this.configItems = document.querySelectorAll('.config-item');
+
+    // Check Config Elements
+    this.checkConfigBtn = document.getElementById('check-config-btn');
+    this.checkConfigModal = document.getElementById('check-config-modal');
+    this.checkConfigCloseBtn = document.getElementById('check-config-close-btn');
+    this.checkConfigDoneBtn = document.getElementById('check-config-done-btn');
+    this.checkConfigList = document.getElementById('check-config-list');
   }
 
   setupEventListeners() {
@@ -137,11 +144,13 @@ class FlipbookApp {
     this.resetBtn.addEventListener('click', () => this.reset());
     if (this.removeFileBtn) this.removeFileBtn.addEventListener('click', () => this.reset());
 
-    if (this.epubFontSizeInput) {
-      this.epubFontSizeInput.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/[^0-9]/g, '');
-      });
-    }
+    this.epubFontSizeInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    });
+
+    if (this.checkConfigBtn) this.checkConfigBtn.addEventListener('click', () => this.showCheckConfigModal());
+    if (this.checkConfigCloseBtn) this.checkConfigCloseBtn.addEventListener('click', () => this.hideCheckConfigModal());
+    if (this.checkConfigDoneBtn) this.checkConfigDoneBtn.addEventListener('click', () => this.hideCheckConfigModal());
   }
 
   handleDragOver(e) { e.preventDefault(); this.uploadArea.classList.add('dragover'); }
@@ -184,10 +193,57 @@ class FlipbookApp {
   updateConfigVisibility(fileType) {
     if (!this.configItems) return;
     this.configItems.forEach(item => {
-      const allowed = item.getAttribute('data-config-for');
-      const shouldShow = !fileType || allowed === 'all' || allowed === fileType;
+      const allowedStr = item.getAttribute('data-config-for') || '';
+      const allowed = allowedStr.split(' ');
+      const shouldShow = !fileType || allowed.includes('all') || allowed.includes(fileType);
       item.classList.toggle('hidden', !shouldShow);
     });
+  }
+
+  showCheckConfigModal() {
+    this.checkConfigList.innerHTML = '';
+    const fileType = this.pendingFile ? (this.pendingFile.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'epub') : null;
+
+    this.configItems.forEach(item => {
+      // Check visibility logic again to be safe, or check class 'hidden'
+      if (item.classList.contains('hidden')) return;
+
+      const label = item.querySelector('.input-label')?.textContent || item.querySelector('.label-text')?.textContent;
+      let valueHtml = '';
+      let isEnabled = false;
+
+      // Check for checkbox
+      const checkbox = item.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        isEnabled = checkbox.checked;
+        valueHtml = isEnabled
+          ? `<span class="config-summary-value enabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"></polyline></svg> Enabled</span>`
+          : `<span class="config-summary-value disabled">Disabled</span>`;
+      }
+
+      // Check for text/number input
+      const input = item.querySelector('input[type="text"], input[type="number"]');
+      if (input) {
+        const val = input.value.trim();
+        valueHtml = `<span class="config-summary-value">${val || 'Default'}</span>`;
+      }
+
+      if (label) {
+        const li = document.createElement('li');
+        li.className = 'config-summary-item';
+        li.innerHTML = `
+          <span class="config-summary-label">${label}</span>
+          ${valueHtml}
+        `;
+        this.checkConfigList.appendChild(li);
+      }
+    });
+
+    this.checkConfigModal.classList.remove('hidden');
+  }
+
+  hideCheckConfigModal() {
+    this.checkConfigModal.classList.add('hidden');
   }
 
   getEffectiveTitle() {
