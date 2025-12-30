@@ -125,6 +125,15 @@ document.addEventListener('DOMContentLoaded', () => {
             updateImageSizes();
             updateEpubContentScale();
             preloadNextSpread(0);
+
+            // Hide loading screen
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+                setTimeout(() => {
+                    loadingScreen.remove();
+                }, 600);
+            }
         });
     }
 

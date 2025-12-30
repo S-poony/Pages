@@ -342,6 +342,10 @@ export async function generateFlipbookHtml(pageImages, options = {},
         </style>
 </head>
 <body>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading Pages...</div>
+    </div>
 
 <!-- 
 ENRICHMENT GUIDE:
