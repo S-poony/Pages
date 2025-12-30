@@ -308,12 +308,30 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                             const highlightWidth = width * (zoomFactor);
                             const highlightHeight = height * (zoomFactor);
 
+
+                            // Create offscreen canvas for the thumbnail
+                            const canvas = document.createElement('canvas');
+                            // Scale for high DPI
+                            const pixelRatio = window.devicePixelRatio || 1;
+                            canvas.width = previewW * pixelRatio;
+                            canvas.height = previewH * pixelRatio;
+
+                            const ctx = canvas.getContext('2d');
+                            ctx.scale(pixelRatio, pixelRatio);
+
+                            // Draw the image at the exact position calculated for CSS
+                            // CSS 'backgound-position: Xpx Ypx' corresponds to drawing at (X, Y)
+                            ctx.drawImage(sourceImg, posX, posY, imgW, imgH);
+
+                            // Export to low-quality JPEG for memory efficiency
+                            const thumbUrl = canvas.toDataURL('image/jpeg', 0.8);
+
                             previewHtml = `
                                 <div class="link-preview-container">
                                     <div class="link-preview-viewport" style="
-                                        background-image: url('${sourceImg.src}');
-                                        background-position: ${posX}px ${posY}px;
-                                        background-size: ${imgW}px ${imgH}px;
+                                        background-image: url('${thumbUrl}');
+                                        background-position: center;
+                                        background-size: 100% 100%;
                                     "></div>
                                     <div class="link-preview-highlight" style="
                                         width: ${highlightWidth}px;
