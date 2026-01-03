@@ -85,10 +85,16 @@ body {
 }
 
 #toc-btn {
+    grid-column: 1;
     justify-self: start;
 }
 
+.page-input-container {
+    grid-column: 2;
+}
+
 #page-links-btn {
+    grid-column: 3;
     justify-self: end;
 }
 
