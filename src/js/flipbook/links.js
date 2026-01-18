@@ -2,6 +2,8 @@
  * Flipbook Link Handling Module
  * Centralizes all link-related interactions (EPUB, PDF, and external links)
  * into a single unified event listener.
+ * 
+ * NOTE: Link previews are restricted to PDF (image-based) documents only.
  */
 
 /**
@@ -42,16 +44,14 @@ function setupLinks(pageFlip, config, wrapper) {
         const pageContainers = window.FLIPBOOK_PAGES || document.querySelectorAll('.page-container');
         const targetPageEl = pageContainers[targetPageNum - 1];
 
-        if (!targetPageEl) {
-            console.warn('Link Preview: Target page not found', targetPageNum);
-            return;
-        }
+        if (!targetPageEl) return;
 
         if (currentPreviewPage !== targetPageNum || !previewElement.classList.contains('visible')) {
             previewElement.innerHTML = '';
             const previewContent = document.createElement('div');
             previewContent.className = 'preview-content';
 
+            // Strictly PDF Logic: Only clone the <img> tag
             const img = targetPageEl.querySelector('img.page-image');
             if (img) {
                 const previewImg = img.cloneNode(false);
@@ -77,6 +77,7 @@ function setupLinks(pageFlip, config, wrapper) {
         if (!previewElement) return;
 
         const margin = 15;
+        // Measure real dimensions for accurate boundary check
         const previewW = previewElement.offsetWidth || 300;
         const previewH = previewElement.offsetHeight || 400;
 
@@ -90,6 +91,7 @@ function setupLinks(pageFlip, config, wrapper) {
         let left = mouseX - rect.left + margin;
         let top = mouseY - rect.top + margin;
 
+        // Viewport boundaries (relative to wrapper)
         if (left + previewW > rect.width) {
             left = (mouseX - rect.left) - previewW - margin;
         }
@@ -97,6 +99,7 @@ function setupLinks(pageFlip, config, wrapper) {
             top = rect.height - previewH - margin;
         }
 
+        // Final safety check for top/left
         if (top < margin) top = margin;
         if (left < margin) left = margin;
 
@@ -111,7 +114,7 @@ function setupLinks(pageFlip, config, wrapper) {
                 previewElement.classList.remove('visible');
             }
             currentLink = null;
-            currentPreviewPage = null;
+            currentPreviewPage = null; // Reset to force re-render if needed
         }, delay);
     };
 
@@ -120,6 +123,7 @@ function setupLinks(pageFlip, config, wrapper) {
         const link = e.target.closest('a');
         if (!link) return;
 
+        // Navigation works for BOTH formats
         const epubHref = link.getAttribute('data-epub-href');
         const targetPageAttr = link.getAttribute('data-target-page');
 
@@ -127,11 +131,12 @@ function setupLinks(pageFlip, config, wrapper) {
             e.preventDefault();
             e.stopPropagation();
             const linkMap = config.linkMap || {};
-            let targetPage = linkMap[epubHref];
+            let key = epubHref.split('#')[0]; // Robust lookup
+            let targetPage = linkMap[key];
 
             if (!targetPage) {
-                const matchingKeys = Object.keys(linkMap).filter(key =>
-                    key.includes(epubHref) || epubHref.includes(key)
+                const matchingKeys = Object.keys(linkMap).filter(k =>
+                    k.includes(key) || key.includes(k)
                 );
                 if (matchingKeys.length > 0) {
                     targetPage = linkMap[matchingKeys[0]];
@@ -166,37 +171,21 @@ function setupLinks(pageFlip, config, wrapper) {
         const link = e.target.closest('a');
         if (!link) return;
 
-        const epubHref = link.getAttribute('data-epub-href');
+        // PREVIEW logic: STRICTLY PDF ONLY (data-target-page)
+        // We explicitly ignore data-epub-href for previews as per user request
         const targetPageAttr = link.getAttribute('data-target-page');
-        if (!epubHref && !targetPageAttr) return;
+        if (!targetPageAttr) return;
 
-        // CRITICAL: Always clear hide timeout when over an internal link
+        // Clear hide timeout when over a valid preview-enabled link
         clearTimeout(hideTimeout);
 
-        // If same link, just update position IF the preview is already showing.
-        // If it's NOT showing (e.g. we re-entered during grace period), we proceed to trigger show.
         if (link === currentLink && previewElement && previewElement.classList.contains('visible')) {
             updatePosition(e.clientX, e.clientY);
             return;
         }
 
         currentLink = link;
-        let targetPageNum = null;
-
-        if (epubHref) {
-            const linkMap = config.linkMap || {};
-            targetPageNum = linkMap[epubHref];
-            if (!targetPageNum) {
-                const matchingKeys = Object.keys(linkMap).filter(key =>
-                    key.includes(epubHref) || epubHref.includes(key)
-                );
-                if (matchingKeys.length > 0) {
-                    targetPageNum = linkMap[matchingKeys[0]];
-                }
-            }
-        } else if (targetPageAttr) {
-            targetPageNum = parseInt(targetPageAttr, 10);
-        }
+        const targetPageNum = parseInt(targetPageAttr, 10);
 
         if (targetPageNum && !isNaN(targetPageNum)) {
             clearTimeout(showTimeout);
