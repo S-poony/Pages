@@ -76,22 +76,31 @@ function setupLinks(pageFlip, config, wrapper) {
         if (!previewElement) return;
 
         const margin = 15;
-        const previewW = 300;
-        const previewH = Math.min(400, window.innerHeight - 40);
+        // Measure real dimensions for accurate boundary check
+        const previewW = previewElement.offsetWidth || 300;
+        const previewH = previewElement.offsetHeight || 400;
 
-        const rect = wrapper ? wrapper.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+        const rect = wrapper ? wrapper.getBoundingClientRect() : {
+            left: 0,
+            top: 0,
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
 
         let left = mouseX - rect.left + margin;
         let top = mouseY - rect.top + margin;
 
-        // Keep within boundaries
+        // Viewport boundaries (relative to wrapper)
         if (left + previewW > rect.width) {
             left = (mouseX - rect.left) - previewW - margin;
         }
         if (top + previewH > rect.height) {
             top = rect.height - previewH - margin;
         }
+
+        // Final safety check for top/left
         if (top < margin) top = margin;
+        if (left < margin) left = margin;
 
         previewElement.style.left = `${left}px`;
         previewElement.style.top = `${top}px`;
