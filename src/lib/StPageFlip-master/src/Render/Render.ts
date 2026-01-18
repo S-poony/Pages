@@ -83,6 +83,9 @@ export abstract class Render {
     /** Timer started from start of rendering */
     protected timer = 0;
 
+    /** Current animation frame request ID for cleanup */
+    private animationFrameId: number | null = null;
+
     /**
      * Safari browser definitions for resolving a bug with a css property clip-area
      *
@@ -141,10 +144,20 @@ export abstract class Render {
 
         const loop = (timer: number): void => {
             this.render(timer);
-            requestAnimationFrame(loop);
+            this.animationFrameId = requestAnimationFrame(loop);
         };
 
-        requestAnimationFrame(loop);
+        this.animationFrameId = requestAnimationFrame(loop);
+    }
+
+    /**
+     * Stop the rendering loop. Should be called on destroy to prevent memory leaks.
+     */
+    public stop(): void {
+        if (this.animationFrameId !== null) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
     }
 
     /**
@@ -450,7 +463,7 @@ export abstract class Render {
         if (this.app.getSettings().display === DisplayType.SINGLE) {
             spineOffset = direction === FlipDirection.FORWARD ? 0 : rect.width;
         }
-        
+
         const x =
             direction === FlipDirection.FORWARD
                 ? pos.x - rect.left - spineOffset
@@ -481,7 +494,7 @@ export abstract class Render {
         if (this.app.getSettings().display === DisplayType.SINGLE) {
             spineOffset = direction === FlipDirection.FORWARD ? 0 : rect.width;
         }
-        
+
         const x =
             direction === FlipDirection.FORWARD
                 ? pos.x + rect.left + spineOffset

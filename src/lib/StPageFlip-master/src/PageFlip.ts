@@ -53,6 +53,7 @@ export class PageFlip extends EventObject {
      * Destructor. Remove a root HTML element and all event handlers
      */
     public destroy(): void {
+        this.render?.stop();
         this.ui.destroy();
         this.block.remove();
     }

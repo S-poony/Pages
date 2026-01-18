@@ -116,12 +116,14 @@ export class CanvasRender extends Render {
 
         const outerGradient = this.ctx.createLinearGradient(0, 0, shadowSize, 0);
 
-        outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowEndAlpha) + ')');
+        // Use shadow opacity if available (during flip), otherwise default to 0
+        const shadowOpacity = this.shadow?.opacity ?? 0;
+        outerGradient.addColorStop(0, 'rgba(0, 0, 0, ' + (shadowOpacity * this.app.getSettings().flippingShadowEndAlpha) + ')');
         outerGradient.addColorStop(0.4, 'rgba(0, 0, 0, 0.2)');
         outerGradient.addColorStop(0.49, 'rgba(0, 0, 0, 0.1)');
         outerGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.5)');
         outerGradient.addColorStop(0.51, 'rgba(0, 0, 0, 0.4)');
-        outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + (this.shadow.opacity * this.app.getSettings().flippingShadowEndAlpha) + ')');
+        outerGradient.addColorStop(1, 'rgba(0, 0, 0, ' + (shadowOpacity * this.app.getSettings().flippingShadowEndAlpha) + ')');
 
         this.ctx.clip();
 
