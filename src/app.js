@@ -58,10 +58,8 @@ class FlipbookApp {
     this.uploadArea = document.getElementById('upload-area');
     this.fileInput = document.getElementById('file-input');
     this.doubleSpreadToggle = document.getElementById('double-spread-toggle');
-    this.blankPageToggle = document.getElementById('blank-page-toggle');
     this.multiScaleToggle = document.getElementById('multi-scale-toggle');
     this.epubFontSizeInput = document.getElementById('epub-font-size-input');
-    this.blankPageOption = document.getElementById('blank-page-option');
     this.progressContainer = document.getElementById('progress-container');
     this.progressBar = document.getElementById('progress-bar');
     this.progressText = document.getElementById('progress-text');
@@ -269,7 +267,6 @@ class FlipbookApp {
       const versions = await generateAllVersions(pageImages, {
         title: this.getEffectiveTitle(),
         doubleSpread,
-        addBlankPage: !!this.blankPageToggle?.checked,
         tableOfContents: result.tableOfContents
       }, this.assetPack, [], result.pageLinks);
 
@@ -299,7 +296,6 @@ class FlipbookApp {
       const versions = await generateAllVersions(pageImages, {
         title: this.getEffectiveTitle(),
         doubleSpread: !!this.doubleSpreadToggle?.checked,
-        addBlankPage: !!this.blankPageToggle?.checked,
         extraCss: epub.css,
         linkMap: epub.linkMap,
         tableOfContents: epub.tableOfContents

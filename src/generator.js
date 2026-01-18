@@ -6,7 +6,7 @@
  * @typedef {Object} GeneratorOptions
  * @property {string} title - Title of the flipbook
  * @property {boolean} doubleSpread - Whether to enable double spread mode
- * @property {boolean} addBlankPage - Whether to add a blank page at start
+ * @property {boolean} doubleSpread - Whether to enable double spread mode
  * @property {'single'|'folder'} mode - Generation mode: 'single' (embedded base64) or 'folder' (external images)
  */
 
@@ -240,7 +240,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
         throw new Error('pageImages must contain at least one image');
     }
 
-    const { title = 'Flipbook', doubleSpread = false, addBlankPage = false, mode = 'single', extraCss = '' } = options;
+    const { title = 'Flipbook', doubleSpread = false, mode = 'single', extraCss = '' } = options;
     const [baseCss, js, pageFlipJs] = await Promise.all([
         assetLoader.loadCss().catch(() => ''),
         assetLoader.loadJs().catch(() => ''),
@@ -250,13 +250,6 @@ export async function generateFlipbookHtml(pageImages, options = {},
     // Construct the array of pages conditionally
     const pagesArray = [];
 
-    // Add blank cover (single page, right side) if addBlankPage is true
-    if (addBlankPage) {
-        pagesArray.push(
-            '<div class="page-container" style="background-color: white;"></div>'
-        );
-    }
-
     // Add content pages - FIXED: Pass enrichmentHtmlList
     pagesArray.push(
         generatePagesHtml(pageImages, doubleSpread, mode, enrichmentHtmlList, pdfPageLinks)
@@ -264,9 +257,6 @@ export async function generateFlipbookHtml(pageImages, options = {},
 
     // Add blank page at end if odd number of pages
     let totalPageCount = pageImages.length;
-    if (addBlankPage) {
-        totalPageCount += 1; // Account for the blank cover we added
-    }
 
     if (totalPageCount % 2 !== 0) {
         pagesArray.push(
