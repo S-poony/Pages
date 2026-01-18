@@ -77,7 +77,7 @@ function generatePagesHtml(pages, doubleSpread = false) {
     }).join('');
 }
 
-const FLIPBOOK_CSS = `:root{--color-cream:#FDFBF8;--color-warm-gray:#E8E4D9;--color-charcoal:#2A2A2A;--color-terracotta:#C9785B;--font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}body{margin:0;padding:0;overflow:hidden;background-color:var(--color-cream);font-family:var(--font-sans);color:var(--color-charcoal)}#flipbook-wrapper{width:100vw;height:100vh;height:100dvh;display:flex;justify-content:center;align-items:center;perspective:2000px;cursor:default}#flipbook-container{position:relative;transition:transform .15s ease-out;transform-origin:center center;flex-shrink:0;min-width:100px;min-height:100px}#flipbook{position:relative;width:100%;height:100%}.page-image{width:100%;height:100%;object-fit:contain;display:block;-webkit-user-drag:none;user-select:none;pointer-events:none}.page-container{position:relative;width:100%;height:100%;z-index:1500;background-color:white;box-shadow:0 0 10px rgba(0,0,0,.05)}.enrichment-layer{position:absolute;inset:0;pointer-events:auto;z-index:1510;overflow:hidden}.pdf-link{display:block;cursor:pointer;z-index:1520;pointer-events:auto}.pdf-link:hover{background-color:rgba(255,255,0,.2)}#controls-panel{position:fixed;bottom:max(24px,env(safe-area-inset-bottom,0px) + 12px);left:50%;transform:translateX(-50%);background:white;padding:12px 24px;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.05);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;justify-items:center;gap:16px;z-index:2000;opacity:.3;transition:opacity .3s ease,transform .3s ease;max-width:calc(100vw - 32px);min-width:180px}#toc-btn{grid-column:1;justify-self:start}.page-input-container{grid-column:2}#page-links-btn{grid-column:3;justify-self:end}#controls-panel:hover,#controls-panel.active{opacity:1;transform:translateX(-50%) translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.12)}input[type="range"]{-webkit-appearance:none;appearance:none;width:120px;height:4px;background:var(--color-warm-gray);border-radius:2px;outline:none}input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--color-terracotta);cursor:pointer;transition:.2s}#page-input{width:40px;text-align:center;border:1px solid var(--color-warm-gray);border-radius:4px;padding:4px;font-family:var(--font-sans);color:var(--color-charcoal);font-size:14px;-moz-appearance:textfield;appearance:textfield}#page-input::-webkit-outer-spin-button,#page-input::-webkit-inner-spin-button{-webkit-appearance:none;appearance:none;margin:0}.page-input-container{display:flex;align-items:center;gap:4px}.page-nav-btn{background:none;border:none;padding:4px;cursor:pointer;color:var(--color-charcoal);border-radius:4px;display:flex;align-items:center;justify-content:center;transition:background-color .2s}.page-nav-btn:hover{background-color:rgba(0,0,0,.05);color:var(--color-terracotta)}#top-controls-panel{position:fixed;top:max(24px,env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);background:white;padding:8px 16px;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.05);display:flex;align-items:center;gap:16px;z-index:2000;opacity:.3;transition:opacity .3s ease,transform .3s ease}#top-controls-panel:hover,#top-controls-panel.active{opacity:1;transform:translateX(-50%) translateY(2px);box-shadow:0 8px 30px rgba(0,0,0,.12)}.zoom-controls{display:flex;align-items:center;gap:12px}.icon-btn,#fullscreen-btn{background:none;border:none;color:var(--color-charcoal);cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;transition:color .2s;border-radius:4px}.icon-btn:hover,#fullscreen-btn:hover{color:var(--color-terracotta);background-color:rgba(0,0,0,.05)}.toc-modal{position:fixed;inset:0;z-index:2000;display:flex;justify-content:center;align-items:center}.toc-modal.hidden{display:none}.toc-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5)}.toc-content{position:relative;background:white;width:90vw;max-width:400px;max-height:85dvh;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.2);display:flex;flex-direction:column;overflow:hidden}.toc-header{padding:16px 20px;border-bottom:1px solid var(--color-warm-gray);display:flex;justify-content:space-between;align-items:center;background:var(--color-cream)}.toc-header h2{margin:0;font-size:18px;font-weight:600;color:var(--color-charcoal)}#toc-close-btn,#links-close-btn{background:none;border:none;cursor:pointer;color:var(--color-charcoal);padding:4px;border-radius:4px}.toc-list{padding:10px 0;overflow-y:auto;flex:1}#links-modal .toc-content{max-width:550px}.toc-item{padding:10px 20px;cursor:pointer;transition:background-color .2s;font-size:15px;color:var(--color-charcoal);display:flex;justify-content:space-between;align-items:center;text-decoration:none}.toc-item:hover{color:var(--color-terracotta)}#zoom-level,.page-count{font-size:14px;font-weight:500;color:var(--color-charcoal);min-width:3em;text-align:center}#loading-screen{position:fixed;top:0;left:0;width:100vw;height:100vh;height:100dvh;background-color:var(--color-cream);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity .5s ease-out}#loading-screen.hidden{opacity:0;pointer-events:none}.spinner{width:40px;height:40px;border:4px solid var(--color-warm-gray);border-top:4px solid var(--color-terracotta);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px}.loading-text{color:var(--color-terracotta);font-size:14px;font-weight:500;letter-spacing:.5px}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}.toc-item-text{flex:1;display:flex;flex-direction:column;min-width:0;gap:2px}.toc-item-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}.toc-item-page{font-size:11px;color:#888}`;
+// CSS is now loaded from external URL
 
 function generateFlipbookHtml(options) {
     const {
@@ -85,7 +85,8 @@ function generateFlipbookHtml(options) {
         doubleSpread = false,
         pages = [],
         bookmarks = [],
-        jsUrl = ''
+        jsUrl = '',
+        cssUrl = ''
     } = options;
 
     if (!Array.isArray(pages) || pages.length < 1) {
@@ -123,7 +124,7 @@ function generateFlipbookHtml(options) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${escapeHtml(title)}</title>
-    <style>${FLIPBOOK_CSS}</style>
+    <link rel="stylesheet" href="${escapeAttr(cssUrl)}">
 </head>
 <body>
     <div id="loading-screen">
@@ -310,13 +311,15 @@ async function handleFlipbookAPI(request, env, url) {
     }
 
     const jsUrl = env.FLIPBOOK_JS_URL || 'https://content.lojkine.art/flipbook.bundle.js';
+    const cssUrl = env.FLIPBOOK_CSS_URL || 'https://content.lojkine.art/flipbook.bundle.css';
 
     const html = generateFlipbookHtml({
         title: title || 'Flipbook',
         doubleSpread,
         pages: pageUrls,
         bookmarks,
-        jsUrl
+        jsUrl,
+        cssUrl
     });
 
     const htmlPath = `${siteId}/index.html`;
