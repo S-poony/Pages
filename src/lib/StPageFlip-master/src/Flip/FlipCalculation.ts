@@ -56,6 +56,7 @@ export class FlipCalculation {
 
             return true;
         } catch (e) {
+            console.warn('[StPageFlip] Calculation error:', e.message);
             return false;
         }
     }
@@ -177,7 +178,7 @@ export class FlipCalculation {
     public getFlippingProgress(): number {
         return Math.abs(((this.position.x - this.pageWidth) / (2 * this.pageWidth)) * 100);
     }
-    
+
     /**
      * Get flipping corner position (top, bottom)
      */

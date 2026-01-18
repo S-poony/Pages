@@ -168,6 +168,7 @@ export class Flip {
 
             return true;
         } catch (e) {
+            console.warn('[StPageFlip] Flip start error:', e.message);
             return false;
         }
     }
@@ -233,7 +234,7 @@ export class Flip {
                 this.flipPrev(corner);
             }
         } catch (e) {
-            //
+            console.warn('[StPageFlip] Flip to page error:', e.message);
         }
     }
 

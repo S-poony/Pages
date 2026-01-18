@@ -46,6 +46,23 @@ export abstract class EventObject {
         this.events.delete(event);
     }
 
+    /**
+     * Remove a specific callback from an event
+     *
+     * @param {string} event - Event name
+     * @param {EventCallback} callback - Callback to remove
+     */
+    public offCallback(event: string, callback: EventCallback): void {
+        if (!this.events.has(event)) return;
+
+        const callbacks = this.events.get(event);
+        const index = callbacks.indexOf(callback);
+
+        if (index !== -1) {
+            callbacks.splice(index, 1);
+        }
+    }
+
     protected trigger(eventName: string, app: PageFlip, data: DataType = null): void {
         if (!this.events.has(eventName)) return;
 
