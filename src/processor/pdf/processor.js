@@ -32,7 +32,55 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
     }
 
     const pdf = await loadPdfDocument(arrayBuffer);
-    const renderer = createPageRenderer(pdf, normalizedOptions, canvasAPI);
+
+    // We'll use a precision of 3 decimal places for aspect ratio grouping
+    const getRatioKey = (width, height) => (width / height).toFixed(3);
+
+    // Scan all pages in parallel
+    const aspectRatios = new Map();
+    const dimensions = new Map();
+
+    const pagePromises = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+        pagePromises.push(pdf.getPage(i).then(page => {
+            const vp = page.getViewport({ scale: 1.0 });
+            return { width: vp.width, height: vp.height };
+        }).catch(e => {
+            console.warn(`Failed to get viewport for page ${i}:`, e);
+            return null;
+        }));
+    }
+
+    const results = await Promise.all(pagePromises);
+
+    results.forEach(vp => {
+        if (!vp) return;
+        const key = getRatioKey(vp.width, vp.height);
+        aspectRatios.set(key, (aspectRatios.get(key) || 0) + 1);
+        if (!dimensions.has(key)) {
+            dimensions.set(key, { width: vp.width, height: vp.height });
+        }
+    });
+
+    // Find most common aspect ratio
+    let standardRatioKey = null;
+    let maxCount = 0;
+    for (const [key, count] of aspectRatios.entries()) {
+        if (count > maxCount) {
+            maxCount = count;
+            standardRatioKey = key;
+        }
+    }
+
+    const standardDims = dimensions.get(standardRatioKey);
+    const processorOptions = {
+        ...normalizedOptions,
+        targetAspectRatio: standardDims ? standardDims.width / standardDims.height : null,
+        standardWidth: standardDims ? standardDims.width : null,
+        standardHeight: standardDims ? standardDims.height : null
+    };
+
+    const renderer = createPageRenderer(pdf, processorOptions, canvasAPI);
 
     // Extract title from PDF metadata
     let pdfTitle = '';
