@@ -162,8 +162,8 @@ export class Flip {
             this.calc = new FlipCalculation(
                 direction,
                 flipCorner,
-                rect.pageWidth.toString(10), // fix bug with type casting
-                rect.height.toString(10) // fix bug with type casting
+                rect.pageWidth,
+                rect.height
             );
 
             return true;

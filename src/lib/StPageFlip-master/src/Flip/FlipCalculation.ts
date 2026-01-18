@@ -33,11 +33,11 @@ export class FlipCalculation {
         private direction: FlipDirection,
         private corner: FlipCorner,
 
-        pageWidth: string,
-        pageHeight: string
+        pageWidth: number,
+        pageHeight: number
     ) {
-        this.pageWidth = parseInt(pageWidth, 10);
-        this.pageHeight = parseInt(pageHeight, 10);
+        this.pageWidth = pageWidth;
+        this.pageHeight = pageHeight;
     }
 
     /**
