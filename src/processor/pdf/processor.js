@@ -10,6 +10,7 @@ import { loadPdfDocument } from './loader.js';
 import { defaultCanvasAPI } from './canvas.js';
 import { createPageRenderer } from './renderer.js';
 import { extractPageLinks, resolveLinkDestinations, normalizeLinkRects } from './annotations.js';
+import { calculateNormalization } from './normalization.js';
 
 /**
  * Processes a PDF file and returns page count and renderers
@@ -22,16 +23,21 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
     const normalizedOptions = normalizeProcessorOptions(options);
     const { scale, scales, doubleSpread, format, quality } = normalizedOptions;
 
-    let arrayBuffer;
-    if (input instanceof ArrayBuffer) {
-        arrayBuffer = input;
-    } else if (input && typeof input.arrayBuffer === 'function') {
-        arrayBuffer = await input.arrayBuffer();
+    let pdf;
+    if (input && typeof input.numPages === 'number' && typeof input.getPage === 'function') {
+        // Direct PDF document injection (for testing)
+        pdf = input;
     } else {
-        throw new Error('input must be a File or ArrayBuffer');
+        let arrayBuffer;
+        if (input instanceof ArrayBuffer) {
+            arrayBuffer = input;
+        } else if (input && typeof input.arrayBuffer === 'function') {
+            arrayBuffer = await input.arrayBuffer();
+        } else {
+            throw new Error('input must be a File, ArrayBuffer, or PDFDocumentProxy');
+        }
+        pdf = await loadPdfDocument(arrayBuffer);
     }
-
-    const pdf = await loadPdfDocument(arrayBuffer);
 
     // We'll use a precision of 3 decimal places for aspect ratio grouping
     const getRatioKey = (width, height) => (width / height).toFixed(3);
@@ -164,20 +170,53 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
 
             const page = await pdf.getPage(pdfPageNumber);
             const wholeVp = page.getViewport({ scale: renderScale });
-            const halfWidth = Math.floor(wholeVp.width / 2);
+
+            // Apply normalization to the WHOLE page first
+            // Note: pass processorOptions which has targetAspectRatio/standardDims
+            const norm = calculateNormalization(wholeVp, processorOptions, renderScale);
+
+            // New "Whole" Dimensions after normalization
+            const normWidth = norm.canvasWidth;
+            const normHeight = norm.canvasHeight;
+            const halfWidth = Math.floor(normWidth / 2);
 
             const canvas = canvasAPI.createCanvas();
             canvas.width = halfWidth;
-            canvas.height = Math.round(wholeVp.height);
+            canvas.height = normHeight; // Normalized Height
 
-            const transform = side === 'right' ? [1, 0, 0, 1, -halfWidth, 0] : undefined;
+            const context = canvas.getContext('2d');
+
+            // Always fill with white to prevent transparent/black background issues
+            context.fillStyle = '#FFFFFF';
+            context.fillRect(0, 0, halfWidth, normHeight);
+
+            // Transform logic:
+            // 1. Translating for Normalization (xOffset, yOffset) to put content in "Container"
+            // 2. Translating for Split (shifting global coordinates so left/right aligns with 0,0)
+
+            const splitOffset = side === 'right' ? -halfWidth : 0;
+            const contextX = norm.xOffset + splitOffset;
+            const contextY = norm.yOffset;
+
+            // Final render scale
+            const finalScale = norm.isNormalized ? renderScale * norm.contentScale : renderScale;
+            // Note: renderScale was used to calc wholeVp. 
+            // calculateNormalization expects viewport at renderScale.
+
+            const renderViewport = page.getViewport({ scale: finalScale });
 
             const t0 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+
+            context.save();
+            context.translate(contextX, contextY);
+
             await page.render({
-                canvasContext: canvas.getContext('2d'),
-                viewport: wholeVp,
-                transform: transform
+                canvasContext: context,
+                viewport: renderViewport
             }).promise;
+
+            context.restore();
+
             const t1 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
 
             const dataUrl = canvasAPI.canvasToDataURL(canvas, format, quality);
