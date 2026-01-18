@@ -214,4 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!window.location.hash && initialPage === null) {
         setPageInHash(1);
     }
+
+    // Cleanup on page unload to stop animation loop and prevent memory leaks
+    window.addEventListener('beforeunload', () => {
+        if (window.pageFlip && typeof window.pageFlip.destroy === 'function') {
+            window.pageFlip.destroy();
+        }
+    });
 });
