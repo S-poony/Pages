@@ -161,6 +161,20 @@ Event object has two fields: `data: number | string` and `object: PageFlip`
 -   `updateFromImages(images: ['path-to-image1.jpg', ...])` - Update page from images (new on 0.4.0)
 -   `destroy()` - Destructor. Remove a root HTML element and all event handlers (new on 0.4.0)
 
+### Testing
+
+Run unit tests with Vitest:
+
+```bash
+npm install  # Install dev dependencies
+npm test     # Run all tests
+```
+
+Tests cover:
+- **Helper** - Geometry utility functions (distance, rect checking, circle limits)
+- **EventObject** - Event registration, removal, and triggering
+- **Settings** - Configuration validation and defaults
+
 ### Contacts
 
 Oleg,
