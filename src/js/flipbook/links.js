@@ -38,15 +38,16 @@ function setupLinks(pageFlip, config, wrapper) {
     const showPreview = (targetPageNum, mouseX, mouseY) => {
         if (!previewElement) previewElement = createPreviewElement();
 
-        // BUG FIX: Always re-render if the page is different, even if the box is already visible.
-        // We also check if it's currently hidden to ensure fresh content.
+        // Use persistent pages if available, otherwise fallback to DOM
+        const pageContainers = window.FLIPBOOK_PAGES || document.querySelectorAll('.page-container');
+        const targetPageEl = pageContainers[targetPageNum - 1];
+
+        if (!targetPageEl) {
+            console.warn('Link Preview: Target page not found', targetPageNum);
+            return;
+        }
+
         if (currentPreviewPage !== targetPageNum || !previewElement.classList.contains('visible')) {
-            const pageContainers = document.querySelectorAll('.page-container');
-            const targetPageEl = pageContainers[targetPageNum - 1];
-
-            if (!targetPageEl) return;
-
-            // ULTRA-LIGHT: Only clone the <img> tag for maximum performance
             previewElement.innerHTML = '';
             const previewContent = document.createElement('div');
             previewContent.className = 'preview-content';
@@ -76,7 +77,6 @@ function setupLinks(pageFlip, config, wrapper) {
         if (!previewElement) return;
 
         const margin = 15;
-        // Measure real dimensions for accurate boundary check
         const previewW = previewElement.offsetWidth || 300;
         const previewH = previewElement.offsetHeight || 400;
 
@@ -90,7 +90,6 @@ function setupLinks(pageFlip, config, wrapper) {
         let left = mouseX - rect.left + margin;
         let top = mouseY - rect.top + margin;
 
-        // Viewport boundaries (relative to wrapper)
         if (left + previewW > rect.width) {
             left = (mouseX - rect.left) - previewW - margin;
         }
@@ -98,7 +97,6 @@ function setupLinks(pageFlip, config, wrapper) {
             top = rect.height - previewH - margin;
         }
 
-        // Final safety check for top/left
         if (top < margin) top = margin;
         if (left < margin) left = margin;
 
@@ -113,7 +111,6 @@ function setupLinks(pageFlip, config, wrapper) {
                 previewElement.classList.remove('visible');
             }
             currentLink = null;
-            // Clear current page to force re-render on next visible show
             currentPreviewPage = null;
         }, delay);
     };
@@ -171,13 +168,14 @@ function setupLinks(pageFlip, config, wrapper) {
 
         const epubHref = link.getAttribute('data-epub-href');
         const targetPageAttr = link.getAttribute('data-target-page');
-
         if (!epubHref && !targetPageAttr) return;
 
-        // If we are over a link, we definitely don't want to hide the preview
+        // CRITICAL: Always clear hide timeout when over an internal link
         clearTimeout(hideTimeout);
 
-        if (link === currentLink) {
+        // If same link, just update position IF the preview is already showing.
+        // If it's NOT showing (e.g. we re-entered during grace period), we proceed to trigger show.
+        if (link === currentLink && previewElement && previewElement.classList.contains('visible')) {
             updatePosition(e.clientX, e.clientY);
             return;
         }

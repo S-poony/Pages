@@ -36,8 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
         container.style.height = `${BOOK_HEIGHT_AT_1X}px`;
     }
 
-    // Store original pages for re-initialization
-    const originalPages = Array.from(document.querySelectorAll('.page-container')).map(node => node.cloneNode(true));
+    // Store original pages for re-initialization and previews
+    window.FLIPBOOK_PAGES = Array.from(document.querySelectorAll('.page-container')).map(node => node.cloneNode(true));
+    const originalPages = window.FLIPBOOK_PAGES;
 
     // Ensure flipbook element exists and is clean
     if (!flipbookEl) {
