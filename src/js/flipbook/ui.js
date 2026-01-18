@@ -80,10 +80,12 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
         });
         zoomSlider.addEventListener('mouseup', () => {
             isUsingSlider = false;
+            zoomSlider.blur();
             deactivateControlPanel();
         });
         zoomSlider.addEventListener('touchend', () => {
             isUsingSlider = false;
+            zoomSlider.blur();
             deactivateControlPanel();
         });
         zoomSlider.addEventListener('input', e => {
