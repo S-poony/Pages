@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build-assets": "node scripts/build-flipbook-assets.js",
     "preview": "vite preview --port 3000",
     "start": "npm run build && npm run preview",
     "test": "node --test test/**/*.test.js"

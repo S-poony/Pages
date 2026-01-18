@@ -1,7 +1,148 @@
 // worker.js
 // This is what's in cloudflare. Putting it here for inspection by my big brother
 
+import { generateFlipbookHtml } from './generator.js';
+
 const MAX_SIZE_BYTES = 300 * 1024 * 1024; // 300MB
+
+// API Key validation - set this in your Cloudflare Worker environment variables
+// In Cloudflare Dashboard: Workers > your worker > Settings > Variables > Add variable
+// Name: API_KEYS, Value: comma-separated list of valid keys
+
+function validateApiKey(request, env) {
+  const apiKey = request.headers.get('X-API-Key');
+  if (!apiKey) return false;
+
+  // Get allowed keys from environment variable (comma-separated)
+  const allowedKeys = (env.API_KEYS || '').split(',').map(k => k.trim()).filter(k => k);
+  return allowedKeys.includes(apiKey);
+}
+
+/**
+ * Handle API flipbook creation
+ * POST /api/flipbook
+ */
+async function handleFlipbookAPI(request, env, url) {
+  // Validate API key
+  if (!validateApiKey(request, env)) {
+    return new Response(JSON.stringify({ success: false, error: 'Invalid or missing API key' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+
+  // Parse request body
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, error: 'Invalid JSON body' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+
+  const { title, doubleSpread = false, pages, bookmarks = [] } = body;
+
+  // Validate required fields
+  if (!pages || !Array.isArray(pages) || pages.length === 0) {
+    return new Response(JSON.stringify({ success: false, error: 'pages array is required and must not be empty' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+
+  // Generate site ID from title
+  const slug = (title || 'flipbook').slice(0, 50).replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+  const shortId = crypto.randomUUID().slice(0, 8);
+  const siteId = `${slug}-${shortId}`;
+
+  // Upload page images to R2 and collect URLs
+  const pageUrls = [];
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
+    if (!page.imageData) {
+      return new Response(JSON.stringify({ success: false, error: `Page ${i + 1} is missing imageData` }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    // Decode base64 image
+    const imageData = page.imageData;
+    let blob;
+    let ext = 'jpg';
+    let contentType = 'image/jpeg';
+
+    if (imageData.startsWith('data:')) {
+      // Data URL format
+      const matches = imageData.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (!matches) {
+        return new Response(JSON.stringify({ success: false, error: `Page ${i + 1} has invalid imageData format` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+      ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+      contentType = `image/${matches[1]}`;
+      const base64Data = matches[2];
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let j = 0; j < binaryString.length; j++) {
+        bytes[j] = binaryString.charCodeAt(j);
+      }
+      blob = bytes;
+    } else {
+      return new Response(JSON.stringify({ success: false, error: `Page ${i + 1} imageData must be a data URL` }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    // Upload to R2
+    const imagePath = `${siteId}/images/page-${i + 1}.${ext}`;
+    await env.FLIPBOOK_BUCKET.put(imagePath, blob, {
+      httpMetadata: { contentType }
+    });
+
+    pageUrls.push({
+      imageUrl: `https://${url.hostname}/${imagePath}`,
+      links: page.links || [],
+      width: page.width,
+      height: page.height
+    });
+  }
+
+  // URL to the flipbook JavaScript bundle (hosted on your main site or CDN)
+  // This should be set as an environment variable, defaulting to a relative path
+  const jsUrl = env.FLIPBOOK_JS_URL || 'https://lojkine.art/pages/flipbook.bundle.js';
+
+  // Generate HTML
+  const html = generateFlipbookHtml({
+    title: title || 'Flipbook',
+    doubleSpread,
+    pages: pageUrls,
+    bookmarks,
+    jsUrl
+  });
+
+  // Upload HTML to R2
+  const htmlPath = `${siteId}/index.html`;
+  await env.FLIPBOOK_BUCKET.put(htmlPath, html, {
+    httpMetadata: { contentType: 'text/html' }
+  });
+
+  const publishedUrl = `https://${url.hostname}/${siteId}`;
+
+  return new Response(JSON.stringify({
+    success: true,
+    url: publishedUrl,
+    slug: siteId,
+    pageCount: pages.length
+  }), {
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+  });
+}
 
 export default {
   async fetch(request, env) {
@@ -13,13 +154,19 @@ export default {
       return new Response(null, {
         headers: {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, PUT, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, X-Custom-Auth-Key",
+          "Access-Control-Allow-Methods": "GET, PUT, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, X-Custom-Auth-Key, X-API-Key",
         },
       });
     }
 
+
     try {
+      // 0. API ENDPOINT (POST /api/flipbook)
+      if (request.method === "POST" && url.pathname === '/api/flipbook') {
+        return await handleFlipbookAPI(request, env, url);
+      }
+
       // 1. SERVE THE SITE (GET request)
       if (request.method === "GET") {
         if (!key) return new Response("Welcome to Page Maker Hosting", { status: 200 });
