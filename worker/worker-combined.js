@@ -220,18 +220,84 @@ function generateFlipbookHtml(options) {
 // WORKER CODE
 // ============================================================================
 
-function validateApiKey(request, env) {
-    const apiKey = request.headers.get('X-API-Key');
-    if (!apiKey) return false;
-    const allowedKeys = (env.API_KEYS || '').split(',').map(k => k.trim()).filter(k => k);
-    return allowedKeys.includes(apiKey);
+// Rate limiting configuration
+const RATE_LIMIT_MAX = 5; // Max flipbooks per IP per hour
+const RATE_LIMIT_WINDOW_SECONDS = 3600; // 1 hour in seconds
+
+function getClientIP(request) {
+    // Cloudflare provides the real client IP in CF-Connecting-IP header
+    return request.headers.get('CF-Connecting-IP') ||
+        request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
+        'unknown';
+}
+
+async function checkRateLimit(ip, env) {
+    // If no rate limit KV is configured, allow the request (for backwards compatibility)
+    if (!env.RATE_LIMIT_KV) {
+        return { allowed: true, remaining: RATE_LIMIT_MAX, resetAt: null };
+    }
+
+    const key = `rate:${ip}`;
+    const now = Math.floor(Date.now() / 1000);
+
+    try {
+        const data = await env.RATE_LIMIT_KV.get(key, { type: 'json' });
+
+        if (!data) {
+            // First request from this IP
+            const newData = { count: 1, resetAt: now + RATE_LIMIT_WINDOW_SECONDS };
+            await env.RATE_LIMIT_KV.put(key, JSON.stringify(newData), {
+                expirationTtl: RATE_LIMIT_WINDOW_SECONDS
+            });
+            return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetAt: newData.resetAt };
+        }
+
+        // Check if window has expired
+        if (now >= data.resetAt) {
+            const newData = { count: 1, resetAt: now + RATE_LIMIT_WINDOW_SECONDS };
+            await env.RATE_LIMIT_KV.put(key, JSON.stringify(newData), {
+                expirationTtl: RATE_LIMIT_WINDOW_SECONDS
+            });
+            return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetAt: newData.resetAt };
+        }
+
+        // Check if limit exceeded
+        if (data.count >= RATE_LIMIT_MAX) {
+            return { allowed: false, remaining: 0, resetAt: data.resetAt };
+        }
+
+        // Increment counter
+        const newData = { count: data.count + 1, resetAt: data.resetAt };
+        await env.RATE_LIMIT_KV.put(key, JSON.stringify(newData), {
+            expirationTtl: data.resetAt - now
+        });
+        return { allowed: true, remaining: RATE_LIMIT_MAX - newData.count, resetAt: data.resetAt };
+    } catch (e) {
+        // If KV fails, allow the request to avoid blocking users
+        console.error('Rate limit check failed:', e);
+        return { allowed: true, remaining: RATE_LIMIT_MAX, resetAt: null };
+    }
 }
 
 async function handleFlipbookAPI(request, env, url) {
-    if (!validateApiKey(request, env)) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid or missing API key' }), {
-            status: 401,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    const clientIP = getClientIP(request);
+    const rateLimit = await checkRateLimit(clientIP, env);
+
+    if (!rateLimit.allowed) {
+        const retryAfter = rateLimit.resetAt ? rateLimit.resetAt - Math.floor(Date.now() / 1000) : 3600;
+        return new Response(JSON.stringify({
+            success: false,
+            error: `Rate limit exceeded. Maximum ${RATE_LIMIT_MAX} flipbooks per hour. Try again in ${Math.ceil(retryAfter / 60)} minutes.`
+        }), {
+            status: 429,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Retry-After': String(retryAfter),
+                'X-RateLimit-Limit': String(RATE_LIMIT_MAX),
+                'X-RateLimit-Remaining': '0',
+                'X-RateLimit-Reset': String(rateLimit.resetAt)
+            }
         });
     }
 

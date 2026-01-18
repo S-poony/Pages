@@ -17,8 +17,7 @@ const pages = [
 const response = await fetch('https://content.lojkine.art/api/flipbook', {
   method: 'POST',
   headers: {
-    'Content-Type': 'application/json',
-    'X-API-Key': 'your-api-key'
+    'Content-Type': 'application/json'
   },
   body: JSON.stringify({
     title: 'My Book',
@@ -39,9 +38,11 @@ console.log('Published at:', url);
 POST https://content.lojkine.art/api/flipbook
 ```
 
-## Authentication
+## Rate Limiting
 
-Include your API key in the `X-API-Key` header.
+The API is limited to **5 flipbooks per hour per IP address**. No API key is required. 
+
+If you exceed this limit, the API will return a `429 Too Many Requests` status.
 
 ## Request Body
 
@@ -131,8 +132,7 @@ for (const pageElement of document.querySelectorAll('.page')) {
 const response = await fetch('https://content.lojkine.art/api/flipbook', {
   method: 'POST',
   headers: {
-    'Content-Type': 'application/json',
-    'X-API-Key': 'your-api-key'
+    'Content-Type': 'application/json'
   },
   body: JSON.stringify({ title: 'My Document', pages })
 });
@@ -144,7 +144,7 @@ const response = await fetch('https://content.lojkine.art/api/flipbook', {
 
 | Status | Error | Description |
 |--------|-------|-------------|
-| 401 | Invalid or missing API key | Check X-API-Key header |
+| 429 | Rate limit exceeded | Max 5 flipbooks per hour |
 | 400 | pages array is required | Include at least one page |
 | 400 | Page N is missing imageData | Each page needs imageData |
 | 400 | Invalid JSON body | Check request body format |
