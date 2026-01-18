@@ -411,6 +411,7 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
     const onStart = (clientX, clientY) => {
         if (isZoomed()) {
             isPanning = true;
+            window.isPanning = true; // Expose globally for scaling.js check
             isActuallyPanning = false;
             mouseDownX = clientX;
             mouseDownY = clientY;
@@ -429,14 +430,19 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
             if (isActuallyPanning) {
                 panX = clientX - startX;
                 panY = clientY - startY;
-                updateTransform();
+                updateTransform(true); // Optimization: Pan only
             }
         }
     };
     const onEnd = () => {
         isPanning = false;
+        window.isPanning = false;
         isActuallyPanning = false;
-        if (isZoomed()) wrapper.style.cursor = 'grab';
+        if (isZoomed()) {
+            wrapper.style.cursor = 'grab';
+            // Trigger quality update now that panning has stopped
+            debouncedUpdateImageSizes();
+        }
     };
 
     wrapper.addEventListener('mousedown', (e) => {

@@ -6,6 +6,9 @@
  * Update img sizes attribute based on zoom level for currently visible pages
  */
 function updateImageSizes() {
+    // Optimization: Skip expensive quality update if user is actively panning
+    if (window.isPanning) return;
+
     const zoomLevel = window.currentZoom || 1;
     const images = document.querySelectorAll('.page-image');
 

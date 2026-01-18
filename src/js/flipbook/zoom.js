@@ -5,7 +5,11 @@
 /**
  * Apply zoom and pan transforms to the container
  */
-function updateTransform() {
+/**
+ * Apply zoom and pan transforms to the container
+ * @param {boolean} isPanOnly - If true, skip expensive resizing operations and only apply translation
+ */
+function updateTransform(isPanOnly = false) {
     const wrapper = document.getElementById('flipbook-wrapper');
     const container = document.getElementById('flipbook-container');
 
@@ -30,38 +34,50 @@ function updateTransform() {
     }
 
     // Apply transform
-    container.style.width = `${BOOK_WIDTH_AT_1X * zoom}px`;
-    container.style.height = `${BOOK_HEIGHT_AT_1X * zoom}px`;
+    // We always set width/height to ensure consistency, but layout thrashing should be minimal if values don't change
+    // However, dispatching 'resize' is VERY expensive.
+
+    if (!isPanOnly) {
+        container.style.width = `${BOOK_WIDTH_AT_1X * zoom}px`;
+        container.style.height = `${BOOK_HEIGHT_AT_1X * zoom}px`;
+    }
+
     container.style.transform = `translate(${panX}px, ${panY}px)`;
 
-    // Force StPageFlip to update its size
-    window.isProgrammaticResize = true;
-    window.dispatchEvent(new Event('resize'));
-    window.isProgrammaticResize = false;
+    if (!isPanOnly) {
+        // Force StPageFlip to update its size
+        window.isProgrammaticResize = true;
+        window.dispatchEvent(new Event('resize'));
+        window.isProgrammaticResize = false;
+
+        // Update EPUB content scale immediately to prevent visual glitches
+        updateEpubContentScale();
+    }
 
     // Update cursor and disable/enable flipping
-    if (isZoomed()) {
-        wrapper.style.cursor = 'grab';
+    // Only verify this on zoom change or start/end, not every frame of pan?
+    // Doing it here is safe but we can skip if isPanOnly to save DOM writes
+    if (!isPanOnly) {
+        if (isZoomed()) {
+            wrapper.style.cursor = 'grab';
 
-        // Native library locks (supported after our custom lib build)
-        if (window.pageFlip) {
-            const settings = window.pageFlip.getSettings();
-            settings.useMouseEvents = false;
-            settings.showPageCorners = false;
-        }
-    } else {
-        wrapper.style.cursor = 'default';
+            // Native library locks (supported after our custom lib build)
+            if (window.pageFlip) {
+                const settings = window.pageFlip.getSettings();
+                settings.useMouseEvents = false;
+                settings.showPageCorners = false;
+            }
+        } else {
+            wrapper.style.cursor = 'default';
 
-        if (window.pageFlip) {
-            const settings = window.pageFlip.getSettings();
-            settings.useMouseEvents = true;
-            settings.showPageCorners = true;
+            if (window.pageFlip) {
+                const settings = window.pageFlip.getSettings();
+                settings.useMouseEvents = true;
+                settings.showPageCorners = true;
+            }
         }
     }
 
     window.currentZoom = zoom;
     // updateImageSizes() is now called with debounce in zoom handler
-
-    // Update EPUB content scale immediately to prevent visual glitches
-    updateEpubContentScale();
 }
