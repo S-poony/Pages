@@ -8,11 +8,11 @@
   touch-action: pan-y;
 }
 
-.sft__wrapper {
-  position: relative;
-  width: 100%;
-  box-sizing: border-box;
-}
+/*
+ * Note: .stf__wrapper intentionally has no CSS rules.
+ * The wrapper element's sizing and positioning is controlled entirely by JavaScript.
+ * Any CSS applied here (position, width, box-sizing) breaks the layout calculations.
+ */
 
 .stf__parent canvas {
   position: absolute;
