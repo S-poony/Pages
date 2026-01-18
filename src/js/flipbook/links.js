@@ -8,8 +8,9 @@
  * Sets up a centralized click listener for all flipbook links
  * @param {Object} pageFlip - StPageFlip instance
  * @param {Object} config - Flipbook configuration
+ * @param {HTMLElement} wrapper - Flipbook wrapper element
  */
-function setupLinks(pageFlip, config) {
+function setupLinks(pageFlip, config, wrapper) {
     console.log('Setting up flipbook links handle...', { hasLinkMap: !!config.linkMap });
 
     let previewElement = null;
@@ -21,7 +22,7 @@ function setupLinks(pageFlip, config) {
     const createPreviewElement = () => {
         const el = document.createElement('div');
         el.className = 'link-hover-preview';
-        document.body.appendChild(el);
+        (wrapper || document.body).appendChild(el);
 
         // Allow user to interact with the preview (scroll it)
         el.addEventListener('mouseenter', () => {
@@ -37,31 +38,30 @@ function setupLinks(pageFlip, config) {
     const showPreview = (targetPageNum, mouseX, mouseY) => {
         if (!previewElement) previewElement = createPreviewElement();
 
-        // Performance: Don't re-render if it's the same page
-        if (currentPreviewPage !== targetPageNum) {
+        // BUG FIX: Always re-render if the page is different, even if the box is already visible.
+        // We also check if it's currently hidden to ensure fresh content.
+        if (currentPreviewPage !== targetPageNum || !previewElement.classList.contains('visible')) {
             const pageContainers = document.querySelectorAll('.page-container');
             const targetPageEl = pageContainers[targetPageNum - 1];
 
             if (!targetPageEl) return;
 
-            // Clear and build ultra-light content
+            // ULTRA-LIGHT: Only clone the <img> tag for maximum performance
             previewElement.innerHTML = '';
             const previewContent = document.createElement('div');
             previewContent.className = 'preview-content';
 
             const img = targetPageEl.querySelector('img.page-image');
             if (img) {
-                // Cloning <img> is lightweight as it reuses browser cache
                 const previewImg = img.cloneNode(false);
                 previewImg.src = img.src;
                 if (img.srcset) previewImg.srcset = img.srcset;
                 if (img.sizes) previewImg.sizes = img.sizes;
                 previewImg.style.pointerEvents = 'none';
+                previewImg.style.width = '100%';
+                previewImg.style.height = 'auto';
                 previewContent.appendChild(previewImg);
             }
-
-            // IGNORE enrichment layer in preview for absolute maximum performance
-            // unless specifically requested. Cloned images are enough for 99% of cases.
 
             previewElement.appendChild(previewContent);
             currentPreviewPage = targetPageNum;
@@ -79,14 +79,17 @@ function setupLinks(pageFlip, config) {
         const previewW = 300;
         const previewH = Math.min(400, window.innerHeight - 40);
 
-        let left = mouseX + margin;
-        let top = mouseY + margin;
+        const rect = wrapper ? wrapper.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
 
-        if (left + previewW > window.innerWidth) {
-            left = mouseX - previewW - margin;
+        let left = mouseX - rect.left + margin;
+        let top = mouseY - rect.top + margin;
+
+        // Keep within boundaries
+        if (left + previewW > rect.width) {
+            left = (mouseX - rect.left) - previewW - margin;
         }
-        if (top + previewH > window.innerHeight) {
-            top = window.innerHeight - previewH - margin;
+        if (top + previewH > rect.height) {
+            top = rect.height - previewH - margin;
         }
         if (top < margin) top = margin;
 
@@ -101,7 +104,8 @@ function setupLinks(pageFlip, config) {
                 previewElement.classList.remove('visible');
             }
             currentLink = null;
-            currentPreviewPage = null; // Reset to force re-render if needed
+            // Clear current page to force re-render on next visible show
+            currentPreviewPage = null;
         }, delay);
     };
 
@@ -111,6 +115,8 @@ function setupLinks(pageFlip, config) {
         if (!link) return;
 
         const epubHref = link.getAttribute('data-epub-href');
+        const targetPageAttr = link.getAttribute('data-target-page');
+
         if (epubHref) {
             e.preventDefault();
             e.stopPropagation();
@@ -132,12 +138,11 @@ function setupLinks(pageFlip, config) {
             return;
         }
 
-        const targetPage = link.getAttribute('data-target-page');
-        if (targetPage) {
+        if (targetPageAttr) {
             e.preventDefault();
             e.stopPropagation();
 
-            const pageNum = parseInt(targetPage, 10);
+            const pageNum = parseInt(targetPageAttr, 10);
             if (!isNaN(pageNum) && pageFlip) {
                 handleZoomNavigation(() => pageFlip.flip(pageNum - 1));
             }
@@ -155,20 +160,18 @@ function setupLinks(pageFlip, config) {
         const link = e.target.closest('a');
         if (!link) return;
 
-        // CRITICAL FIX: Always clear hide timeout when entering any link area
+        const epubHref = link.getAttribute('data-epub-href');
+        const targetPageAttr = link.getAttribute('data-target-page');
+
+        if (!epubHref && !targetPageAttr) return;
+
+        // If we are over a link, we definitely don't want to hide the preview
         clearTimeout(hideTimeout);
 
         if (link === currentLink) {
-            if (previewElement && previewElement.classList.contains('visible')) {
-                updatePosition(e.clientX, e.clientY);
-            }
+            updatePosition(e.clientX, e.clientY);
             return;
         }
-
-        const epubHref = link.getAttribute('data-epub-href');
-        const targetPage = link.getAttribute('data-target-page');
-
-        if (!epubHref && !targetPage) return; // Not an internal link
 
         currentLink = link;
         let targetPageNum = null;
@@ -184,15 +187,15 @@ function setupLinks(pageFlip, config) {
                     targetPageNum = linkMap[matchingKeys[0]];
                 }
             }
-        } else if (targetPage) {
-            targetPageNum = parseInt(targetPage, 10);
+        } else if (targetPageAttr) {
+            targetPageNum = parseInt(targetPageAttr, 10);
         }
 
         if (targetPageNum && !isNaN(targetPageNum)) {
             clearTimeout(showTimeout);
             showTimeout = setTimeout(() => {
                 showPreview(targetPageNum, e.clientX, e.clientY);
-            }, 150); // Slightly faster response
+            }, 150);
         }
     });
 
