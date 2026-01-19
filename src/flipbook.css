@@ -109,26 +109,67 @@ body {
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
+    width: 136px;
+    /* 120px visual + 16px (half thumb hitarea each side) */
+    height: 32px;
+    background: transparent;
+    border-radius: 0;
+    outline: none;
+    margin: 0 -8px;
+    /* Offset the extra width to keep visual center */
+    padding: 0;
+}
+
+/* Track */
+input[type="range"]::-webkit-slider-runnable-track {
     width: 120px;
     height: 4px;
     background: var(--color-warm-gray);
     border-radius: 2px;
-    outline: none;
+    margin: 0 8px;
+    /* Center track within the 136px input */
 }
 
+input[type="range"]::-moz-range-track {
+    width: 120px;
+    height: 4px;
+    background: var(--color-warm-gray);
+    border-radius: 2px;
+    margin: 0 8px;
+}
+
+/* Thumb */
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 16px;
-    height: 16px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: var(--color-terracotta);
     cursor: pointer;
-    transition: 0.2s;
+    transition: background 0.2s;
+    background-clip: content-box;
+    border: 8px solid transparent;
+    box-sizing: border-box;
+    margin-top: -14px;
+    /* (4px track height - 32px thumb height) / 2 */
 }
 
-input[type="range"]::-webkit-slider-thumb:hover {
-    background: var(--color-terracotta-hover);
+input[type="range"]::-moz-range-thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-terracotta);
+    cursor: pointer;
+    transition: background 0.2s;
+    background-clip: content-box;
+    border: 8px solid transparent;
+    box-sizing: border-box;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover,
+input[type="range"]::-moz-range-thumb:hover {
+    background-color: var(--color-terracotta-hover);
 }
 
 #page-input {
