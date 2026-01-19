@@ -285,7 +285,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=overlays-content">
     <title>${escapeHtml(title)}</title>
         <style>
         /* --- ENRICHMENT UTILITIES --- */

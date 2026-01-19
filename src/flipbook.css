@@ -58,8 +58,8 @@ body {
 
 #controls-panel {
     position: fixed;
-    /* Use safe-area-inset-bottom to avoid browser UI on mobile */
-    bottom: max(24px, env(safe-area-inset-bottom, 0px) + 12px);
+    /* Use safe-area-inset-bottom and keyboard-inset-bottom to avoid browser UI and keyboard on mobile */
+    bottom: max(24px, env(safe-area-inset-bottom, 0px) + 12px, env(keyboard-inset-bottom, 0px) + 12px);
     left: 50%;
     transform: translateX(-50%);
 
