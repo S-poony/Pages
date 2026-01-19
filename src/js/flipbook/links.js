@@ -118,15 +118,20 @@ function setupLinks(pageFlip, config, wrapper) {
         }, delay);
     };
 
-    // Centralized event listener for clicks
-    document.addEventListener('click', (e) => {
-        // Hide preview if clicking anywhere outside the preview element
+    // Centralized event listener for taps/clicks to hide preview
+    document.addEventListener('pointerdown', (e) => {
         if (previewElement && previewElement.classList.contains('visible')) {
-            if (!previewElement.contains(e.target)) {
+            const isInsidePreview = previewElement.contains(e.target);
+            const isLink = e.target.closest('a[data-target-page], a[data-epub-href]');
+
+            if (!isInsidePreview && !isLink) {
                 hidePreview(0);
             }
         }
+    }, true);
 
+    // Centralized event listener for navigation clicks
+    document.addEventListener('click', (e) => {
         const link = e.target.closest('a');
         if (!link) return;
 
