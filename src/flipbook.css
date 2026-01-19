@@ -596,6 +596,14 @@ input[type="range"]::-moz-range-thumb:hover {
     display: block;
 }
 
+/* Disable context menu/callout on internal links for mobile */
+a[data-target-page],
+a[data-epub-href] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
 /* Custom scrollbar for premium feel */
 .link-hover-preview::-webkit-scrollbar {
     width: 6px;

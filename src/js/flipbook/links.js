@@ -173,6 +173,14 @@ function setupLinks(pageFlip, config, wrapper) {
         }
     }, true);
 
+    // Disable context menu on internal links (for mobile long-press)
+    document.addEventListener('contextmenu', (e) => {
+        const link = e.target.closest('a');
+        if (link && (link.hasAttribute('data-target-page') || link.hasAttribute('data-epub-href'))) {
+            e.preventDefault();
+        }
+    }, true);
+
     // Hover listeners
     document.addEventListener('mouseover', (e) => {
         const link = e.target.closest('a');
