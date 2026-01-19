@@ -120,6 +120,13 @@ function setupLinks(pageFlip, config, wrapper) {
 
     // Centralized event listener for clicks
     document.addEventListener('click', (e) => {
+        // Hide preview if clicking anywhere outside the preview element
+        if (previewElement && previewElement.classList.contains('visible')) {
+            if (!previewElement.contains(e.target)) {
+                hidePreview(0);
+            }
+        }
+
         const link = e.target.closest('a');
         if (!link) return;
 
