@@ -123,6 +123,14 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                 handleZoomNavigation(() => pageFlip.flip(targetPage - 1));
             }
         });
+
+        // Blur input when tapping outside (dismisses keyboard on mobile)
+        // Use pointerdown instead of click for immediate response on touch
+        document.addEventListener('pointerdown', (e) => {
+            if (!e.target.closest('.page-input-container')) {
+                pageInput.blur();
+            }
+        });
     }
 
     // Table of Contents
