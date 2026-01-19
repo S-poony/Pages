@@ -121,6 +121,30 @@ To set configuration define these parameters when creating an object:
 -   `clickEventForward: boolean` - default: `true` forwarding click events to the page children html elements (only for `a` and `button` tags) (new on 1.1.0)
 -   `useMouseEvents: boolean` - default: `true` using mouse and touch events to page flipping (new on 1.2.0)
 -   `disableFlipByClick: boolean` - default: `false` if this value is true, flipping by clicking on the whole book will be locked. Clicking will only work in corners (new on 2.0.3)
+-   `display: ("single", "double")` - default: `"double"` Whether to show one page at a time or two pages side-by-side
+
+### Orientation vs Display Mode
+
+The library has two distinct concepts that are often confused:
+
+**Orientation (`portrait` / `landscape`)** - Responsive behavior based on parent container width:
+- Automatically switches to `portrait` when `containerWidth < minWidth * 2` AND `usePortrait: true`
+- Triggered by browser resize events
+- In portrait mode:
+  - Uses a separate `portraitSpread` (one page per spread) instead of `landscapeSpread`
+  - Changes flip direction detection: only left 1/5 of screen goes back, rest goes forward
+  - Applies `--portrait` CSS class to wrapper
+  - Clones HTML elements for flipping animation (uses `newTemporaryCopy()`)
+
+**Display Mode (`single` / `double`)** - Explicit user setting:
+- Set via `display: 'single'` or `display: 'double'` in config
+- In single mode:
+  - Shows one page at a time in `landscapeSpread` (each page is its own spread)
+  - Flip direction uses center of screen as threshold (like landscape)
+  - Both left/right page slots contain the same page (for bidirectional flipping)
+  - Uses different coordinate conversion (page-relative positioning)
+
+**Key difference**: Portrait is a responsive fallback with different flip detection zones. Single is an explicit layout choice that still uses landscape flip behavior but with one page visible.
 
 ### Events
 
