@@ -4,6 +4,7 @@ import { Helper } from '../Helper';
 import { PageRect, Point } from '../BasicTypes';
 import { FlipCalculation } from './FlipCalculation';
 import { Page, PageDensity } from '../Page/Page';
+import { DisplayType } from '../Settings';
 
 /**
  * Flipping direction
@@ -273,7 +274,12 @@ export class Flip {
 
         const y = this.calc.getCorner() === FlipCorner.BOTTOM ? rect.height : 0;
 
-        if (pos.x <= 0) this.animateFlippingTo(pos, { x: -rect.pageWidth, y }, true);
+        // In single display mode, reduce threshold so flip completes at 25% drag 
+        // (half the distance compared to double mode)
+        const isSingleMode = this.app.getSettings().display === DisplayType.SINGLE;
+        const threshold = isSingleMode ? rect.pageWidth / 2 : 0;
+
+        if (pos.x <= threshold) this.animateFlippingTo(pos, { x: -rect.pageWidth, y }, true);
         else this.animateFlippingTo(pos, { x: rect.pageWidth, y }, false);
     }
 
