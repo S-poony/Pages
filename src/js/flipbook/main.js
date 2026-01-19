@@ -4,6 +4,12 @@
  */
 // Initialize StPageFlip and all controls
 document.addEventListener('DOMContentLoaded', () => {
+    // Enable Virtual Keyboard API so keyboard-inset-* CSS env vars work
+    // This keeps the bottom control bar visible above the keyboard on mobile
+    if ('virtualKeyboard' in navigator) {
+        navigator.virtualKeyboard.overlaysContent = true;
+    }
+
     const config = window.FLIPBOOK_CONFIG || {};
     const pageCount = config.pageCount || 0;
     const isDoubleSpread = config.doubleSpread || false;
