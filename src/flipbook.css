@@ -26,7 +26,7 @@ body {
     justify-content: center;
     align-items: center;
     cursor: default;
-    /* Note: perspective is on #flipbook-container to avoid breaking position:fixed on control panels */
+    perspective: 2000px;
 }
 
 #flipbook-container {
@@ -38,8 +38,6 @@ body {
     /* Ensure container is visible even before JS runs */
     min-width: 100px;
     min-height: 100px;
-    /* perspective here for 3D flip effect, not on wrapper (which would break position:fixed) */
-    perspective: 2000px;
 }
 
 #flipbook {
