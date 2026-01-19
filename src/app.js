@@ -380,6 +380,20 @@ class FlipbookApp {
     this.detectedTitle = '';
     this.pendingFile = null;
     this.updateConfigVisibility(null);
+
+    // Reset publish button so a new book can be published
+    if (this.publishBtn) {
+      this.publishBtn.disabled = false;
+      this.publishBtn.classList.remove('btn-success');
+      this.publishBtn.innerHTML = `
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.2 15c.7 0 1.2.5 1.2 1.2v3.6c0 .7-.5 1.2-1.2 1.2H2.8c-.7 0-1.2-.5-1.2-1.2v-3.6c0-.7.5-1.2 1.2-1.2"></path>
+          <path d="M12 3v13"></path>
+          <path d="M16 7l-4-4-4 4"></path>
+        </svg>
+        Publish Online
+      `;
+    }
   }
 
   showError(msg) { this.errorMessage.textContent = msg; this.errorMessage.classList.remove('hidden'); }
