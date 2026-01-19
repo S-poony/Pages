@@ -162,15 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const linksList = document.getElementById('links-list');
     const linksCloseBtn = document.getElementById('links-close-btn');
 
-    // Virtual Keyboard API: only enable overlays-content when page input is focused
-    // This prevents the overlay mode from interfering with zoom/pan gestures
-    if ('virtualKeyboard' in navigator && pageInput) {
-        pageInput.addEventListener('focus', () => {
-            navigator.virtualKeyboard.overlaysContent = true;
-        });
-        pageInput.addEventListener('blur', () => {
-            navigator.virtualKeyboard.overlaysContent = false;
-        });
+    // This keeps the bottom control bar visible above the keyboard on mobile
+    if ('virtualKeyboard' in navigator) {
+        navigator.virtualKeyboard.overlaysContent = true;
     }
 
     // Initial setup
