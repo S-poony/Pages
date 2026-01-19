@@ -178,6 +178,13 @@ function setupLinks(pageFlip, config, wrapper) {
         }
     }, true);
 
+    // Hide preview on page flip
+    if (pageFlip) {
+        pageFlip.on('flip', () => {
+            hidePreview(0);
+        });
+    }
+
     // Disable context menu on internal links (for mobile long-press)
     document.addEventListener('contextmenu', (e) => {
         const link = e.target.closest('a');
