@@ -198,8 +198,8 @@ function setupLinks(pageFlip, config, wrapper) {
         const link = e.target.closest('a');
         if (!link) return;
 
-        // PREVIEW logic: STRICTLY PDF ONLY (data-target-page)
-        // We explicitly ignore data-epub-href for previews as per user request
+        // PREVIEW logic: not epub because pages are html. Works with flipbooks generated from api
+        // We explicitly ignore data-epub-href for previews
         const targetPageAttr = link.getAttribute('data-target-page');
         if (!targetPageAttr) return;
 

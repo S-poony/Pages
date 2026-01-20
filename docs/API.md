@@ -52,6 +52,7 @@ If you exceed this limit, the API will return a `429 Too Many Requests` status.
 | `doubleSpread` | boolean | No | Each image spans two pages (default: false) |
 | `pages` | array | **Yes** | Array of page objects |
 | `bookmarks` | array | No | Table of contents entries |
+| `linkMap` | object | No | Mapping for <a> links |
 
 ### Page Object
 
@@ -61,6 +62,7 @@ If you exceed this limit, the API will return a `429 Too Many Requests` status.
 | `width` | number | No | Image width in pixels |
 | `height` | number | No | Image height in pixels |
 | `links` | array | No | Array of link objects |
+| `enrichmentHtml` | string | No | Custom HTML to overlay on the page |
 
 ### Link Object
 
@@ -70,7 +72,11 @@ If you exceed this limit, the API will return a `429 Too Many Requests` status.
 | `targetPage` | number | Target page (for internal links) |
 | `url` | string | URL (for external links) |
 | `title` | string | Link tooltip text |
-| `rect` | object | Position: `{ x, y, width, height }` as percentages |
+| `rect` | object | Position: `{ x, y, width, height }` as numbers representing percentages (0-100) |
+
+
+> [!NOTE]
+> Links are rendered as `<a>` tags with the class `.pdf-link`. They are placed in an "enrichment layer" above the page image.
 
 ### Bookmark Object
 
@@ -78,6 +84,23 @@ If you exceed this limit, the API will return a `429 Too Many Requests` status.
 |-------|------|-------------|
 | `title` | string | Chapter/section title |
 | `page` | number | Page number |
+
+---
+
+## Custom HTML (enrichmentHtml)
+
+The `enrichmentHtml` field allows you to inject arbitrary HTML into a layer that sits on top of the page image. This is useful for:
+- Adding custom interactive elements.
+- Using `<a>` tags with custom behavior or attributes.
+- Overlaying SVG or other graphics.
+
+Example:
+```javascript
+{
+  imageData: "...",
+  enrichmentHtml: `<a href="https://example.com" class="custom-link" style="position:absolute; top:10%; left:10%; width:50px; height:50px;">Click Me</a>`
+}
+```
 
 ---
 
@@ -146,13 +169,14 @@ const response = await fetch('https://content.lojkine.art/api/flipbook', {
 |--------|-------|-------------|
 | 429 | Rate limit exceeded | Max 5 flipbooks per hour |
 | 400 | pages array is required | Include at least one page |
-| 400 | Page N is missing imageData | Each page needs imageData |
+| 400 | Page N is missing imageData | Each page needs imageData (data URL) |
 | 400 | Invalid JSON body | Check request body format |
 
 ---
 
 ## Setup (for deployment)
 
-1. Deploy the updated `worker.js` and `generator.js` to Cloudflare
-2. Add environment variable `API_KEYS` with comma-separated valid keys
-3. Optionally set `FLIPBOOK_JS_URL` to your flipbook JS bundle URL
+1. Deploy `worker/worker.js` to Cloudflare Workers.
+2. Bind an R2 bucket named `FLIPBOOK_BUCKET`.
+3. (Optional) Bind a KV namespace named `RATE_LIMIT_KV` for rate limiting.
+4. (Optional) Set `FLIPBOOK_JS_URL` and `FLIPBOOK_CSS_URL` to your custom bundles.
