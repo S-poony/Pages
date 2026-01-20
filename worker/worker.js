@@ -63,6 +63,7 @@ function generatePagesHtml(pages, doubleSpread = false) {
         const pageNum = i + 1;
         const imageUrl = page.imageUrl || page.imageData;
         const links = page.links || [];
+        const enrichmentHtml = page.enrichmentHtml || '';
 
         const objectPosition = doubleSpread ? (pageNum % 2 === 0 ? 'left' : 'right') : 'center';
         const imgStyle = doubleSpread ? `style="object-position: ${objectPosition} center;"` : '';
@@ -71,6 +72,7 @@ function generatePagesHtml(pages, doubleSpread = false) {
 <div class="page-container" data-density="soft">
   <img class="page-image" src="${escapeAttr(imageUrl)}" alt="" loading="eager" ${imgStyle} />
   <div class="enrichment-layer">
+    ${enrichmentHtml}
     ${renderLinks(links)}
   </div>
 </div>`;
@@ -85,6 +87,7 @@ function generateFlipbookHtml(options) {
         doubleSpread = false,
         pages = [],
         bookmarks = [],
+        linkMap = {},
         jsUrl = '',
         cssUrl = ''
     } = options;
@@ -206,7 +209,7 @@ function generateFlipbookHtml(options) {
             pageCount: ${actualPageCount},
             doubleSpread: ${doubleSpread},
             pageAspectRatio: ${aspectRatio},
-            linkMap: {},
+            linkMap: ${JSON.stringify(linkMap)},
             tableOfContents: ${JSON.stringify(tocData)},
             pageLinks: ${JSON.stringify(pageLinks)}
         };
@@ -311,7 +314,7 @@ async function handleFlipbookAPI(request, env, url) {
         });
     }
 
-    const { title, doubleSpread = false, pages, bookmarks = [] } = body;
+    const { title, doubleSpread = false, pages, bookmarks = [], linkMap = {} } = body;
 
     if (!pages || !Array.isArray(pages) || pages.length === 0) {
         return new Response(JSON.stringify({ success: false, error: 'pages array is required and must not be empty' }), {
@@ -371,6 +374,7 @@ async function handleFlipbookAPI(request, env, url) {
         pageUrls.push({
             imageUrl: `https://${url.hostname}/${imagePath}`,
             links: page.links || [],
+            enrichmentHtml: page.enrichmentHtml || '',
             width: page.width,
             height: page.height
         });
@@ -384,6 +388,7 @@ async function handleFlipbookAPI(request, env, url) {
         doubleSpread,
         pages: pageUrls,
         bookmarks,
+        linkMap,
         jsUrl,
         cssUrl
     });
