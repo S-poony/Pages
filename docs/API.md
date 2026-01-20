@@ -52,7 +52,7 @@ If you exceed this limit, the API will return a `429 Too Many Requests` status.
 | `doubleSpread` | boolean | No | Each image spans two pages (default: false) |
 | `pages` | array | **Yes** | Array of page objects |
 | `bookmarks` | array | No | Table of contents entries |
-| `linkMap` | object | No | Mapping for <a> links |
+| `linkMap` | object | No | Mapping for links |
 
 ### Page Object
 
@@ -94,11 +94,54 @@ The `enrichmentHtml` field allows you to inject arbitrary HTML into a layer that
 - Using `<a>` tags with custom behavior or attributes.
 - Overlaying SVG or other graphics.
 
-Example:
+### When to Use enrichmentHtml vs links Array
+
+| Feature | `links` array | `enrichmentHtml` |
+|---------|---------------|------------------|
+| Automatic `<a>` rendering | ✅ Yes | ❌ You provide HTML |
+| Internal page navigation | ✅ Built-in | ❌ Manual (use `data-target-page`) |
+| Link hover previews | ✅ Automatic | ❌ Only if you add `data-target-page` |
+| Custom styling/classes | ❌ Limited | ✅ Full control |
+| Simpler if links already positioned | ❌ Requires extraction | ✅ Just clone HTML |
+
+### Example: Cloning Existing Links
+
+If your page already has an overlay with absolutely-positioned links, you can clone it directly:
+
+```javascript
+// Assuming your page has a ".links-overlay" container with <a> tags
+const pages = [];
+for (const pageElement of document.querySelectorAll('.page')) {
+  const imageData = await renderPageToImage(pageElement);
+  
+  // Clone the links overlay HTML directly
+  const linksOverlay = pageElement.querySelector('.links-overlay');
+  
+  pages.push({
+    imageData,
+    width: pageElement.offsetWidth,
+    height: pageElement.offsetHeight,
+    enrichmentHtml: linksOverlay ? linksOverlay.innerHTML : ''
+  });
+}
+```
+
+> [!WARNING]
+> Links in `enrichmentHtml` must use **percentage-based positioning** (`top: 10%; left: 20%`) to work correctly at all zoom levels. Pixel-based positions will break when the flipbook is scaled.
+
+### Example: Manual HTML
+
 ```javascript
 {
   imageData: "...",
-  enrichmentHtml: `<a href="https://example.com" class="custom-link" style="position:absolute; top:10%; left:10%; width:50px; height:50px;">Click Me</a>`
+  enrichmentHtml: `
+    <a href="https://example.com" style="position:absolute; top:10%; left:10%; width:30%; height:5%;">
+      External Link
+    </a>
+    <a href="javascript:void(0)" data-target-page="5" style="position:absolute; top:50%; left:20%; width:25%; height:4%;">
+      Go to Page 5
+    </a>
+  `
 }
 ```
 
@@ -139,7 +182,39 @@ async function renderPageToImage(element) {
   return canvas.toDataURL('image/jpeg', 0.9);
 }
 
-// Render all pages
+/**
+ * Extracts all <a> links from a page element and converts their
+ * positions to percentage-based rectangles for the API.
+ */
+function extractLinksFromPage(pageElement) {
+  const links = [];
+  const pageRect = pageElement.getBoundingClientRect();
+
+  for (const anchor of pageElement.querySelectorAll('a[href]')) {
+    const anchorRect = anchor.getBoundingClientRect();
+    const href = anchor.getAttribute('href');
+
+    // Calculate position as percentages of the page
+    const rect = {
+      x: ((anchorRect.left - pageRect.left) / pageRect.width) * 100,
+      y: ((anchorRect.top - pageRect.top) / pageRect.height) * 100,
+      width: (anchorRect.width / pageRect.width) * 100,
+      height: (anchorRect.height / pageRect.height) * 100
+    };
+
+    // Determine link type
+    if (href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+      links.push({ type: 'external', url: href, title: anchor.textContent, rect });
+    } else if (href.startsWith('#page-')) {
+      // Example: internal links like "#page-5"
+      const targetPage = parseInt(href.replace('#page-', ''), 10);
+      links.push({ type: 'internal', targetPage, title: anchor.textContent, rect });
+    }
+  }
+  return links;
+}
+
+// Render all pages and extract links
 const pages = [];
 for (const pageElement of document.querySelectorAll('.page')) {
   const imageData = await renderPageToImage(pageElement);
@@ -147,18 +222,19 @@ for (const pageElement of document.querySelectorAll('.page')) {
     imageData,
     width: pageElement.offsetWidth,
     height: pageElement.offsetHeight,
-    links: extractLinksFromPage(pageElement)  // Your link extraction logic
+    links: extractLinksFromPage(pageElement)
   });
 }
 
 // Create flipbook
 const response = await fetch('https://content.lojkine.art/api/flipbook', {
   method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
+  headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ title: 'My Document', pages })
 });
+
+const { url } = await response.json();
+console.log('Published at:', url);
 ```
 
 ---
