@@ -36,7 +36,8 @@ export async function publishFlipbook(folderData, getUrlSlug, updateBtn) {
                 blob = new Blob([decodeURIComponent(asset.data.split(',')[1])], { type: contentType });
             }
 
-            const response = await fetch(`${WORKER_URL}/upload/${asset.filename}`, {
+            const sanitizedFilename = asset.filename.replace(/\//g, '_');
+            const response = await fetch(`${WORKER_URL}/upload/${sanitizedFilename}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': contentType },
                 body: blob
