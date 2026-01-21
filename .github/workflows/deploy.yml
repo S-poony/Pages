@@ -33,11 +33,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Build local library
-        run: |
-          cd PagesEngine
-          npm install --legacy-peer-deps
-          npm run build
+
 
       - name: Build
         run: npm run build

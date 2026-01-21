@@ -7,7 +7,7 @@ import { processPdf } from './processor/pdf/processor.js';
 import { processEpub } from './processor/epub/processor.js';
 import { generateFlipbookHtml } from './generator.js';
 import { sanitizeTitle, slugifyTitle } from './processor/common/sanitizer.js';
-import pageFlipJs from 'page-flip/dist/js/page-flip.browser.js?raw';
+import pageFlipJs from 'pages-engine/dist/js/page-flip.browser.js?raw';
 import flipbookCss from './flipbook.css?raw';
 import utilsJs from './js/flipbook/utils.js?raw';
 import stateJs from './js/flipbook/state.js?raw';
