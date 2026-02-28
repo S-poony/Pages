@@ -166,7 +166,7 @@ function setupLinks(pageFlip, config, wrapper) {
         const targetPageAttr = link.getAttribute('data-target-page');
 
         if (epubHref) {
-            if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
             e.preventDefault();
             e.stopPropagation();
             const linkMap = config.linkMap || {};
@@ -189,7 +189,7 @@ function setupLinks(pageFlip, config, wrapper) {
         }
 
         if (targetPageAttr) {
-            if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
             e.preventDefault();
             e.stopPropagation();
 

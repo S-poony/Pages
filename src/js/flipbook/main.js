@@ -58,6 +58,16 @@ document.addEventListener('DOMContentLoaded', () => {
         flipbookEl.appendChild(page.cloneNode(true));
     });
 
+    // Prevent non-left clicks (e.g., right click) from reaching StPageFlip
+    ['mousedown', 'pointerdown'].forEach(eventType => {
+        flipbookEl.addEventListener(eventType, (e) => {
+            // Allow touch events and primary mouse clicks (0)
+            if (e.button !== 0 && e.pointerType !== 'touch') {
+                e.stopPropagation();
+            }
+        }, { capture: true });
+    });
+
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             initStPageFlip();
