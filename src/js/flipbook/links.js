@@ -127,13 +127,20 @@ function setupLinks(pageFlip, config, wrapper) {
 
             if (epubHref) {
                 const linkMap = config.linkMap || {};
-                let key = epubHref.split('#')[0];
-                targetPage = linkMap[key];
 
+                // 1. Try exact match (with anchor) first
+                targetPage = linkMap[epubHref];
+
+                // 2. Fallback to stripping the anchor
                 if (!targetPage) {
-                    const matchingKeys = Object.keys(linkMap).filter(k => k.includes(key) || key.includes(k));
-                    if (matchingKeys.length > 0) {
-                        targetPage = linkMap[matchingKeys[0]];
+                    let key = epubHref.split('#')[0];
+                    targetPage = linkMap[key];
+
+                    if (!targetPage) {
+                        const matchingKeys = Object.keys(linkMap).filter(k => k.includes(key) || key.includes(k));
+                        if (matchingKeys.length > 0) {
+                            targetPage = linkMap[matchingKeys[0]];
+                        }
                     }
                 }
             }
@@ -170,15 +177,22 @@ function setupLinks(pageFlip, config, wrapper) {
             e.preventDefault();
             e.stopPropagation();
             const linkMap = config.linkMap || {};
-            let key = epubHref.split('#')[0]; // Robust lookup
-            let targetPage = linkMap[key];
 
+            // 1. Try exact match (with anchor) first
+            let targetPage = linkMap[epubHref];
+
+            // 2. Fallback to stripping the anchor
             if (!targetPage) {
-                const matchingKeys = Object.keys(linkMap).filter(k =>
-                    k.includes(key) || key.includes(k)
-                );
-                if (matchingKeys.length > 0) {
-                    targetPage = linkMap[matchingKeys[0]];
+                let key = epubHref.split('#')[0]; // Robust lookup
+                targetPage = linkMap[key];
+
+                if (!targetPage) {
+                    const matchingKeys = Object.keys(linkMap).filter(k =>
+                        k.includes(key) || key.includes(k)
+                    );
+                    if (matchingKeys.length > 0) {
+                        targetPage = linkMap[matchingKeys[0]];
+                    }
                 }
             }
 

@@ -230,7 +230,15 @@ function setupUI(pageCount, pageInput, zoomSlider, zoomText, controlsPanel, topC
                     // Resolve EPUB link for the list title/target if possible
                     if (epubHref) {
                         const linkMap = (window.FLIPBOOK_CONFIG && window.FLIPBOOK_CONFIG.linkMap) || {};
+
+                        // 1. Try exact match (with anchor) first
                         targetPage = linkMap[epubHref];
+
+                        // 2. Fallback to stripping the anchor
+                        if (!targetPage) {
+                            let key = epubHref.split('#')[0];
+                            targetPage = linkMap[key];
+                        }
                     }
 
                     const href = a.getAttribute('href');
