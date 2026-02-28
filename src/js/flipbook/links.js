@@ -118,6 +118,32 @@ function setupLinks(pageFlip, config, wrapper) {
         }, delay);
     };
 
+    // Initialize missing hrefs for internal links so native right-click/ctrl-click works
+    const internalLinks = (wrapper || document.body).querySelectorAll('a[data-target-page], a[data-epub-href]');
+    internalLinks.forEach(link => {
+        if (!link.getAttribute('href') || link.getAttribute('href') === 'javascript:void(0)') {
+            let targetPage = link.getAttribute('data-target-page');
+            const epubHref = link.getAttribute('data-epub-href');
+
+            if (epubHref) {
+                const linkMap = config.linkMap || {};
+                let key = epubHref.split('#')[0];
+                targetPage = linkMap[key];
+
+                if (!targetPage) {
+                    const matchingKeys = Object.keys(linkMap).filter(k => k.includes(key) || key.includes(k));
+                    if (matchingKeys.length > 0) {
+                        targetPage = linkMap[matchingKeys[0]];
+                    }
+                }
+            }
+
+            if (targetPage) {
+                link.setAttribute('href', `#page=${targetPage}`);
+            }
+        }
+    });
+
     // Centralized event listener for taps/clicks to hide preview
     document.addEventListener('pointerdown', (e) => {
         if (previewElement && previewElement.classList.contains('visible')) {
@@ -140,6 +166,7 @@ function setupLinks(pageFlip, config, wrapper) {
         const targetPageAttr = link.getAttribute('data-target-page');
 
         if (epubHref) {
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
             e.preventDefault();
             e.stopPropagation();
             const linkMap = config.linkMap || {};
@@ -162,6 +189,7 @@ function setupLinks(pageFlip, config, wrapper) {
         }
 
         if (targetPageAttr) {
+            if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
             e.preventDefault();
             e.stopPropagation();
 
@@ -186,12 +214,13 @@ function setupLinks(pageFlip, config, wrapper) {
     }
 
     // Disable context menu on internal links (for mobile long-press)
-    document.addEventListener('contextmenu', (e) => {
-        const link = e.target.closest('a');
-        if (link && (link.hasAttribute('data-target-page') || link.hasAttribute('data-epub-href'))) {
-            e.preventDefault();
-        }
-    }, true);
+    // Removed to allow native right-click natively.
+    // document.addEventListener('contextmenu', (e) => {
+    //     const link = e.target.closest('a');
+    //     if (link && (link.hasAttribute('data-target-page') || link.hasAttribute('data-epub-href'))) {
+    //         e.preventDefault();
+    //     }
+    // }, true);
 
     // Hover listeners
     document.addEventListener('mouseover', (e) => {
