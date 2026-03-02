@@ -429,6 +429,25 @@ input[type="range"]::-moz-range-thumb:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
 
+.pdf-link:hover {
+    background-color: rgba(255, 255, 0, 0.2);
+}
+
+.pdf-text {
+    position: absolute;
+    color: transparent;
+    white-space: pre;
+    cursor: text;
+    transform-origin: left top;
+    z-index: 1515;
+    pointer-events: auto;
+}
+
+.pdf-text::selection {
+    background: rgba(0, 0, 255, 0.2);
+    color: transparent;
+}
+
 .toc-list {
     padding: 10px 0;
     overflow-y: auto;

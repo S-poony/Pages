@@ -11,6 +11,7 @@ import { defaultCanvasAPI } from './canvas.js';
 import { createPageRenderer } from './renderer.js';
 import { extractPageLinks, resolveLinkDestinations, normalizeLinkRects } from './annotations.js';
 import { calculateNormalization } from './normalization.js';
+import { extractPageText } from './text.js';
 
 /**
  * Processes a PDF file and returns page count and renderers
@@ -21,7 +22,7 @@ import { calculateNormalization } from './normalization.js';
  */
 export async function processPdf(input, options = {}, canvasAPI = defaultCanvasAPI) {
     const normalizedOptions = normalizeProcessorOptions(options);
-    const { scale, scales, doubleSpread, format, quality } = normalizedOptions;
+    const { scale, scales, doubleSpread, format, quality, preserveText } = normalizedOptions;
 
     let pdf;
     if (input && typeof input.numPages === 'number' && typeof input.getPage === 'function') {
@@ -107,8 +108,10 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
         }
     }
 
-    // Extract links for all pages
+    // Extract links and text for all pages
     const pageLinks = [];
+    const pageText = [];
+
     for (let i = 1; i <= pdf.numPages; i++) {
         try {
             const page = await pdf.getPage(i);
@@ -125,9 +128,22 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
                 width: viewport.width,
                 height: viewport.height
             });
+
+            if (preserveText) {
+                const textItems = await extractPageText(page);
+                pageText.push({
+                    pageIndex: i - 1,
+                    items: textItems,
+                    width: viewport.width,
+                    height: viewport.height
+                });
+            } else {
+                pageText.push({ pageIndex: i - 1, items: [], width: viewport.width, height: viewport.height });
+            }
         } catch (e) {
-            console.warn(`Failed to extract links for page ${i}:`, e);
+            console.warn(`Failed to extract data for page ${i}:`, e);
             pageLinks.push({ pageIndex: i - 1, links: [], width: 0, height: 0 });
+            pageText.push({ pageIndex: i - 1, items: [], width: 0, height: 0 });
         }
     }
 
@@ -142,12 +158,16 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
         // Note: For double spread, we'll need to map links to the correct half
         // For now, we return empty links for double spread or handle it later
         const dsPageLinks = [];
-        for (const pl of pageLinks) {
+        const dsPageText = [];
+
+        for (let i = 0; i < pageLinks.length; i++) {
+            const pl = pageLinks[i];
+            const pt = pageText[i];
             const { links, width, height } = pl;
             const halfWidth = width / 2;
 
             const leftLinks = links.filter(l => l.rect[0] < halfWidth)
-                .map(l => ({ ...l, rect: [...l.rect] })); // Clone
+                .map(l => ({ ...l, rect: [...l.rect] }));
 
             const rightLinks = links.filter(l => l.rect[0] >= halfWidth)
                 .map(l => {
@@ -159,6 +179,39 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
 
             dsPageLinks.push({ links: leftLinks, width: halfWidth, height });
             dsPageLinks.push({ links: rightLinks, width: halfWidth, height });
+
+            if (preserveText && pt) {
+                const { items } = pt;
+                // Note: items are already percentage-based in text.js!
+                // We need to re-calculate them relative to half-width.
+                // In text.js: left = (translateX / pageWidth) * 100
+                // For left page: newLeft = (translateX / halfWidth) * 100 = left * 2
+                // For right page: newLeft = ((translateX - halfWidth) / halfWidth) * 100 = (left - 50) * 2
+
+                const leftItems = items.filter(item => {
+                    const leftVal = parseFloat(item.left);
+                    return leftVal < 50;
+                }).map(item => ({
+                    ...item,
+                    left: `${(parseFloat(item.left) * 2).toFixed(4)}%`,
+                    fontSize: `${(parseFloat(item.fontSize)).toFixed(4)}`, // Font size is relative to height, so it stays the same
+                }));
+
+                const rightItems = items.filter(item => {
+                    const leftVal = parseFloat(item.left);
+                    return leftVal >= 50;
+                }).map(item => ({
+                    ...item,
+                    left: `${((parseFloat(item.left) - 50) * 2).toFixed(4)}%`,
+                    fontSize: `${(parseFloat(item.fontSize)).toFixed(4)}`,
+                }));
+
+                dsPageText.push({ items: leftItems });
+                dsPageText.push({ items: rightItems });
+            } else {
+                dsPageText.push({ items: [] });
+                dsPageText.push({ items: [] });
+            }
         }
 
         async function renderHalfPageVariant(halfIndex, renderScale) {
@@ -263,7 +316,8 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
             renderPageVariants: renderPageVariantsDS,
             tableOfContents: [],
             title: pdfTitle,
-            pageLinks: dsPageLinks
+            pageLinks: dsPageLinks,
+            pageText: dsPageText
         };
     }
 
@@ -282,7 +336,8 @@ export async function processPdf(input, options = {}, canvasAPI = defaultCanvasA
         renderPageVariants: async (pageNumber) => renderer.renderPageVariants(pageNumber),
         tableOfContents,
         title: pdfTitle,
-        pageLinks: pageLinks.map(pl => ({ links: pl.links, width: pl.width, height: pl.height }))
+        pageLinks: pageLinks.map(pl => ({ links: pl.links, width: pl.width, height: pl.height })),
+        pageText: pageText.map(pt => ({ items: pt.items, width: pt.width, height: pt.height }))
     };
 }
 

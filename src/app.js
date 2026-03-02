@@ -59,6 +59,7 @@ class FlipbookApp {
     this.fileInput = document.getElementById('file-input');
     this.doubleSpreadToggle = document.getElementById('double-spread-toggle');
     this.multiScaleToggle = document.getElementById('multi-scale-toggle');
+    this.preserveTextToggle = document.getElementById('preserve-text-toggle');
     this.epubFontSizeInput = document.getElementById('epub-font-size-input');
     this.progressContainer = document.getElementById('progress-container');
     this.progressBar = document.getElementById('progress-bar');
@@ -87,9 +88,12 @@ class FlipbookApp {
     if (savedDoubleSpread !== null) this.doubleSpreadToggle.checked = savedDoubleSpread === 'true';
     const savedMultiScale = localStorage.getItem('multiScale');
     if (savedMultiScale !== null) this.multiScaleToggle.checked = savedMultiScale === 'true';
+    const savedPreserveText = localStorage.getItem('preserveText');
+    if (savedPreserveText !== null) this.preserveTextToggle.checked = savedPreserveText === 'true';
 
     this.handleDoubleSpreadToggle();
     this.handleMultiScaleToggle();
+    this.handlePreserveTextToggle();
 
     // Modal Elements (passed to ModalManager)
     this.modal = document.getElementById('success-modal');
@@ -134,6 +138,7 @@ class FlipbookApp {
     );
     if (this.doubleSpreadToggle) this.doubleSpreadToggle.addEventListener('change', () => this.handleDoubleSpreadToggle());
     if (this.multiScaleToggle) this.multiScaleToggle.addEventListener('change', () => this.handleMultiScaleToggle());
+    if (this.preserveTextToggle) this.preserveTextToggle.addEventListener('change', () => this.handlePreserveTextToggle());
 
     this.buildBtn.addEventListener('click', () => this.startProcessing());
     this.publishBtn.addEventListener('click', () => this.publish());
@@ -188,6 +193,7 @@ class FlipbookApp {
 
   handleDoubleSpreadToggle() { localStorage.setItem('doubleSpread', this.doubleSpreadToggle.checked); }
   handleMultiScaleToggle() { localStorage.setItem('multiScale', this.multiScaleToggle.checked); }
+  handlePreserveTextToggle() { localStorage.setItem('preserveText', !!this.preserveTextToggle?.checked); }
 
   updateConfigVisibility(fileType) {
     if (!this.configItems) return;
@@ -257,7 +263,8 @@ class FlipbookApp {
     try {
       const doubleSpread = !!this.doubleSpreadToggle?.checked;
       const multiScale = !!this.multiScaleToggle?.checked;
-      const opts = { scales: multiScale ? [1, 2, 3] : null, format: 'image/jpeg', quality: 0.92, doubleSpread };
+      const preserveText = !!this.preserveTextToggle?.checked;
+      const opts = { scales: multiScale ? [1, 2, 3] : null, format: 'image/jpeg', quality: 0.92, doubleSpread, preserveText };
 
       const result = await processPdf(file, opts);
       this.detectedTitle = result.title || file.name.replace(/\.pdf$/i, '');
@@ -269,7 +276,7 @@ class FlipbookApp {
         title: this.getEffectiveTitle(),
         doubleSpread,
         tableOfContents: result.tableOfContents
-      }, this.assetPack, [], result.pageLinks);
+      }, this.assetPack, [], result.pageLinks, result.pageText);
 
       this.currentHtml = versions.htmlSingle;
       this.currentFolderData = versions.folderData;

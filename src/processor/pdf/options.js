@@ -27,7 +27,8 @@ export function normalizeProcessorOptions(options = {}) {
         scales = null,
         format = 'image/jpeg',
         quality = 0.92,
-        doubleSpread = DOUBLESPREAD
+        doubleSpread = DOUBLESPREAD,
+        preserveText = false
     } = options;
 
     if (!Number.isFinite(scale) || scale <= 0) {
@@ -58,5 +59,9 @@ export function normalizeProcessorOptions(options = {}) {
         throw new Error('doubleSpread must be a boolean');
     }
 
-    return { scale, scales, format, quality, doubleSpread };
+    if (typeof preserveText !== 'boolean') {
+        throw new Error('preserveText must be a boolean');
+    }
+
+    return { scale, scales, format, quality, doubleSpread, preserveText };
 }

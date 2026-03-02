@@ -26,14 +26,14 @@ export async function processPdfLoop(pageCount, renderPageVariants, renderPage, 
     return pageImages;
 }
 
-export async function generateAllVersions(pageImages, options, assets, enrichmentHtmlList, pdfPageLinks) {
+export async function generateAllVersions(pageImages, options, assets, enrichmentHtmlList, pdfPageLinks, pdfPageText) {
     const htmlSingle = await generateFlipbookHtml(pageImages, {
         ...options, mode: 'single'
-    }, assets, enrichmentHtmlList, pdfPageLinks);
+    }, assets, enrichmentHtmlList, pdfPageLinks, pdfPageText);
 
     const folderData = await generateFlipbookHtml(pageImages, {
         ...options, mode: 'folder'
-    }, assets, enrichmentHtmlList, pdfPageLinks);
+    }, assets, enrichmentHtmlList, pdfPageLinks, pdfPageText);
 
     return { htmlSingle, folderData };
 }

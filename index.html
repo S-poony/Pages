@@ -345,6 +345,17 @@
                         <p class="config-description">Higher resolution (PDFs only)</p>
                     </div>
 
+                    <div class="config-item" data-config-for="pdf"
+                        title="For PDFs only. When enabled, text is extracted and placed in a layer for selection and search. This can increase processing time and file size.">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="preserve-text-toggle">
+                            <span class="slider"></span>
+                            <span class="label-text">Preserve text data</span>
+                        </label>
+                        <p class="config-description">Extract selectable text (PDFs only). Note: may increase processing
+                            time and file size.</p>
+                    </div>
+
                     <div class="config-item" data-config-for="epub">
                         <label class="input-label" for="epub-font-size-input">Font size (px)</label>
                         <input type="number" id="epub-font-size-input" class="text-input"
