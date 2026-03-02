@@ -435,7 +435,7 @@ input[type="range"]::-moz-range-thumb:hover {
 
 .pdf-text {
     position: absolute;
-    color: transparent;
+    color: rgba(0, 0, 0, 0);
     white-space: pre;
     cursor: text;
     transform-origin: left top;
@@ -445,7 +445,6 @@ input[type="range"]::-moz-range-thumb:hover {
 
 .pdf-text::selection {
     background: rgba(0, 0, 255, 0.2);
-    color: transparent;
 }
 
 .toc-list {

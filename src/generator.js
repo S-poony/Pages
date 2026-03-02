@@ -341,7 +341,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
 
         .pdf-text {
             position: absolute;
-            color: transparent;
+            color: rgba(0, 0, 0, 0);
             white-space: pre;
             cursor: text;
             transform-origin: left top;
@@ -351,7 +351,6 @@ export async function generateFlipbookHtml(pageImages, options = {},
 
         .pdf-text::selection {
             background: rgba(0, 0, 255, 0.2);
-            color: transparent;
         }
         /* --- END UTILITIES --- */
         </style>
