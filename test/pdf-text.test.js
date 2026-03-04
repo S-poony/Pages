@@ -34,11 +34,15 @@ describe('PDF Text Extraction', () => {
                 items: [
                     {
                         str: 'Hello World',
-                        transform: [12, 0, 0, 12, 72, 720], // top-down: top = (1000 - 720) = 280, left = 72
+                        transform: [12, 0, 0, 12, 72, 720], // top-down: top = (1000 - 720 - 12) = 268, left = 72
                         width: 100,
-                        height: 12
+                        height: 12,
+                        fontName: 'F1'
                     }
-                ]
+                ],
+                styles: {
+                    'F1': { fontFamily: 'Helvetica' }
+                }
             }),
             render: () => ({ promise: Promise.resolve() }),
             getAnnotations: async () => []
@@ -62,6 +66,7 @@ describe('PDF Text Extraction', () => {
         // left = 72 / 800 * 100 = 9%
         assert.strictEqual(item.top, '26.8000%');
         assert.strictEqual(item.left, '9.0000%');
+        assert.strictEqual(item.fontFamily, 'Helvetica');
     });
 
     it('should NOT extract text when preserveText is false', async () => {

@@ -15,12 +15,23 @@ export async function extractPageText(page) {
     const { width: pageWidth, height: pageHeight } = viewport;
 
     return textContent.items.map(item => {
-        const { transform, str, width, height } = item;
+        const { transform, str, width, height, fontName } = item;
         // transform: [scaleX, skewY, skewX, scaleY, translateX, translateY]
         const scaleX = transform[0];
         const scaleY = transform[3];
         const translateX = transform[4];
         const translateY = transform[5];
+
+        // Font style lookup with fallback logic
+        const style = textContent.styles[fontName];
+        let fontFamily = 'sans-serif';
+
+        if (style && style.fontFamily) {
+            // Robust Fallback: If font family starts with 'g_d0_' or similar, it's likely an internal PDF name
+            if (!style.fontFamily.startsWith('g_d')) {
+                fontFamily = style.fontFamily;
+            }
+        }
 
         // PDF.js coordinates are bottom-up (translateY is the baseline)
         // We need to convert to top-down percentage
@@ -29,13 +40,16 @@ export async function extractPageText(page) {
         const top = ((pageHeight - translateY - scaleY) / pageHeight) * 100;
 
         // Font size is usually the scaleY in the transform
-        const fontSize = (scaleY / pageHeight) * 100;
+        // Ensure it's a valid positive number
+        const fontSizeVal = Math.max(0, scaleY);
+        const fontSize = (fontSizeVal / pageHeight) * 100;
 
         return {
             str,
             top: `${top.toFixed(4)}%`,
             left: `${left.toFixed(4)}%`,
             fontSize: fontSize.toFixed(4),
+            fontFamily,
             scaleX: scaleX / scaleY, // Ratio to handle font-stretch-like behavior if needed
             width: (width / pageWidth) * 100,
             height: (height / pageHeight) * 100
