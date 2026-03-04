@@ -29,12 +29,16 @@ describe('PDF Text Extraction', () => {
     it('should extract and normalize text when preserveText is true', async () => {
         // We mock the PDF document directly in the test to avoid pdf.js/env issues
         const mockPage = {
-            getViewport: () => ({ width: 800, height: 1000 }),
+            getViewport: () => ({
+                width: 800,
+                height: 1000,
+                convertToViewportPoint: (x, y) => [x, 1000 - y] // Simplified bottom-up to top-down
+            }),
             getTextContent: async () => ({
                 items: [
                     {
                         str: 'Hello World',
-                        transform: [12, 0, 0, 12, 72, 720], // top-down: top = (1000 - 720 - 12) = 268, left = 72
+                        transform: [12, 0, 0, 12, 72, 720],
                         width: 100,
                         height: 12,
                         fontName: 'F1'
@@ -62,7 +66,8 @@ describe('PDF Text Extraction', () => {
 
         const item = result.pageText[0].items[0];
         assert.strictEqual(item.str, 'Hello World');
-        // top = (1000 - 720 - 12) / 1000 * 100 = 26.8%
+        // pixelY = 1000 - 720 = 280
+        // top = (280 - 12) / 1000 * 100 = 26.8%
         // left = 72 / 800 * 100 = 9%
         assert.strictEqual(item.top, '26.8000%');
         assert.strictEqual(item.left, '9.0000%');

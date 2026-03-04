@@ -429,6 +429,17 @@ input[type="range"]::-moz-range-thumb:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
 
+.enrichment-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: auto;
+    z-index: 1510;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    container-type: size;
+}
+
 .pdf-link:hover {
     background-color: rgba(255, 255, 0, 0.2);
 }
@@ -441,6 +452,10 @@ input[type="range"]::-moz-range-thumb:hover {
     transform-origin: left top;
     z-index: 1515;
     pointer-events: auto;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    user-select: text;
+    line-height: 1;
 }
 
 .pdf-text::selection {

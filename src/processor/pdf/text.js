@@ -17,10 +17,15 @@ export async function extractPageText(page) {
     return textContent.items.map(item => {
         const { transform, str, width, height, fontName } = item;
         // transform: [scaleX, skewY, skewX, scaleY, translateX, translateY]
-        const scaleX = transform[0];
-        const scaleY = transform[3];
+        // translateX, translateY are in PDF "user space" (0,0 is bottom-left)
         const translateX = transform[4];
         const translateY = transform[5];
+        const scaleY = transform[3];
+
+        // Use PDF.js viewport to convert user space to viewport space (pixels, 0,0 is top-left)
+        // This handles rotation and complex transformations correctly.
+        // convertToViewportPoint returns [x, y] in pixels
+        const [pixelX, pixelY] = viewport.convertToViewportPoint(translateX, translateY);
 
         // Font style lookup with fallback logic
         const style = textContent.styles[fontName];
@@ -33,24 +38,28 @@ export async function extractPageText(page) {
             }
         }
 
-        // PDF.js coordinates are bottom-up (translateY is the baseline)
-        // We need to convert to top-down percentage
-        // To align correctly with HTML 'top', we subtract the font height (scaleY)
-        const left = (translateX / pageWidth) * 100;
-        const top = ((pageHeight - translateY - scaleY) / pageHeight) * 100;
+        // Convert pixel coordinates to percentages
+        const left = (pixelX / pageWidth) * 100;
+
+        // PDF.js translateY is the baseline. In CSS 'top', we need the top of the line.
+        // viewport.convertToViewportPoint for scaleY helps get the correct vertical offset
+        // but for simplicity and since we normalize to 1.0 scale, we can use the scaleY directly.
+        // We subtract scaleY because CSS top is top-down and PDF is bottom-up.
+        const top = ((pixelY - scaleY) / pageHeight) * 100;
 
         // Font size is usually the scaleY in the transform
         // Ensure it's a valid positive number
         const fontSizeVal = Math.max(0, scaleY);
+        // We use the raw fontSize value for cqh conversion later
         const fontSize = (fontSizeVal / pageHeight) * 100;
 
         return {
             str,
             top: `${top.toFixed(4)}%`,
             left: `${left.toFixed(4)}%`,
-            fontSize: fontSize.toFixed(4),
+            fontSize: fontSize.toFixed(4), // This will be used as cqh
             fontFamily,
-            scaleX: scaleX / scaleY, // Ratio to handle font-stretch-like behavior if needed
+            scaleX: transform[0] / scaleY, // Ratio to handle font-stretch-like behavior
             width: (width / pageWidth) * 100,
             height: (height / pageHeight) * 100
         };

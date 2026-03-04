@@ -167,7 +167,7 @@ function renderPdfText(textItems) {
     return textItems.map(item => {
         // PDF.js text items have transform [scaleX, skewY, skewX, scaleY, translateX, translateY]
         // Our normalized items should already have percentage-based { top, left, width, height }
-        const style = `top: ${item.top}; left: ${item.left}; font-size: ${item.fontSize}%; font-family: ${item.fontFamily || 'sans-serif'}; transform: scaleX(${item.scaleX}); transform-origin: left top; position: absolute;`;
+        const style = `top: ${item.top}; left: ${item.left}; font-size: ${item.fontSize}cqh; font-family: ${item.fontFamily || 'sans-serif'}; transform: scaleX(${item.scaleX}); transform-origin: left top; position: absolute; line-height: 1;`;
         return `<span class="pdf-text" style="${style}">${escapeHtml(item.str)}</span>`;
     }).join('');
 }
@@ -325,7 +325,7 @@ export async function generateFlipbookHtml(pageImages, options = {},
     inset: 0;
     pointer-events: auto;
     z-index: 1510;
-    overflow: hidden;
+    container-type: size;
 }
 
 .pdf-link {
